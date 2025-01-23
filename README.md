@@ -1,1 +1,1 @@
-# thunder-bay
+# Thunder Bay
