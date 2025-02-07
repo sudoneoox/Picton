@@ -15,9 +15,9 @@ micromamba activate backend
 ```bash
 CREATE DATABASE picton
 ```
-4. Create a .env file in the root of the backend directory
+4. Navigate to the backend root & create a .env file
 ```bash
-# with this structure
+# the .env file should have this structure
 DEBUG=
 SECRET_KEY=
 DB_NAME=
