@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    // Target latest version of ECMAScript
+    "target": "es2022",
+    // Search under node_modules for non-relative imports
+    "moduleResolution": "node",
+    // Enable importing .json files
+    "resolveJsonModule": true,
+    // Process & infer types from .js files
+    "allowJs": true,
+    // Allow default imports from modules with no default export
+    "allowSyntheticDefaultImports": true,
+    // Emit additional JS to ease support for importing CommonJS modules
+    "esModuleInterop": true,
+    // Don't emit; allow Babel to transform files
+    "noEmit": true,
+    // Enable strictest settings like strictNullChecks & noImplicitAny
+    "strict": true,
+    // Import non-ES modules as default imports
+    "module": "esnext",
+    // Support JSX in .tsx files
+    "jsx": "react-jsx",
+    // Interop between ESM and CJS modules
+    "moduleDetection": "force",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.js",
+    "src/**/*.jsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    ".next",
+    "coverage"
+  ]
+}
