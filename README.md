@@ -1,6 +1,6 @@
 # Team Picton
 
-## Setup Instruction
+## Setup Instructions
 ### Backend
 1. Install micromamba 
 2. Create and activate the environment
