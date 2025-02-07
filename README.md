@@ -3,6 +3,9 @@
 ## Setup Instructions
 ### Backend
 1. Install micromamba 
+```bash
+"${SHELL}" <(curl -L micro.mamba.pm/install.sh)
+```
 2. Create and activate the environment
 ```bash
 micromamba create -f backend/environment.yml
