@@ -15,15 +15,38 @@ micromamba activate backend
 ```bash
 CREATE DATABASE picton
 ```
-4. Apply migrations:
+4. Create a .env file in the root of the backend directory
 ```bash
-# Lorem Ipsum
+# with this structure
+DEBUG=
+SECRET_KEY=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+DB_HOST=
+DB_PORT=
+```  
+5. Apply migrations:
+```bash
+python manage.py migrate
 ```
-5. Create superuser:
-
-6. Run developmental server:
+6. Create superuser:
+```
+python manage.py createsuperuser
+```
+7. Run developmental server:
 ```bash
 python backend/manage.py runserver
+```
+
+### Frontend 
+1. Navigate to the frontend directory and install dependencies
+```bash
+cd frontend && pnpm install 
+```
+2. Start up developmental server
+```bash
+pnpm run start
 ```
 
 ## Project Structure
