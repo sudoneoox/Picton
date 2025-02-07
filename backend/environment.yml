@@ -1,0 +1,13 @@
+name: backend
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.13
+  - django
+  - psycopg2
+  - python-dotenv
+  - djangorestframework
+  - django-cors-headers
+  - pip
+

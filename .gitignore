@@ -1,1 +1,8 @@
+# frontend
 frontend/node_modules
+
+
+# env files
+database/scripts/.env
+backend/.env
+

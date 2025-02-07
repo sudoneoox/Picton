@@ -1,0 +1,6 @@
+Django==5.0.1
+psycopg2-binary==2.9.9
+python-dotenv==1.0.0
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+
