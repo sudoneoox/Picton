@@ -1,0 +1,43 @@
+services:
+
+####### FRONTEND ########
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment: 
+      - NODE_ENV=development
+    ports:
+      - "8080:80"
+    depends_on:
+      database:
+        condition: service_healthy
+    command: ["npm", "run", "start"]
+
+####### BACKEND ########
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+
+####### POSTGRESQL ########
+  database:
+    image: postgres
+    restart: always
+    environment:
+      DB_PASSWORD: xxxx
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+  
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+
+volumes:
+  pgdata:
+   
