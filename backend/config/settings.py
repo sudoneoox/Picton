@@ -69,6 +69,15 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+if DEBUG:
+    print("DEBUG: Got .env file this should not be empty")
+    print(f"DB_NAME: {os.getenv('DB_NAME')}")
+    print(f"DB_USER: {os.getenv('DB_USER')}")
+    print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
+    print(f"DB_HOST: {os.getenv('DB_HOST')}")
+    print(f"DB_PORT: {os.getenv('DB_PORT')}")
+
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
