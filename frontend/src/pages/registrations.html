@@ -1,10 +1,41 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title></title>
-    <link href="css/style.css" rel="stylesheet" />
-  </head>
-  <body></body>
-</html>
+<div class="container">
+  <h1>Registration Page</h1>
+  <form id="registerForm" onsubmit="handleRegister(event)">
+    <input type="text" name="username" placeholder="Username" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Register</button>
+  </form>
+  <div id="message"></div>
+</div>
+
+<script>
+  async function handleRegister(event) {
+    event.preventDefault();
+    const form = event.target;
+    const data = {
+      username: form.username.value,
+      password: form.password.value,
+    };
+
+    try {
+      const response = await fetch("http://localhost:8000/api/register/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      document.getElementById("message").textContent = result.message;
+
+      if (result.status === "success") {
+        // Maybe redirect to login or home page
+        setTimeout(() => router.navigateTo("/"), 2000);
+      }
+    } catch (error) {
+      document.getElementById("message").textContent =
+        "Registration failed: " + error.message;
+    }
+  }
+</script>

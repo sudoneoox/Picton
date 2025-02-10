@@ -8,8 +8,8 @@
 ```
 2. Create and activate the environment
 ```bash
-micromamba create -f backend/environment.yml
-micromamba activate backend 
+micromamba create -n picton-backend -f backend/environment.yml
+micromamba activate picton-backend 
 ```
 3. Set up PostgreSQL database:
 ```bash

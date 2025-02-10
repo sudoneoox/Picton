@@ -1,13 +1,11 @@
 import "./styles/output.css";
 
-if (process.env.DEBUG) {
-  document.addEventListener("DOMContentLoaded", () => {
-    alert("Application started");
-  });
-}
+document.addEventListener("DOMContentLoaded", () => {
+  alert("Application started");
+});
 
 // NOTE:  MAKESHIFT ROUTING (since we cant use react router)
-const router = {
+window.router = {
   // handle page load and backwards forwwards navigation
   init: () => {
     window.addEventListener("popstate", router.handleRoute);
@@ -17,13 +15,17 @@ const router = {
   // IMPORTANT: add navigation paths here
   handleRoute: () => {
     const path = window.location.pathname;
+    console.log("Current Path:", path);
+
     switch (path) {
       case "/":
-        loadContent("./pages/index.html");
+        loadContent("/src/pages/home.html");
         break;
       case "/registration":
-        loadContent("./pages/registrations.html");
+        loadContent("/src/pages/registrations.html");
         break;
+      default:
+        loadContent("./pages/home.html");
     }
   },
 
@@ -37,15 +39,20 @@ const router = {
 async function loadContent(url) {
   try {
     const response = await fetch(url);
+    if (!response.ok)
+      throw new Error(`HTTP error! status : ${response.status}`);
     const html = await response.text();
     document.getElementById("content").innerHTMl = html;
+    console.log("Content loaded from:", url);
   } catch (err) {
-    if (process.env.DEBUG) {
-      console.error("Error loading page:", err);
-      alert("ERROR loading HTML page", err);
-    }
+    console.error("Error loading page:", err);
+    document.getElementById("content").innerHTML =
+      "<p> ERROR loading page </p>";
   }
 }
 
 // init router on page load
-document.addEventListener("DOMContentLoaded", router.init);
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("page loaded, initializing router");
+  router.init();
+});

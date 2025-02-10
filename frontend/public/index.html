@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Picton Web App</title>
-    <link href="styles/output.css" rel="stylesheet" />
+    <link href="src/styles/output.css" rel="stylesheet" />
   </head>
+  <nav>
+    <button onclick="router.navigateTo('/')">Home</button>
+    <button onclick="router.navigateTo('/registration')">Register</button>
+  </nav>
   <body>
-    <div id="app">Team Picton</div>
-    <!-- NOTE: scripts will be injected here by webpack -->
+    <div id="content"></div>
+    <script src="src/index.js"></script>
   </body>
 </html>

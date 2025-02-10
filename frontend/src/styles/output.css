@@ -1,5 +1,16 @@
 /*! tailwindcss v4.0.4 | MIT License | https://tailwindcss.com */
 @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+.container {
+  width: 100%;
+}
+.container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+.border {
+  border-style: var(--tw-border-style);
+  border-width: 1px;
+}
 body {
   margin: 0;
   padding: 0;
@@ -31,4 +42,9 @@ body {
     --box-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
     --box-shadow-none: none;
   }
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
 }

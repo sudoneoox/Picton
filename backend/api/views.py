@@ -5,7 +5,13 @@ from rest_framework.permissions import AllowAny
 
 
 # NOTE: sample view
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def registrations(request):
-    return Response({"message": "Hello from Django!"})
+@api_view(["POST"])
+def register_user(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+
+    return Response({
+        'message': f'Received registration for user: {username}',
+        'status': 'success'
+    })

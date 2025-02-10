@@ -37,3 +37,24 @@ body {
   color-scheme: dark;
 }
 
+.container {
+  padding: 2rem;
+}
+
+nav {
+  padding: 1rem;
+  background-color: #f0fff0;
+
+  button {
+    margin-right: 1rem;
+    padding: 0.5rem 1rem;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    
+    &:hover {
+      background-color: #0056b3;
+    }
+  }
+}
