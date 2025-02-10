@@ -5,9 +5,9 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "start": "craco start",
-    "build": "GENERATE_SOURCEMAP=true craco build",
-    "build:prod": "cross-env NODE_ENV=produciton GENERATE_SOURCEMAP=false craco build",
+    "start": "export $(cat .env | xargs) && craco start",
+    "build": "export $(cat .env | xargs) && craco build",
+    "build:prod": "export $(cat .env | xargs) && craco build",
     "test": "craco test",
     "analyze": "source-map-explorer 'build/static/js/*.js'"
   },

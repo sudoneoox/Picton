@@ -1,8 +1,14 @@
 # frontend
 frontend/node_modules
 
+# backend
+**/**/__pycache__
+backend/api/__pychache__
+backend/api/migrations/__pycache__
+backend/config/__pycache__
 
 # env files
 database/scripts/.env
 backend/.env
+
 

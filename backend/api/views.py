@@ -7,5 +7,5 @@ from rest_framework.permissions import AllowAny
 # NOTE: sample view
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def same_endpointt(request):
+def registrations(request):
     return Response({"message": "Hello from Django!"})
