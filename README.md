@@ -25,6 +25,7 @@ DB_USER=
 DB_PASSWORD=
 DB_HOST=
 DB_PORT=
+CORS_ALLOWED_ORIGINS='http://localhost:3000'
 ```  
 5. Apply migrations:
 ```bash
@@ -43,6 +44,11 @@ python backend/manage.py runserver
 1. Navigate to the frontend directory and install dependencies
 ```bash
 cd frontend && pnpm install 
+```
+2. Configure a .env file with this format
+```bash
+# the backend api server 
+VITE_API_BASE_URL=http://localhost:8000/api
 ```
 2. Start up developmental server
 ```bash

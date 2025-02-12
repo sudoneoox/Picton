@@ -10,5 +10,6 @@ backend/config/__pycache__
 # env files
 database/scripts/.env
 backend/.env
+frontend/.env
 
 
