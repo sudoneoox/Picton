@@ -1,45 +1,36 @@
 {
   "name": "frontend",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "start": "export $(cat .env | xargs) && craco start",
-    "build": "export $(cat .env | xargs) && craco build",
-    "build:prod": "export $(cat .env | xargs) && craco build",
-    "test": "craco test",
-    "analyze": "source-map-explorer 'build/static/js/*.js'"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "tailwindcss": "pnpm tailwindcss -i src/styles/App.css -o src/styles/output.css --watch",
+    "sass": "sass --watch src/styles/App.scss App.css"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@craco/craco": "^7.1.0",
-    "@tailwindcss/cli": "^4.0.4",
-    "tailwind-merge": "^3.0.1",
-    "typescript": "^5.7.3"
+    "@tailwindcss/cli": "^4.0.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
-    "css-loader": "^7.1.2",
-    "postcss-loader": "^8.1.1",
-    "sass": "^1.84.0",
-    "sass-loader": "^16.0.4",
-    "style-loader": "^4.0.0",
-    "tailwindcss": "^4.0.4",
-    "ts-loader": "^9.5.2"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "eslint": "^9.19.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.18",
+    "globals": "^15.14.0",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^4.0.6",
+    "vite": "^6.1.0"
   }
 }
