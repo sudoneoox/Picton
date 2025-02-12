@@ -1,4 +1,5 @@
 # Team Picton
+Team Project for COSC 4353 (Software Design)
 
 ## Setup Instructions
 ### Backend
@@ -54,9 +55,16 @@ cd frontend && pnpm install
 # the backend api server 
 VITE_API_BASE_URL=http://localhost:8000/api
 ```
-3. Start up developmental server
+3. Start up developmental environment
 ```bash
+# start frontend server
 pnpm run dev
+
+# start up tailwindcss 
+pnpn run tailwindcss
+
+# start up scss 
+pnpm run sass
 ```
 
 ## Project Structure

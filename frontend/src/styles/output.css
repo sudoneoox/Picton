@@ -1,7 +1,17 @@
 /*! tailwindcss v4.0.6 | MIT License | https://tailwindcss.com */
 @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+.container {
+  width: 100%;
+}
+.container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
 .flex {
   display: flex;
+}
+.transform {
+  transform: var(--tw-rotate-x) var(--tw-rotate-y) var(--tw-rotate-z) var(--tw-skew-x) var(--tw-skew-y);
 }
 body {
   margin: 0;
@@ -34,4 +44,29 @@ body {
     --box-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
     --box-shadow-none: none;
   }
+}
+@property --tw-rotate-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: rotateX(0);
+}
+@property --tw-rotate-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: rotateY(0);
+}
+@property --tw-rotate-z {
+  syntax: "*";
+  inherits: false;
+  initial-value: rotateZ(0);
+}
+@property --tw-skew-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: skewX(0);
+}
+@property --tw-skew-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: skewY(0);
 }
