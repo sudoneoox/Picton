@@ -2,7 +2,7 @@
 
 ## Setup Instructions
 ### Backend
-1. Install micromamba 
+1. Install micromamba (specific to your OS)
 ```bash
 "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
 ```
@@ -11,14 +11,18 @@
 micromamba create -n picton-backend -f backend/environment.yml
 micromamba activate picton-backend 
 ```
-3. Set up PostgreSQL database:
+3. Set up PostgreSQL database with pgcli 
 ```bash
 CREATE DATABASE picton
+
+# create a user as well and give them a password
+
+# grant all privileges to the database to that user
 ```
-4. Navigate to the backend root & create a .env file
+4. Configure a .env file with this format in the root backend directory
 ```bash
 # the .env file should have this structure
-DEBUG=
+DEBUG=True
 SECRET_KEY=
 DB_NAME=
 DB_USER=
@@ -45,42 +49,47 @@ python backend/manage.py runserver
 ```bash
 cd frontend && pnpm install 
 ```
-2. Configure a .env file with this format
+2. Configure a .env file with this format in the root frontend directory
 ```bash
 # the backend api server 
 VITE_API_BASE_URL=http://localhost:8000/api
 ```
-2. Start up developmental server
+3. Start up developmental server
 ```bash
-pnpm run start
+pnpm run dev
 ```
 
 ## Project Structure
-```
-backend
-├── api/
-│   ├── migrations/
-├── config/
-├── media/
-├── static/
-└── templates/
-├── requirements.txt
-├── environment.yml
-├── manage.py
+```bash
+├── backend/
+│   ├── api/  
+│   │   ├── migrations/     # defines our database schema 
+│   │   ├── urls.py         
+│   │   └── views.py         
+│   ├── config/
+│   │   ├── asgi.py
+│   │   ├── settings.py     # Django project settings
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   ├── environment.yml     # micromamba env installation config
+│   ├── manage.py           
+│   └── requirements.txt
 
-
-frontend/
-├── public/
-│   ├── assets/
-│   │   └── images/
-│   └── index.html
-├── src/
-│   ├── js/
-│   │   └── utils/
-│   ├── pages/
-│   └── styles/
-│       ├── modules/
-└── package.json
+├── frontend/
+│   ├── index.html
+│   ├── public/             # static images etc.
+│   ├── src/
+│   │   ├── api.js          # api config and util functions 
+│   │   ├── App.jsx         # defines react-router
+│   │   ├── main.jsx        
+│   │   ├── Components/     # reusable react components
+│   │   ├── Pages/          # site pages 
+│   │   │   ├── imports.jsx 
+│   │   └── styles/
+│   │       ├── App.css     # intermediate css to output to tailwind styles
+│   │       ├── App.scss    # main config scss styles
+│   │       ├── output.css  # tailwindcss output all files will use this 
+│   │       ├── modules/    # seperatate component or page styles using scss imports here
 ```
 
 ### Contributors
