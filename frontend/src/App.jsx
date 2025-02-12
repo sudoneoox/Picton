@@ -1,21 +1,12 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import Navbar from "./Components/Navbar.jsx";
 import Pages from "./Pages/imports.jsx";
 import "./styles/output.css";
 
 function App() {
   return (
     <div className="p-4">
-      <nav className="flex space-x-4">
-        <Link to="/" className="text-blue-500">
-          Home
-        </Link>
-        <Link to="/registration" className="text-blue-500">
-          Register
-        </Link>
-        <Link to="/login" className="text-blue-500">
-          Login
-        </Link>
-      </nav>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Pages.Home />} />
         <Route path="/login" element={<Pages.Login />} />

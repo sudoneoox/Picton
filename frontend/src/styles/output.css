@@ -1,14 +1,78 @@
 /*! tailwindcss v4.0.6 | MIT License | https://tailwindcss.com */
 @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+.main-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+}
+.navbar-container {
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 640px) {
+  .navbar-container {
+    padding: 0 0.5rem;
+  }
+}
+.navbar-wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4rem;
+}
+@media (max-width: 640px) {
+  .navbar {
+    position: relative;
+  }
+}
+.navbar-item {
+  position: relative;
+  color: rgb(82, 82, 91);
+  transition: all 200ms;
+}
+.navbar-item-underline {
+  position: absolute;
+  bottom: -0.25rem;
+  left: 0;
+  width: 0;
+  height: 0.125rem;
+  background-color: rgb(79, 70, 229);
+  transition: all 300ms;
+}
+.navbar-item-underline--active {
+  width: 100%;
+}
+@media (min-width: 640px) {
+  .navbar-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .navbar-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+@media (width <= 768px) {
+  .navbar-container-brand {
+    font-size: 1rem;
+  }
+}
 .container {
   width: 100%;
 }
 .container {
   margin-inline: auto;
   padding-inline: 1rem;
-}
-.flex {
-  display: flex;
 }
 .transform {
   transform: var(--tw-rotate-x) var(--tw-rotate-y) var(--tw-rotate-z) var(--tw-skew-x) var(--tw-skew-y);
