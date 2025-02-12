@@ -1,6 +1,6 @@
-import "./styles/output.css";
 import { Routes, Route, Link } from "react-router-dom";
 import Pages from "./Pages/imports.jsx";
+import "./styles/output.css";
 
 function App() {
   return (

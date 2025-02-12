@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "tailwindcss": "pnpm tailwindcss -i src/styles/App.css -o src/styles/output.css --watch",
-    "sass": "sass --watch src/styles/App.scss App.css"
+    "tailwindcss": "npx tailwindcss -i './src/styles/App.css' -o './src/styles/output.css' --watch",
+    "sass": "pnpm exec sass src/styles/App.scss src/styles/App.css --watch" 
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.0.6",
@@ -30,6 +30,7 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
     "postcss": "^8.5.2",
+    "sass": "^1.84.0",
     "tailwindcss": "^4.0.6",
     "vite": "^6.1.0"
   }
