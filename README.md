@@ -100,7 +100,7 @@ pnpm run sass
 │   │       ├── modules/    # seperatate component or page styles using scss imports here
 ```
 
-### Contributors
+## Contributors
 - Denis Fuentes - denisfuentes@gmail.com
 - Diego Coronado - diegoa2992@gmail.com
 - Jihao Ye - jihaoyb@gmail.com

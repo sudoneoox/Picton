@@ -1,16 +1,18 @@
 // MODULES
 @use 'modules/constants';
 @use 'modules/navbar';
-
-// FONTS
-@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
-
+@use 'modules/main-content-container';
 
 // Tailwind Config
 @config "../../tailwind.config.ts";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+// FONTS
+@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+
+
 
 // ROOT Styles
 body {

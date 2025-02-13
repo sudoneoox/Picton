@@ -1,17 +1,35 @@
 $MOBILE-MAX-W: 640px;
 $TABLET-MIN-PORTRAIT-W: 768px;
 
-
-.main-navbar{
+.main-navbar {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
   z-index: 50;
   backdrop-filter: blur(8px);
- }
 
- .navbar {
-   &-container {
+  :root.light & {
+    background-color: rgba(255,255,255,0.8);
+    border-bottom: 1px solid rgb(228,228,231);
+  }
+  :root.dark & {
+    background-color: rgba(24,24,27,0.8);
+    border-bottom: 1px solid rgb(39,39,42);
+  }
+}
+
+.navbar-mobile-toggle {
+  display: none;
+  @media (max-width: $MOBILE-MAX-W){
+    display: block;
+    margin-left: 1rem;
+    cursor: pointer;
+  }
+}
+
+.navbar {
+  &-container {
     max-width: 100%;
     margin-left: auto;
     margin-right: auto;
@@ -22,21 +40,87 @@ $TABLET-MIN-PORTRAIT-W: 768px;
     @media (max-width: $MOBILE-MAX-W){
       padding: 0 0.5rem;
     }
-   }
+  }
 
-   &-wrapper {
-     width: 100%;
-     display: flex;
-     align-items: center;
-     justify-content: space-between;
-     height: 4rem;
-   }
-   @media (max-width: $MOBILE-MAX-W){
+  &-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 4rem;
+
+    @media (max-width: $MOBILE-MAX-W){
       position: relative;
-   }
+    }
 
-   
-   &-item {
+    :root.light & {
+      border-bottom: 1px solid #000;
+    }
+
+    :root.dark & {
+      border-bottom: 1px solid #2d2d2f;    
+    }
+
+  }
+
+  &-brand {
+    // font-family: serif;
+    // font-size: 1.25rem;
+    // font-weight: 500;
+    // letter-spacing: -0.025em;
+    // text-decoration: none;
+    // transition: colors 200ms;
+    // padding-top: 0.5rem;
+    
+    font-size: 1.5rem;
+    white-space: normal;
+
+    @media (max-width: $MOBILE-MAX-W){
+      font-size: 1.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 12.5rem;
+    }
+    &:active {
+      color: #4f46e5;
+    }
+
+  }
+
+  &-menu {
+    display: flex;
+    margin-left: auto;
+    align-items: center;
+    gap: 2rem;
+
+    @media (max-width: $TABLET-MIN-PORTRAIT-W) {
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    @media (max-width: $MOBILE-MAX-W){
+      position: fixed;
+      top: 4rem;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      padding: 1rem;
+      gap: 1rem;
+      display: none;
+      :root.dark & {
+        background-color: rgba(24,24,27,0.95);
+      }
+      :root.light & {
+        background-color: rgba(255,255,255,0.95);
+      }
+      &.active {
+        display: flex;
+      }
+    }
+  }
+
+  &-item {
     position: relative;
     color: rgb(82, 82, 91);
     transition: all 200ms;
@@ -54,6 +138,27 @@ $TABLET-MIN-PORTRAIT-W: 768px;
         width: 100%;
       }
     }
+  }
+
+  &-icons {
+    display: flex;
+    margin-left: 2rem;
+    gap: 1.25rem;
+    @media (max-width: $TABLET-MIN-PORTRAIT-W) {
+      margin-left: 1rem;
+      gap: 0.75rem;
+    }
+    @media (max-width: $MOBILE-MAX-W){
+      margin-left: auto;
+      gap: 0.75rem;
+    }
+  }
+
+  &-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: rgb(82, 82, 91);
+    transition: colors 200ms;
   }
 }
 

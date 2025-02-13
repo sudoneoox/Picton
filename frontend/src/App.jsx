@@ -1,19 +1,19 @@
 import { Routes, Route } from "react-router-dom";
-import Navbar from "./Components/Navbar.jsx";
+import Layout from "./Layout.jsx";
 import Pages from "./Pages/imports.jsx";
 import "./styles/output.css";
 
 function App() {
   return (
-    <div className="p-4">
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Pages.Home />} />
-        <Route path="/login" element={<Pages.Login />} />
-        <Route path="/registration" element={<Pages.Registration />} />
-        <Route path="/control-center" element={<Pages.ControlCenter />} />
-      </Routes>
-    </div>
+    <Routes>
+      {/* The Layout wraps all pages it acts as a container for css styles*/}
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Pages.Home />} />
+        <Route path="login" element={<Pages.Login />} />
+        <Route path="registration" element={<Pages.Registrations />} />
+        <Route path="control-center" element={<Pages.ControlCenter />} />
+      </Route>
+    </Routes>
   );
 }
 
