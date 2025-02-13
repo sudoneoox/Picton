@@ -1,10 +1,12 @@
+
 // MODULES
 @use 'modules/constants';
 @use 'modules/navbar';
 @use 'modules/main-content-container';
+@use 'modules/registrations';
 
 // Tailwind Config
-@config "../../tailwind.config.ts";
+@config "../../tailwind.config";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

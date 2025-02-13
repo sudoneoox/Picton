@@ -6,6 +6,7 @@
   right: 0;
   z-index: 50;
   backdrop-filter: blur(8px);
+  background-color: #171821;
 }
 :root.light .main-navbar {
   background-color: rgba(255, 255, 255, 0.8);
@@ -60,7 +61,13 @@
   border-bottom: 1px solid #2d2d2f;
 }
 .navbar-brand {
+  font-family: serif;
   font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  text-decoration: none;
+  transition: colors 200ms;
+  padding-top: 0.5rem;
   white-space: normal;
 }
 @media (max-width: 640px) {
@@ -111,7 +118,7 @@
 }
 .navbar-item {
   position: relative;
-  color: rgb(82, 82, 91);
+  color: #c0caf5;
   transition: all 200ms;
 }
 .navbar-item-underline {
@@ -169,21 +176,10 @@
 }
 .main-content-container {
   width: 100%;
-  display: grid;
-  grid-template-columns: 3fr 7fr; /* Left sidebar and main content */
-  gap: 0.75rem; /* Space between columns */
-  padding: 0.5rem;
-  z-index: 1;
-  margin-top: 5rem;
-  margin-bottom: 0.75rem;
-  min-height: calc(100vh - 5rem);
+  position: relative;
+  margin-top: 4rem;
+  min-height: calc(100vh - 4rem);
   box-sizing: border-box;
-}
-
-.main-content-container > * {
-  background-color: red;
-  border: 0.01rem solid #333131;
-  padding: 1rem;
 }
 
 /* Responsive design */
@@ -195,7 +191,167 @@
     border: 0px;
   }
 }
-@config "../../tailwind.config.ts";
+.registration-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+  min-height: 100vh;
+  height: 100%;
+}
+@media (max-width: 640px) {
+  .registration-container {
+    grid-template-columns: 1fr;
+  }
+}
+.registration-left {
+  background-color: #1a1b26;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.5rem;
+}
+.registration-left__logo {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.registration-left__testimonial p {
+  color: #c0caf5;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  margin-bottom: 1rem;
+}
+.registration-left__testimonial span {
+  color: #7982a9;
+}
+@media (max-width: 640px) {
+  .registration-left {
+    display: none;
+  }
+}
+.registration-right {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #24283b;
+  padding: 1.5rem;
+}
+@media (min-width: 768px) {
+  .registration-right {
+    padding: 3rem;
+  }
+}
+.registration-formContainer {
+  width: 100%;
+  max-width: 24rem;
+  text-align: center;
+  color: white;
+}
+.registration-formContainer__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.registration-formContainer__input {
+  max-width: 95%;
+  background-color: rgba(26, 27, 38, 0.5);
+  border: 1px solid #414868;
+  border-radius: 0.375rem;
+  color: #c0caf5;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+.registration-formContainer__input--animate {
+  animation: slideDown 0.3s ease-out;
+}
+.registration-formContainer__input:focus {
+  outline: none;
+  border-color: #565f89;
+  box-shadow: 0 0 0 2px rgba(86, 95, 137, 0.2);
+}
+.registration-formContainer__sign-in {
+  margin-left: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  background-color: rgba(26, 27, 38, 0.5);
+}
+.registration-formContainer__submit, .registration-formContainer__sso {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: white;
+  color: black;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.registration-formContainer__submit:hover, .registration-formContainer__sso:hover {
+  background-color: rgb(244, 244, 245);
+}
+.registration-formContainer__outlook {
+  width: 50%;
+  background-color: white;
+  padding: 0.5rem;
+  color: black;
+  align-self: center;
+}
+.registration-formContainer__icon {
+  margin-right: 0.25rem;
+}
+.registration-formContainer h2 {
+  margin-bottom: 0.5rem;
+  color: white;
+}
+.registration-formContainer p {
+  margin-bottom: 1.5rem;
+  color: white;
+}
+.registration-formContainer__header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.registration-formContainer__title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+.registration-formContainer__subtitle {
+  font-size: 1rem;
+  color: #c0caf5;
+}
+.registration-formContainer__divider {
+  position: relative;
+  margin: 0.5rem 0;
+}
+.registration-formContainer__divider-line {
+  display: flex;
+  align-items: center;
+}
+.registration-formContainer__divider-border {
+  width: 100%;
+  border-top: 1px solid #414868;
+}
+.registration-formContainer__divider-text {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  background-color: #24283b;
+  margin-top: 0.2rem;
+}
+.registration-formContainer__divider-text span {
+  font-size: 0.8rem;
+  padding-top: 0.75rem;
+  color: #c0caf5;
+}
+
+@config "../../tailwind.config";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

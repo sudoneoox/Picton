@@ -1,6 +1,15 @@
 $MOBILE-MAX-W: 640px;
 $TABLET-MIN-PORTRAIT-W: 768px;
 
+// colors 
+$bg-dark-harder: #171821;
+$bg-dark-soft: #1a1b26;
+$bg-dark-lighter: #24283b;
+$text-primary: #c0caf5;
+$text-secondary: #7982a9;
+$border-color: #414868;
+$hover-color: #565f89;
+
 .main-navbar {
   position: fixed;
   top: 0;
@@ -8,6 +17,7 @@ $TABLET-MIN-PORTRAIT-W: 768px;
   right: 0;
   z-index: 50;
   backdrop-filter: blur(8px);
+  background-color: $bg-dark-harder;
 
   :root.light & {
     background-color: rgba(255,255,255,0.8);
@@ -64,15 +74,13 @@ $TABLET-MIN-PORTRAIT-W: 768px;
   }
 
   &-brand {
-    // font-family: serif;
-    // font-size: 1.25rem;
-    // font-weight: 500;
-    // letter-spacing: -0.025em;
-    // text-decoration: none;
-    // transition: colors 200ms;
-    // padding-top: 0.5rem;
-    
+    font-family: serif;
     font-size: 1.5rem;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    text-decoration: none;
+    transition: colors 200ms;
+    padding-top: 0.5rem;
     white-space: normal;
 
     @media (max-width: $MOBILE-MAX-W){
@@ -122,7 +130,7 @@ $TABLET-MIN-PORTRAIT-W: 768px;
 
   &-item {
     position: relative;
-    color: rgb(82, 82, 91);
+    color: $text-primary;
     transition: all 200ms;
 
     &-underline {

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000",
+    "dev": "vite --port 3000 & sass --watch src/styles:src/styles & npx tailwindcss -i src/styles/App.css -o src/styles/output.css --watch",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -12,16 +12,23 @@
     "sass": "pnpm exec sass src/styles/App.scss src/styles/App.css --watch"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.1.2",
     "@tailwindcss/cli": "^4.0.6",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/vite": "^4.0.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.5",
-    "tailwind-merge": "^3.0.1"
+    "tailwind-merge": "^3.0.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@tailwindcss/postcss": "^4.0.6",
+    "@types/node": "^22.13.1",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@types/react-router-dom": "^5.3.3",
@@ -33,6 +40,7 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
     "postcss": "^8.5.2",
+    "postcss-nesting": "^13.0.1",
     "sass": "^1.84.0",
     "tailwindcss": "^4.0.6",
     "vite": "^6.1.0"

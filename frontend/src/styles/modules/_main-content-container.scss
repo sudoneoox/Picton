@@ -1,22 +1,11 @@
 .main-content-container {
   width: 100%;
-  display: grid;
-  grid-template-columns: 3fr 7fr; /* Left sidebar and main content */
-  gap: 0.75rem; /* Space between columns */
-  padding: 0.5rem;
-  z-index: 1;
-  margin-top: 5rem;
-  margin-bottom: 0.75rem;
-  min-height: calc(100vh - 5rem);
+  position: relative;
+  margin-top: 4rem; // Account for fixed navbar
+  min-height: calc(100vh - 4rem);
   box-sizing: border-box;
 }
 
-// debug information 
-.main-content-container > * {
-  background-color: red;
-  border: 0.01rem solid #333131;
-  padding: 1rem;
-}
 
 
 /* Responsive design */
