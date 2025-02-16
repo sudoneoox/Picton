@@ -5,6 +5,7 @@
 @use 'modules/navbar';
 @use 'modules/main-content-container';
 @use 'modules/registrations';
+@use 'modules/toast-notif';
 
 // Tailwind Config
 @config "../../tailwind.config";
