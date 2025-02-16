@@ -457,6 +457,9 @@
 .inline-flex {
   display: inline-flex;
 }
+.table {
+  display: table;
+}
 .w-full {
   width: 100%;
 }
