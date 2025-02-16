@@ -12,4 +12,6 @@ database/scripts/.env
 backend/.env
 frontend/.env
 
-
+# other
+start_dev.bat
+start_dev.sh
