@@ -50,7 +50,6 @@ const defaultNavConfig = {
   menuItems: [
     { name: "Register", navigation: "/registration" },
     { name: "Login", navigation: "/login" },
-    { name: "Admin Panel", navigation: "/control-center" }, // <-- Added this so admins can acces it
   ],
 };
 
