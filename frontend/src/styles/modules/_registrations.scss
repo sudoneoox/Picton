@@ -78,10 +78,12 @@ $hover-color: #565f89;
       gap: 1rem;
     }
 
-    width: 100%;
-    max-width: 24rem;
-    text-align: center;
-    color: white;
+    & {
+      width: 100%;
+      max-width: 24rem;
+      text-align: center;
+      color: white;
+    }
 
     &__input {
       max-width: 95%;
