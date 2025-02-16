@@ -329,6 +329,7 @@
   flex-direction: column;
   gap: 1rem;
 }
+
 .registration-formContainer__input {
   max-width: 95%;
   background-color: rgba(26, 27, 38, 0.5);
