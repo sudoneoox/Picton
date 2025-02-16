@@ -1,5 +1,6 @@
 .main-content-container {
   width: 100%;
+  height: calc(100vh - 5rem);
   position: relative;
   margin-top: 4rem; // Account for fixed navbar
   min-height: calc(100vh - 4rem);

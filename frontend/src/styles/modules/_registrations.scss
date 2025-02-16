@@ -68,10 +68,27 @@ $hover-color: #565f89;
       padding: 3rem;
     }
   }
-
   // -RIGHT END
 
   &-formContainer {
+    &__navigation {
+      padding: 0.5rem 1rem;
+      background-color: white;
+      color: black;
+      border-radius: 0.375rem;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: rgb(244, 244, 245);
+      }
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+
     &__form {
       display: flex;
       flex-direction: column;
