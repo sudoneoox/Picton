@@ -1,0 +1,104 @@
+.toast {
+  &-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    &__notification {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+      &--success {
+        background-color: rgb(240, 253, 244);
+        color: rgb(22, 101, 52);
+      }
+
+      &--error {
+        background-color: rgb(254, 242, 242);
+        color: rgb(153, 27, 27);
+      }
+      &--warning {
+        background-color: rgb(255, 251, 235); // Light yellow
+        color: rgb(161, 98, 7); // Dark orange/brown
+      }
+
+      &--info {
+        background-color: rgb(239, 246, 255); // Light blue
+        color: rgb(37, 99, 235); // Dark blue
+      }
+   }
+
+    &__header {
+      font-weight: 600;
+      font-size: 0.925rem;
+      margin-bottom: 0.25rem;
+      
+      &--success {
+        color: rgb(21, 128, 61); // Darker green
+      }
+
+      &--error {
+        color: rgb(185, 28, 28); // Darker red
+      }
+
+      &--warning {
+        color: rgb(194, 120, 3); // Darker orange
+      }
+
+      &--info {
+        color: rgb(29, 78, 216); // Darker blue
+      }
+    }
+
+    &__icon {
+      height: 1.25rem;
+      width: 1.25rem;
+
+      .toast-container__notification--success & {
+        color: rgb(74, 222, 128);
+      }
+
+      .toast-container__notification--error & {
+        color: rgb(248, 113, 113);
+      }
+
+      .toast-container__notification--warning & {
+        color: rgb(234, 179, 8); // Yellow/Amber
+      }
+
+      .toast-container__notification--info & {
+        color: rgb(96, 165, 250); // Blue
+      }
+    }
+
+    &__content {
+      flex: 1;
+    }
+
+    &__text {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    &__close {
+      color: rgb(156, 163, 175);
+      
+      &:hover {
+        color: rgb(107, 114, 128);
+      }
+
+      &-icon {
+        height: 1rem;
+        width: 1rem;
+      }
+    }
+  }
+}
