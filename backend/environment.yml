@@ -14,4 +14,7 @@ dependencies:
   - python-dotenv
   - wfastcgi=3.0.0
   - social-auth-app-django=5.4.3
+  - django-auth-adfs
+
+
 

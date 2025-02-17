@@ -10,6 +10,9 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from .models import User
 import os
+from django_auth_adfs.backend import AdfsAccessTokenBackend
+from django.core.exceptions import PermissionDenied
+import jwt
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -156,75 +159,65 @@ def toggle_user_status(request, user_id):
 # NOTE: Microsoft Login
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def microsoft_login(request):
+def azure_login(request):
     try:
         if os.getenv('DEBUG'):
-            print(f"DEBUG: starting Microsoft login process")
-        strategy = load_strategy(request)
-        backend = load_backend(strategy=strategy,
-                               name='microsoft-graph',
-                               redirect_url=settings.SOCIAL_AUTH_MICROSOFT_GRAPH_REDIRECT_URL)
-        auth_url = backend.auth_url()
-        return Response({'authorization_url': auth_url})
-
-    except Exception as e:
-        if os.getenv("DEBUG"):
-            print(f"\nDEBUG: Exception in microsoft_login: {str(e)}")
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def microsoft_callback(request):
-    try:
-        if os.getenv("DEBUG"):
-            print(f"DEBUG: Processing Microsoft callback")
-
-        code = request.GET.get('code')
-        if not code:
+            print(f"DEBUG: Starting Azure login process")
+            
+        token = request.data.get('token')
+        if not token:
             return Response(
-                {'error': 'No authorization code provided'},
+                {'error': 'No token provided'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        strategy = load_strategy(request)
-        backend = load_backend(strategy=strategy,
-                            name="microsfot-graph",
-                            redirect_url=settings.SOCIAL_AUTH_MICROSOFT_GRAPH_REDIRECT_URL)
 
-        # complete auth process
-        user = backend.complete(request=request)
-
-        if user and user.is_active:
-            # log user in
-            login(request,user)
-            
-            # redirect to frontend callback URL
-            return redirect(settings.MICROSOFT_FRONTEND_REDIRECT_URL)
-            
-            return Response({
-                'message': 'Microsoft login successful',
-                'user': {
-                    'id': user.id,
-                    'email': user.email,
-                    'is_superuser': user.is_superuser,
-                    'firstName': user.first_name,
-                    'lastName': user.last_name
-                }
-            })
-        else:
+        # Verify token is from Azure
+        unverified_token = jwt.decode(token, verify=False)
+        if not unverified_token["iss"].startswith("https://sts.windows.net"):
             return Response(
-                {'error': 'Authentication failed'},
+                {'error': 'Invalid token issuer'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-    except Exeption as e:
-        if os.getenv("DEBUG"):
-            print(f"DEBUG: Exception is microsoft_callback: {str(e)}")
+
+        try:
+            # Authenticate using the token
+            user = AdfsAccessTokenBackend().authenticate(
+                request=request,
+                access_token=token.encode('utf-8')
+            )
+            
+            if user and user.is_active:
+                login(request, user)
+                return Response({
+                    'message': 'Login successful',
+                    'user': {
+                        'id': user.id,
+                        'email': user.email,
+                        'is_superuser': user.is_superuser,
+                        'firstName': user.first_name,
+                        'lastName': user.last_name
+                    }
+                })
+            else:
+                return Response(
+                    {'error': 'User inactive or authentication failed'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+        except PermissionDenied as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+    except Exception as e:
+        if os.getenv('DEBUG'):
+            print(f"DEBUG: Exception in azure_login: {str(e)}")
         return Response(
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
 
 
 

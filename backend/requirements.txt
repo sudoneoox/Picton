@@ -6,4 +6,5 @@ python-dotenv==1.0.0
 djangorestframework==3.14.0
 django-cors-headers==4.3.1
 social-auth-app-django==5.4.3
+django-auth-adfs==1.15.0
 

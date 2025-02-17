@@ -3,8 +3,7 @@ import Layout from "./Layout.jsx";
 import Pages from "./Pages/imports.jsx";
 import "./styles/output.css";
 import { ToastProvider } from "./Components/ui/ToastNotification.jsx";
-import MicrosoftCallback from "./Components/MicrosoftCallback.jsx";
-import { MICROSOFT_FRONTEND_REDIRECT_URL } from "./api.js";
+import { MicrosoftCallback } from "./Components/MicrosoftCallback.jsx";
 
 function App() {
   return (
@@ -17,7 +16,7 @@ function App() {
           <Route path="registration" element={<Pages.Registrations />} />
           <Route path="control-center" element={<Pages.ControlCenter />} />
           <Route
-            path={MICROSOFT_FRONTEND_REDIRECT_URL}
+            path="/auth/microsoft/callback"
             element={<MicrosoftCallback />}
           />
         </Route>
@@ -25,5 +24,4 @@ function App() {
     </ToastProvider>
   );
 }
-
 export default App;

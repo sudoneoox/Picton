@@ -22,7 +22,8 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 # WARNING: change in production
 ALLOWED_HOSTS = [
     os.getenv("WEBSITE_HOSTNAME", 'localhost'),
-    '.azurewebsites.net'
+    '.azurewebsites.net',
+    "127.0.0.1"
 
 ]
 
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     "social_django",
     "rest_framework",
     "corsheaders",
+    "django_auth_adfs"
 ]
 
 MIDDLEWARE = [
@@ -55,18 +57,39 @@ MIDDLEWARE = [
 ]
 
 
-SOCIAL_AUTH_MICROSOFT_GRAPH_KEY = os.getenv("MICROSOFT_GRAPH_KEY")
-SOCIAL_AUTH_MICROSOFT_GRAPH_SECRET = os.getenv("MICROSOFT_GRAPH_SECRET")
-SOCIAL_AUTH_MICROSOFT_GRAPH_REDIRECT_URL = os.getenv("MICROSOFT_BACKEND_REDIRECT_URL") 
-MICROSOFT_FRONTEND_REDIRECT_URL = os.getenv('MICROSOFT_FRONTEND_REDIRECT_URL', "http://localhost:3000/auth/microsoft/callback")
-SOCIAL_AUTH_MICROSOFT_GRAPH_SCOPE = ['User.Read', 'email']
+# Azure Entra ID
+AUTH_ADFS = {
+    "AUDIENCE": os.getenv("MICROSOFT_GRAPH_KEY"),
+    "CLIENT_ID": os.getenv("MICROSOFT_GRAPH_KEY"),
+    "CLIENT_SECRET": os.getenv("MICROSOFT_GRAPH_SECRET"),
+    "TENANT_ID": os.getenv("MICROSOFT_TENANT_ID"),
+    "RELYING_PARTY_ID": os.getenv("MICROSOFT_GRAPH_KEY"),
+    "USERNAME_CLAIM": "upn", 
+    "CLAIM_MAPPING": {
+        "first_name": "given_name",
+        "last_name": "family_name",
+        "email": "upn"
+    },
+}
+
+
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
 
 
 AUTHENTICATION_BACKENDS = (
-    "social_core.backends.microsoft.MicrosoftOAuth2",
-    "django.contrib.auth.backends.ModelBackend"
+    'django_auth_adfs.backend.AdfsAuthCodeBackend',
+    'django.contrib.auth.backends.ModelBackend',
 )
-
 
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -84,6 +107,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "social_django.context_processors.backends",  
+                "social_django.context_processors.login_redirect",  
             ],
         },
     },
@@ -101,6 +126,12 @@ if DEBUG:
     print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
     print(f"DB_HOST: {os.getenv('DB_HOST')}")
     print(f"DB_PORT: {os.getenv('DB_PORT')}")
+    print(f"MICROSOFT_GRAPH_KEY: {os.getenv("MICROSOFT_GRAPH_KEY")}")
+    print(f"MICROSOFT_GRAPH_SECRET: {os.getenv("MICROSOFT_GRAPH_SECRET")}")
+    print(f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv("MICROSOFT_BACKEND_REDIRECT_URL")}")
+    print(f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv("MICROSOFT_FRONTEND_REDIRECT_URL")}")
+
+
 
 
 DATABASES = {
@@ -173,8 +204,14 @@ CORS_ALLOW_CREDENTIALS = True
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication"
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]

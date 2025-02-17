@@ -62,21 +62,21 @@ export const api = {
   },
 
   // NOTE: Microsoft login api request
-  async microsoftLogin() {
-    const response = await fetch(`${API_BASE_URL}/microsoft/login/`, {
+  async azureLogin(token) {
+    const response = await fetch(`${API_BASE_URL}/azure/login/`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({ token }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || "Microsoft login failed");
+      throw new Error(error.error || "Azure login failed");
     }
 
-    const data = await response.json();
-    return data;
+    return response.json();
   },
 };

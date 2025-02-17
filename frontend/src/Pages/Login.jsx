@@ -5,6 +5,7 @@ import { Button } from "../Components/ui/shadcn/button.tsx";
 import { Input } from "../Components/ui/shadcn/input.tsx";
 import { useToast } from "../Components/ui/ToastNotification.jsx";
 import { api } from "../api";
+import { useMsal } from "@azure/msal-react";
 import "../styles/output.css";
 
 const Login = () => {
@@ -15,6 +16,43 @@ const Login = () => {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { instance } = useMsal();
+
+  const handleAzureLogin = async () => {
+    try {
+      const loginResponse = await instance.loginPopup({
+        scopes: ["User.Read", "email", "profile"],
+        prompt: "select_account",
+      });
+
+      if (loginResponse.accessToken) {
+        const response = await api.azureLogin(loginResponse.accessToken);
+
+        showToast(
+          {
+            message: "Azure login successful",
+            user: response.user.email,
+          },
+          "success",
+          "Welcome",
+        );
+
+        if (response.user.is_superuser) {
+          navigate("/control-center");
+        } else {
+          navigate("/dashboard");
+        }
+      }
+    } catch (error) {
+      showToast(
+        {
+          error: error.message,
+        },
+        "error",
+        "Azure Login Failed",
+      );
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -126,21 +164,7 @@ const Login = () => {
             <Button
               type="button"
               className="registration-formContainer__outlook"
-              onClick={async () => {
-                try {
-                  const response = await api.microsoftLogin();
-                  // redirect to microsoft login page
-                  window.location.href = response.authorization_url;
-                } catch (error) {
-                  showToast(
-                    {
-                      error: error.message,
-                    },
-                    "error",
-                    "Microsoft Login Failed",
-                  );
-                }
-              }}
+              onClick={handleAzureLogin}
             >
               <KeyRound className="registration-formContainer__icon" />
               Continue with Microsoft
