@@ -1,38 +1,34 @@
-import React, { useState } from 'react';
-import '../styles/output.css';
+import React from "react";
+import "../styles/modules/_home.scss";
+import { Button } from "@/Components/ui/shadcn/button";
 
 const Home = () => {
-  // Create showDetails using React state for allowing to toggle content
-  const [showDetails, setShowDetails] = useState(false);
-  const creators =[
-    { name: 'Denis Fuentes', email: 'denisfuentes@gmail.com' },
-    { name: 'Diego Coronado', email: 'diegoa2992@gmail.com' },
-    { name: 'Billy Ngo', email: 'billykngo@gmail.com' },
-    { name: 'Jihao Ye', email: 'jihaoyb@gmail.com' }
+  const creators = [
+    { name: "Denis Fuentes", email: "denisfuentes@gmail.com" },
+    { name: "Diego Coronado", email: "diegoa2992@gmail.com" },
+    { name: "Jihao Ye", email: "jihaoyb@gmail.com" },
+    { name: "Billy Ngo", email: "billykngo@gmail.com" },
   ];
 
   return (
-    <div className="home-page">
-      <header className="home-header">
-        <h1>Welcome to Picton</h1>
-        <p>Your user management system secure authentication</p>
-      </header>
-      
-      <section className="home_contact">
-        <h2>Contact the Creators</h2>
-        <button className="home_toggle-btn" onClick={() => setShowDetails(!showDetails)}>
-          {showDetails ? "Hide Details" : "Show Details"}
-        </button>
+    <div className="home-container">
+      {/* Hero Section */}
+      <section className="hero">
+        <h1>Welcome to <span>Team Picton</span></h1>
+        <Button className="cta-button">Get Started</Button>
+      </section>
 
-        {showDetails && (
-          <ul className="home_creators-list"> 
-            {creators.map((creator, index) => (
-              <li key={index} className="home_creator">
-                <strong>{creator.name}</strong> - <a href={'mailto:${creator.email}'}>Email</a>
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* Creator Panel */}
+      <section className="creators">
+        <h2>Meet the Builders</h2>
+        <div className="creators-list">
+          {creators.map((creator, index) => (
+            <div key={index} className="creator-card">
+              <h3>{creator.name}</h3>
+              <p>{creator.email}</p>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );
