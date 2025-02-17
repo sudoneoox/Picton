@@ -13,4 +13,5 @@ dependencies:
   - whitenoise=6.4.0
   - python-dotenv
   - wfastcgi=3.0.0
+  - social-auth-app-django=5.4.3
 

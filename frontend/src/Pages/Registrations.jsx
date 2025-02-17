@@ -288,10 +288,26 @@ const Registrations = () => {
             </div>
           </div>
 
-          {/* SSO Login  */}
-          <Button className="registration-formContainer__outlook">
+          {/* Microsoft Login  */}
+          <Button
+            className="registration-formContainer__outlook"
+            onClick={async () => {
+              try {
+                const response = await api.microsoftLogin();
+                window.location.href = response.authorization_url;
+              } catch (error) {
+                showToast(
+                  {
+                    error: error.message,
+                  },
+                  "error",
+                  "Microsoft Login Failed",
+                );
+              }
+            }}
+          >
             <KeyRound className="registration-formContainer__icon" />
-            Continue with Outlook
+            Continue with Microsoft
           </Button>
           <div className="space-y-4 text-center text-sm">
             <p className="text-zinc-400">
