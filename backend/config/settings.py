@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "social_django",
     "rest_framework",
     "corsheaders",
 ]
@@ -52,6 +53,21 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
+
+
+SOCIAL_AUTH_MICROSOFT_GRAPH_KEY = os.getenv("MICROSOFT_GRAPH_KEY")
+SOCIAL_AUTH_MICROSOFT_GRAPH_SECRET = os.getenv("MICROSOFT_GRAPH_SECRET")
+SOCIAL_AUTH_MICROSOFT_GRAPH_REDIRECT_URL = os.getenv("MICROSOFT_BACKEND_REDIRECT_URL") 
+MICROSOFT_FRONTEND_REDIRECT_URL = os.getenv('MICROSOFT_FRONTEND_REDIRECT_URL', "http://localhost:3000/auth/microsoft/callback")
+SOCIAL_AUTH_MICROSOFT_GRAPH_SCOPE = ['User.Read', 'email']
+
+
+AUTHENTICATION_BACKENDS = (
+    "social_core.backends.microsoft.MicrosoftOAuth2",
+    "django.contrib.auth.backends.ModelBackend"
+)
+
+
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
@@ -138,8 +154,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-   "https://your-frontend-domain.com",
     "http://localhost:3000",
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'authorization',
+    'content-type',
+    'user-agent',
+    'x-csrftoken',
+    'x-request-with'
 ]
 
 CORS_ALLOW_CREDENTIALS = True

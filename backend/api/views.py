@@ -1,4 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.conf import settings
+from social_core.backends.microsoft import MicrosoftOAuth2
+from social_django.utils import load_strategy, load_backend
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -149,6 +152,79 @@ def toggle_user_status(request, user_id):
             status=status.HTTP_404_NOT_FOUND
         )
         
+
+# NOTE: Microsoft Login
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def microsoft_login(request):
+    try:
+        if os.getenv('DEBUG'):
+            print(f"DEBUG: starting Microsoft login process")
+        strategy = load_strategy(request)
+        backend = load_backend(strategy=strategy,
+                               name='microsoft-graph',
+                               redirect_url=settings.SOCIAL_AUTH_MICROSOFT_GRAPH_REDIRECT_URL)
+        auth_url = backend.auth_url()
+        return Response({'authorization_url': auth_url})
+
+    except Exception as e:
+        if os.getenv("DEBUG"):
+            print(f"\nDEBUG: Exception in microsoft_login: {str(e)}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def microsoft_callback(request):
+    try:
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Processing Microsoft callback")
+
+        code = request.GET.get('code')
+        if not code:
+            return Response(
+                {'error': 'No authorization code provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        strategy = load_strategy(request)
+        backend = load_backend(strategy=strategy,
+                            name="microsfot-graph",
+                            redirect_url=settings.SOCIAL_AUTH_MICROSOFT_GRAPH_REDIRECT_URL)
+
+        # complete auth process
+        user = backend.complete(request=request)
+
+        if user and user.is_active:
+            # log user in
+            login(request,user)
+            
+            # redirect to frontend callback URL
+            return redirect(settings.MICROSOFT_FRONTEND_REDIRECT_URL)
+            
+            return Response({
+                'message': 'Microsoft login successful',
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'is_superuser': user.is_superuser,
+                    'firstName': user.first_name,
+                    'lastName': user.last_name
+                }
+            })
+        else:
+            return Response(
+                {'error': 'Authentication failed'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+    except Exeption as e:
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Exception is microsoft_callback: {str(e)}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 

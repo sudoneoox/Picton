@@ -43,7 +43,12 @@ DB_USER=your_user_name
 DB_PASSWORD=your_db_password
 DB_HOST=localhost
 DB_PORT=5432
-CORS_ALLOWED_ORIGINS='http://localhost:3000'
+
+# for microsoft authentication
+MICROSOFT_GRAPH_KEY = # client-id from Azure Portal
+MICROSOFT_GRAPH_SECRET = # client secret from Azure Portal
+MICROSOFT_BACKEND_REDIRECT_URL = 
+MICROSOFT_FRONTEND_REDIRECT_URL =
 ```  
 5. Apply migrations:
 ```bash
@@ -68,6 +73,7 @@ pnpm install
 ```bash
 # the backend api server 
 VITE_API_BASE_URL=http://localhost:8000/api
+MICROSOFT_REDIRECT_URL= # Azure redirect url for frontend
 ```
 3. Start up developmental environment
 ```bash

@@ -126,16 +126,24 @@ const Login = () => {
             <Button
               type="button"
               className="registration-formContainer__outlook"
-              onClick={() => {
-                showToast(
-                  "Outlook login not implemented yet",
-                  "info",
-                  "Coming Soon",
-                );
+              onClick={async () => {
+                try {
+                  const response = await api.microsoftLogin();
+                  // redirect to microsoft login page
+                  window.location.href = response.authorization_url;
+                } catch (error) {
+                  showToast(
+                    {
+                      error: error.message,
+                    },
+                    "error",
+                    "Microsoft Login Failed",
+                  );
+                }
               }}
             >
               <KeyRound className="registration-formContainer__icon" />
-              Continue with Outlook
+              Continue with Microsoft
             </Button>
           </form>
           <div className="space-y-4 text-center text-sm">
