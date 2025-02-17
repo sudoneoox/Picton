@@ -10,4 +10,7 @@ dependencies:
   - djangorestframework
   - django-cors-headers
   - pip
+  - whitenoise=6.4.0
+  - python-dotenv
+  - wfastcgi=3.0.0
 

@@ -1,12 +1,10 @@
 import { useState } from "react";
-import {
-  ToastProvider,
-  useToast,
-} from "../Components/ui/ToastNotification.jsx";
+import { useToast } from "../Components/ui/ToastNotification.jsx";
 import { KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../Components/ui/shadcn/button.tsx";
 import { Input } from "../Components/ui/shadcn/input.tsx";
+import { api } from "../api.js";
 import { motion, AnimatePresence } from "framer-motion";
 
 import "../styles/output.css";
@@ -21,6 +19,7 @@ const Registrations = () => {
     firstName: "",
     lastName: "",
     phone: "",
+    username: "",
   });
 
   // popup notification for forms
@@ -41,6 +40,16 @@ const Registrations = () => {
     );
   };
 
+  const validatePhone = () => {
+    return /(^((\+\d{1,2}|1)[\s.-]?)?\(?[2-9](?!11)\d{2}\)?[\s.-]?\d{3}[\s.-]?\d{4}$|^$)/.test(
+      formData.phone,
+    );
+  };
+
+  const validateUsername = () => {
+    return formData.username.length >= 4 && formData.username.length <= 20;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -51,10 +60,28 @@ const Registrations = () => {
           showToast("Please enter a valid email address", "error", "ERROR");
           return;
         }
-        showToast({ email: formData.email }, "success", "Submitted");
+        showToast({ email: formData.email }, "success", "Email Validated");
       }
-
       if (currentStep === 2) {
+        if (!validateUsername()) {
+          showToast(
+            "Username must be between 4-30 characters",
+            "error",
+            "ERROR",
+          );
+          return;
+        }
+        if (!validatePhone()) {
+          showToast(
+            "Phone number must be a valid 10 digit phone number",
+            "error",
+            "ERROR",
+          );
+          return;
+        }
+        showToast("Awesome! got your username", "success", "Username acquired");
+      }
+      if (currentStep === 3) {
         if (!validatePasswords()) {
           showToast(
             "Passwords must match and be at least 8 characters",
@@ -69,7 +96,7 @@ const Registrations = () => {
             strength: "strong",
           },
           "success",
-          "SUCCESS",
+          "Password Valid",
         );
       }
 
@@ -79,17 +106,25 @@ const Registrations = () => {
         return;
       }
 
-      // TODO: Handle final submission API
-      // const response = await submitForm(formData);
+      // NOTE: Final submission sending this to backend api
+      const response = await api.registerUser({
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone || "",
+      });
       showToast(
         {
           status: "Success",
-          data: formData,
+          message: "Registration successful",
         },
         "success",
         "SUCCESS",
       );
-      navigate("/dashboard");
+      // Redirect to login after successful registration
+      navigate("/login");
     } catch (error) {
       showToast(
         {
@@ -97,8 +132,7 @@ const Registrations = () => {
           details: error.details || {},
         },
         "error",
-        // TODO: Show error json
-        "ERROR",
+        "Registration Failed",
       );
     }
   };
@@ -156,8 +190,29 @@ const Registrations = () => {
                     className="registration-formContainer__input"
                   />
                 )}
-                {/* TODO: show password if email is valid*/}
                 {currentStep === 2 && (
+                  <>
+                    <Input
+                      type="text"
+                      onChange={(e) =>
+                        handleInputChange("username", e.target.value)
+                      }
+                      value={formData.username}
+                      placeholder="Enter Your Username"
+                      className="registration-formContainer__input registration-formContainer__input"
+                    />
+                    <Input
+                      type="tel"
+                      placeholder="Enter a phone number"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
+                      className="registration-formContainer__input registration-formContainer__input"
+                    />
+                  </>
+                )}
+                {currentStep === 3 && (
                   <>
                     <Input
                       type="password"
@@ -179,7 +234,7 @@ const Registrations = () => {
                     />
                   </>
                 )}
-                {currentStep === 3 && (
+                {currentStep === 4 && (
                   <>
                     <Input
                       type="text"
@@ -264,12 +319,17 @@ const formSteps = [
   },
   {
     id: 2,
+    title: "Lets make your account unique!",
+    subtitle: "Enter a username and an optional phone number",
+  },
+  {
+    id: 3,
     title: "Secure Your Account",
     subtitle: "Create a strong password to protect your information",
   },
   // TODO: add with other stuff depending on what our database requires
   {
-    id: 3,
+    id: 4,
     title: "Personal Information",
     subtitle: "Tell us a bit about yourself",
   },
