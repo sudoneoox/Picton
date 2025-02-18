@@ -405,9 +405,6 @@
   outline: none;
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
 }
-.registration-formCard__icon {
-  margin-right: 0.25rem;
-}
 .registration-formCard__footer {
   margin-top: 2rem;
   text-align: center;

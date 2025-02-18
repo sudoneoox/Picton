@@ -157,7 +157,7 @@ const Registrations = () => {
           showToast(
             "Passwords must match and be at least 8 characters",
             "error",
-            "ERROR"
+            "ERROR",
           );
           return;
         }
@@ -317,6 +317,7 @@ const Registrations = () => {
                     />
                   </>
                 )}
+
                 <div className="registration-formCard__nav-row">
                   {currentStep > 1 && (
                     <Button
@@ -328,35 +329,29 @@ const Registrations = () => {
                       Previous
                     </Button>
                   )}
-                  <Button
-                    type="submit"
-                    variant="homepage"
-                    className="registration-formCard__btn"
-                  >
+                  <Button type="submit" className="registration-formCard__btn">
                     {currentStep === formSteps.length ? "Complete" : "Next"}
                   </Button>
                 </div>
+                <div className="registration-formCard__divider">
+                  <div className="registration-formCard__divider-line">
+                    <div className="registration-formCard__divider-border"></div>
+                  </div>
+                  <div className="registration-formCard__divider-text">
+                    <span>Or continue with</span>
+                  </div>
+                </div>
+
+                <Button
+                  className="registration-formCard__outlook"
+                  onClick={handleAzureRegistration}
+                >
+                  <KeyRound className="registration-formCard__icon" />
+                  Continue with Microsoft
+                </Button>
               </form>
             </motion.div>
           </AnimatePresence>
-
-          <div className="registration-formCard__divider">
-            <div className="registration-formCard__divider-line">
-              <div className="registration-formCard__divider-border"></div>
-            </div>
-            <div className="registration-formCard__divider-text">
-              <span>Or continue with</span>
-            </div>
-          </div>
-
-          <Button 
-            variant="homepage" 
-            className="registration-formCard__outlook"
-            onClick={handleAzureRegistration}
-          >
-            <KeyRound className="registration-formCard__icon" />
-            Continue with Microsoft
-          </Button>
 
           <div className="registration-formCard__footer">
             <p>

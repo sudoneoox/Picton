@@ -156,27 +156,25 @@ const Login = () => {
           <span>PLACEHOLDER</span>
         </div>
       </div>
+
       {/* Right Section - Form START */}
       <div className="registration-right">
-        <div className="registration-formContainer">
-          <div className="registration-formContainer__header">
-            <h1 className="registration-formContainer__title">
+        <div className="registration-formCard">
+          <div className="registration-formCard__header">
+            <h1 className="registration-formCard__title">
               Log into your account
             </h1>
-            <p className="registration-formContainer__subtitle">
+            <p className="registration-formCard__subtitle">
               Enter your username below
             </p>
           </div>
-          <form
-            className="registration-formContainer__form"
-            onSubmit={handleSubmit}
-          >
+          <form className="registration-formCard__form" onSubmit={handleSubmit}>
             <Input
               type="text"
               placeholder="Enter your username"
               value={formData.username}
               onChange={(e) => handleInputChange("username", e.target.value)}
-              className="registration-formContainer__input"
+              className="registration-formCard__input"
               required
             />
             <Input
@@ -184,26 +182,26 @@ const Login = () => {
               placeholder="Enter your password"
               value={formData.password}
               onChange={(e) => handleInputChange("password", e.target.value)}
-              className="registration-formContainer__input"
+              className="registration-formCard__input"
               required
             />
 
             {/* Regular Username Sign In  */}
             <Button
               type="submit"
-              className="registration-formContainer__sso"
+              className="registration-formCard__sso"
               disabled={isLoading}
             >
-              <User className="registration-formContainer__icon" />
+              <User className="registration-formCard__icon" />
               {isLoading ? "Logging in..." : "Login With Your Username"}
             </Button>
 
             {/* DIVIDER  */}
-            <div className="registration-formContainer__divider">
-              <div className="registration-formContainer__divider-line">
-                <div className="registration-formContainer__divider-border"></div>
+            <div className="registration-formCard__divider">
+              <div className="registration-formCard__divider-line">
+                <div className="registration-formCard__divider-border"></div>
               </div>
-              <div className="registration-formContainer__divider-text">
+              <div className="registration-formCard__divider-text">
                 <span> Or continue with</span>
               </div>
             </div>
@@ -211,19 +209,20 @@ const Login = () => {
             {/* SSO Login  */}
             <Button
               type="button"
-              className="registration-formContainer__outlook"
+              className="registration-formCard__outlook"
               onClick={handleAzureLogin}
             >
-              <KeyRound className="registration-formContainer__icon" />
+              <KeyRound className="registration-formCard__icon" />
               Continue with Microsoft
             </Button>
           </form>
+
           <div className="space-y-4 text-center text-sm">
             <p className="text-zinc-400">
               Dont have an account?
               <Button
                 variant="link"
-                className="registration-formContainer__sign-in"
+                className="registration-formCard__sign-in"
                 onClick={() => navigate("/registration")}
               >
                 Register
