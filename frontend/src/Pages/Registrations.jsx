@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "../Components/ui/ToastNotification.jsx";
 import { KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -32,45 +32,83 @@ const Registrations = () => {
 
   const handleAzureRegistration = async () => {
     try {
+      // Clear existing state
+      sessionStorage.removeItem("msal.error");
+      localStorage.removeItem("msal.error");
+      instance.clearCache();
+
+      console.log("Starting Microsoft authentication for registration");
+      // Use popup to prevent auto-redirects
       const loginResponse = await instance.loginPopup({
         scopes: ["User.Read", "email", "profile"],
         prompt: "select_account",
       });
 
-      if (loginResponse.accessToken) {
-        // Get user info from Microsoft
-        const response = await api.azureLogin(loginResponse.accessToken);
+      console.log(
+        "Microsoft authentication successful, proceeding with registration",
+      );
 
-        // IMPORTANT: Create local account with Microsoft info
-        const registrationResponse = await api.registerUser({
-          email: response.user.email,
-          username: response.user.email.split("@")[0], // Use email prefix as username
-          password: loginResponse.accessToken, // Use token as password
-          firstName: response.user.firstName,
-          lastName: response.user.lastName,
-        });
+      if (loginResponse && loginResponse.accessToken) {
+        try {
+          // Register with backend
+          const response = await api.azureRegister(loginResponse.accessToken);
 
-        showToast(
-          {
-            message: "Microsoft registration successful",
-            user: response.user.email,
-          },
-          "success",
-          "Welcome",
-        );
+          console.log("Registration successful:", response);
+          showToast(
+            { message: "Registration successful", user: response.user.email },
+            "success",
+            "Welcome",
+          );
 
-        navigate("/login");
+          // Manually sign out without redirect
+          await instance.clearCache();
+          instance
+            .logoutPopup({ onRedirectNavigate: () => false })
+            .catch(() => {
+              /* Ignore redirect errors */
+            });
+
+          // Navigate to login page
+          navigate("/login");
+        } catch (error) {
+          console.error("Backend registration error:", error);
+          if (error.message.includes("already exists")) {
+            showToast(
+              { message: "Account already exists. Please login instead." },
+              "info",
+              "Account Exists",
+            );
+            navigate("/login");
+          } else {
+            throw error;
+          }
+        }
       }
     } catch (error) {
+      console.error("Registration error:", error);
+      instance.clearCache();
+
       showToast(
-        {
-          error: error.message,
-        },
+        { error: error.message || "Registration failed" },
         "error",
-        "Microsoft Registration Failed",
+        "Registration Failed",
       );
     }
   };
+
+  // FIX: when microsoft OAuth crashes the storage session isnt cleared and makes the website for that user completely unusable
+  useEffect(() => {
+    // cleanup function to run when component unmounts
+    return () => {
+      // if ongoing authentication instance cancel it
+      if (instance) {
+        instance.logoutRedirect().catch((e) => {
+          console.log("Silent logout error", e);
+        });
+      }
+    };
+  }, [instance]);
+
   const validateEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
