@@ -517,12 +517,18 @@
   height: 1rem;
   width: 1rem;
 }
+.fixed {
+  position: fixed;
+}
 .container {
   width: 100%;
 }
 .container {
   margin-inline: auto;
   padding-inline: 1rem;
+}
+.block {
+  display: block;
 }
 .flex {
   display: flex;
@@ -547,6 +553,9 @@
 }
 .justify-center {
   justify-content: center;
+}
+.justify-end {
+  justify-content: flex-end;
 }
 .rounded-\[5px\] {
   border-radius: 5px;
