@@ -1,13 +1,16 @@
-import { useState } from "react";
-import { ToastProvider, useToast } from "../Components/ui/ToastNotification.jsx";
-import { KeyRound, Mail } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useToast } from "../Components/ui/ToastNotification.jsx";
+import { KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../Components/ui/shadcn/button.tsx";
 import { Input } from "../Components/ui/shadcn/input.tsx";
+import { api } from "../api.js";
 import { motion, AnimatePresence } from "framer-motion";
 import "../styles/output.css";
+import { useMsal } from "@azure/msal-react";
 
 const Registrations = () => {
+  const { instance } = useMsal();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -17,6 +20,7 @@ const Registrations = () => {
     firstName: "",
     lastName: "",
     phone: "",
+    username: "",
   });
 
   const { showToast } = useToast();
@@ -25,10 +29,99 @@ const Registrations = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleAzureRegistration = async () => {
+    try {
+      // Clear existing state
+      sessionStorage.removeItem("msal.error");
+      localStorage.removeItem("msal.error");
+      instance.clearCache();
+
+      console.log("Starting Microsoft authentication for registration");
+      // Use popup to prevent auto-redirects
+      const loginResponse = await instance.loginPopup({
+        scopes: ["User.Read", "email", "profile"],
+        prompt: "select_account",
+      });
+
+      console.log(
+        "Microsoft authentication successful, proceeding with registration",
+      );
+
+      if (loginResponse && loginResponse.accessToken) {
+        try {
+          // Register with backend
+          const response = await api.azureRegister(loginResponse.accessToken);
+
+          console.log("Registration successful:", response);
+          showToast(
+            { message: "Registration successful", user: response.user.email },
+            "success",
+            "Welcome",
+          );
+
+          // Manually sign out without redirect
+          await instance.clearCache();
+          instance
+            .logoutPopup({ onRedirectNavigate: () => false })
+            .catch(() => {
+              /* Ignore redirect errors */
+            });
+
+          // Navigate to login page
+          navigate("/login");
+        } catch (error) {
+          console.error("Backend registration error:", error);
+          if (error.message.includes("already exists")) {
+            showToast(
+              { message: "Account already exists. Please login instead." },
+              "info",
+              "Account Exists",
+            );
+            navigate("/login");
+          } else {
+            throw error;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      instance.clearCache();
+
+      showToast(
+        { error: error.message || "Registration failed" },
+        "error",
+        "Registration Failed",
+      );
+    }
+  };
+
+  // FIX: when microsoft OAuth crashes the storage session isnt cleared and makes the website for that user completely unusable
+  useEffect(() => {
+    // cleanup function to run when component unmounts
+    return () => {
+      // if ongoing authentication instance cancel it
+      if (instance) {
+        instance.logoutRedirect().catch((e) => {
+          console.log("Silent logout error", e);
+        });
+      }
+    };
+  }, [instance]);
+
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePasswords = () =>
     formData.password === formData.confirmPassword &&
     formData.password.length >= 8;
+
+  const validatePhone = () => {
+    return /(^((\+\d{1,2}|1)[\s.-]?)?\(?[2-9](?!11)\d{2}\)?[\s.-]?\d{3}[\s.-]?\d{4}$|^$)/.test(
+      formData.phone,
+    );
+  };
+
+  const validateUsername = () => {
+    return formData.username.length >= 4 && formData.username.length <= 20;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,9 +131,28 @@ const Registrations = () => {
           showToast("Please enter a valid email address", "error", "ERROR");
           return;
         }
-        showToast({ email: formData.email }, "success", "Submitted");
+        showToast({ email: formData.email }, "success", "Email Validated");
       }
       if (currentStep === 2) {
+        if (!validateUsername()) {
+          showToast(
+            "Username must be between 4-30 characters",
+            "error",
+            "ERROR",
+          );
+          return;
+        }
+        if (!validatePhone()) {
+          showToast(
+            "Phone number must be a valid 10 digit phone number",
+            "error",
+            "ERROR",
+          );
+          return;
+        }
+        showToast("Awesome! got your username", "success", "Username acquired");
+      }
+      if (currentStep === 3) {
         if (!validatePasswords()) {
           showToast(
             "Passwords must match and be at least 8 characters",
@@ -52,15 +164,33 @@ const Registrations = () => {
         showToast(
           { message: "Password requirements met", strength: "strong" },
           "success",
-          "SUCCESS"
+          "Password Valid",
         );
       }
       if (currentStep < formSteps.length) {
         setCurrentStep((prev) => prev + 1);
         return;
       }
-      showToast({ status: "Success", data: formData }, "success", "SUCCESS");
-      navigate("/dashboard");
+
+      // NOTE: Final submission sending this to backend api
+      const response = await api.registerUser({
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone || "",
+      });
+      showToast(
+        {
+          status: "Success",
+          message: "Registration successful",
+        },
+        "success",
+        "SUCCESS",
+      );
+      // Redirect to login after successful registration
+      navigate("/login");
     } catch (error) {
       showToast(
         {
@@ -68,7 +198,7 @@ const Registrations = () => {
           details: error.details || {},
         },
         "error",
-        "ERROR"
+        "Registration Failed",
       );
     }
   };
@@ -124,6 +254,28 @@ const Registrations = () => {
                 {currentStep === 2 && (
                   <>
                     <Input
+                      type="text"
+                      onChange={(e) =>
+                        handleInputChange("username", e.target.value)
+                      }
+                      value={formData.username}
+                      placeholder="Enter Your Username"
+                      className="registration-formContainer__input registration-formContainer__input"
+                    />
+                    <Input
+                      type="tel"
+                      placeholder="Enter a phone number"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
+                      className="registration-formContainer__input registration-formContainer__input"
+                    />
+                  </>
+                )}
+                {currentStep === 3 && (
+                  <>
+                    <Input
                       type="password"
                       placeholder="Enter your password"
                       value={formData.password}
@@ -143,7 +295,7 @@ const Registrations = () => {
                     />
                   </>
                 )}
-                {currentStep === 3 && (
+                {currentStep === 4 && (
                   <>
                     <Input
                       type="text"
@@ -197,9 +349,13 @@ const Registrations = () => {
             </div>
           </div>
 
-          <Button variant="homepage" className="registration-formCard__outlook">
+          <Button 
+            variant="homepage" 
+            className="registration-formCard__outlook"
+            onClick={handleAzureRegistration}
+          >
             <KeyRound className="registration-formCard__icon" />
-            Continue with Outlook
+            Continue with Microsoft
           </Button>
 
           <div className="registration-formCard__footer">
@@ -228,11 +384,16 @@ const formSteps = [
   },
   {
     id: 2,
+    title: "Lets make your account unique!",
+    subtitle: "Enter a username and an optional phone number",
+  },
+  {
+    id: 3,
     title: "Secure Your Account",
     subtitle: "Set a strong password to protect your data",
   },
   {
-    id: 3,
+    id: 4,
     title: "Personal Information",
     subtitle: "Tell us a bit about yourself",
   },

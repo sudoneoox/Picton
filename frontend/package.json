@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000 & sass --watch src/styles:src/styles & npx tailwindcss -i src/styles/App.css -o src/styles/output.css --watch",
+    "dev": "vite --port 3000 --host & sass --watch src/styles:src/styles & npx tailwindcss -i src/styles/App.css -o src/styles/output.css --watch",
     "dev:concurrent": "concurrently \"vite --port 3000\" \"sass --watch src/styles:src/styles\" \"npx tailwindcss -i src/styles/App.css -o src/styles/output.css --watch\"",
     "build": "vite build",
     "lint": "eslint .",
@@ -13,6 +13,8 @@
     "sass": "pnpm exec sass src/styles/App.scss src/styles/App.css --watch"
   },
   "dependencies": {
+    "@azure/msal-browser": "^4.2.1",
+    "@azure/msal-react": "^3.0.4",
     "@radix-ui/react-slot": "^1.1.2",
     "@tailwindcss/cli": "^4.0.6",
     "@tailwindcss/forms": "^0.5.10",

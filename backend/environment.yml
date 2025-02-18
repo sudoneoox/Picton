@@ -3,11 +3,18 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.13
+  - python
   - django
   - psycopg2
   - python-dotenv
   - djangorestframework
   - django-cors-headers
   - pip
+  - whitenoise=6.4.0
+  - python-dotenv
+  - wfastcgi=3.0.0
+  - social-auth-app-django=5.4.3
+  - django-auth-adfs
+
+
 
