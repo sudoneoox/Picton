@@ -53,6 +53,7 @@ MICROSOFT_FRONTEND_REDIRECT_URL =
 ```  
 5. Apply migrations:
 ```bash
+python backend/manage.py makemigrations
 python backend/manage.py migrate
 ```
 6. Create superuser:
@@ -84,13 +85,8 @@ VITE_AZURE_TENANT_ID=
 3. Start up developmental environment
 ```bash
 # start frontend server
+# NOTE: this also starts tailwindcss & sass live compilers
 pnpm run dev
-
-# in a separate terminal, start TailwindCSS 
-pnpn run tailwindcss
-
-# in another terminal, start SCSS compilation 
-pnpm run sass
 ```
 
 ## Project Structure
