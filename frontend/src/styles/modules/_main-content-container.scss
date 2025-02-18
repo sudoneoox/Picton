@@ -1,13 +1,18 @@
 .main-content-container {
   width: 100%;
-  height: calc(100vh - 5rem);
-  position: relative;
+  // height: calc(100vh - 5rem);
+  flex: 1;
+  // position: relative;
   margin-top: 4rem; // Account for fixed navbar
-  min-height: calc(100vh - 4rem);
+  // min-height: calc(100vh - 4rem);
   box-sizing: border-box;
 }
 
-
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
 /* Responsive design */
 @media (max-width: 768px) {

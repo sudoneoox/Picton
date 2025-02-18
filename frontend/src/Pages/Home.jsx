@@ -1,8 +1,11 @@
 import React from "react";
 import "../styles/modules/_home.scss";
 import { Button } from "@/Components/ui/shadcn/button";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
+  const navigate = useNavigate();
+
   const creators = [
     { name: "Denis Fuentes", email: "denisfuentes@gmail.com" },
     { name: "Diego Coronado", email: "diegoa2992@gmail.com" },
@@ -14,8 +17,8 @@ const Home = () => {
     <div className="home-container">
       {/* Hero Section */}
       <section className="hero">
-        <h1>Welcome to <span>Team Picton</span></h1>
-        <Button className="cta-button">Get Started</Button>
+        <h1>Welcome to <span>Picton</span></h1>
+        <Button className="cta-button" onClick={() => navigate("/registration")}>Get Started</Button>
       </section>
 
       {/* Creator Panel */}

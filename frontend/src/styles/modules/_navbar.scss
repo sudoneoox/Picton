@@ -23,7 +23,7 @@ $TABLET-MIN-PORTRAIT-W: 768px;
   z-index: 50;
   height: $NAVBAR-HEIGHT;
   backdrop-filter: blur(10px);
-  background-color: rgba(18, 18, 18, 0.95); // Dark Grey background
+  background-color: #222222; // Dark Grey background
   border-bottom: 1px solid c.$DARK-MODE-SECONDARY;
   display: flex;
   align-items: center;
