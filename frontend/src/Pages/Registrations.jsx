@@ -6,10 +6,11 @@ import { Button } from "../Components/ui/shadcn/button.tsx";
 import { Input } from "../Components/ui/shadcn/input.tsx";
 import { api } from "../api.js";
 import { motion, AnimatePresence } from "framer-motion";
-
 import "../styles/output.css";
+import { useMsal } from "@azure/msal-react";
 
 const Registrations = () => {
+  const { instance } = useMsal();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -29,6 +30,47 @@ const Registrations = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleAzureRegistration = async () => {
+    try {
+      const loginResponse = await instance.loginPopup({
+        scopes: ["User.Read", "email", "profile"],
+        prompt: "select_account",
+      });
+
+      if (loginResponse.accessToken) {
+        // Get user info from Microsoft
+        const response = await api.azureLogin(loginResponse.accessToken);
+
+        // IMPORTANT: Create local account with Microsoft info
+        const registrationResponse = await api.registerUser({
+          email: response.user.email,
+          username: response.user.email.split("@")[0], // Use email prefix as username
+          password: loginResponse.accessToken, // Use token as password
+          firstName: response.user.firstName,
+          lastName: response.user.lastName,
+        });
+
+        showToast(
+          {
+            message: "Microsoft registration successful",
+            user: response.user.email,
+          },
+          "success",
+          "Welcome",
+        );
+
+        navigate("/login");
+      }
+    } catch (error) {
+      showToast(
+        {
+          error: error.message,
+        },
+        "error",
+        "Microsoft Registration Failed",
+      );
+    }
+  };
   const validateEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -291,20 +333,7 @@ const Registrations = () => {
           {/* Microsoft Login  */}
           <Button
             className="registration-formContainer__outlook"
-            onClick={async () => {
-              try {
-                const response = await api.microsoftLogin();
-                window.location.href = response.authorization_url;
-              } catch (error) {
-                showToast(
-                  {
-                    error: error.message,
-                  },
-                  "error",
-                  "Microsoft Login Failed",
-                );
-              }
-            }}
+            onClick={handleAzureRegistration}
           >
             <KeyRound className="registration-formContainer__icon" />
             Continue with Microsoft

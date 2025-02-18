@@ -524,9 +524,6 @@
 .block {
   display: block;
 }
-.contents {
-  display: contents;
-}
 .flex {
   display: flex;
 }
@@ -608,9 +605,6 @@
 }
 .text-primary-foreground {
   color: hsl(var(--primary-foreground));
-}
-.text-secondary {
-  color: hsl(var(--secondary));
 }
 .text-secondary-foreground {
   color: hsl(var(--secondary-foreground));
