@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { KeyRound, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../Components/ui/shadcn/button.tsx";
@@ -20,40 +20,88 @@ const Login = () => {
 
   const handleAzureLogin = async () => {
     try {
+      // Clear MSAL state first
+      sessionStorage.removeItem("msal.error");
+      localStorage.removeItem("msal.error");
+      instance.clearCache();
+
+      // Use popup flow instead of redirect to prevent automatic redirects
+      console.log("Starting Microsoft authentication for login");
       const loginResponse = await instance.loginPopup({
         scopes: ["User.Read", "email", "profile"],
         prompt: "select_account",
       });
 
-      if (loginResponse.accessToken) {
-        const response = await api.azureLogin(loginResponse.accessToken);
+      console.log("Microsoft authentication successful, proceeding with login");
+      if (loginResponse && loginResponse.accessToken) {
+        try {
+          console.log("Login response account:", loginResponse.account);
+          console.log(
+            `Attempting login with email: ${loginResponse.account?.username}`,
+          );
+          const response = await api.azureLogin(loginResponse.accessToken);
+          console.log("Login successful:", response);
 
-        showToast(
-          {
-            message: "Azure login successful",
-            user: response.user.email,
-          },
-          "success",
-          "Welcome",
-        );
+          showToast(
+            { message: "Login successful", user: response.user.email },
+            "success",
+            "Welcome",
+          );
 
-        if (response.user.is_superuser) {
-          navigate("/control-center");
-        } else {
-          navigate("/dashboard");
+          if (response.user.is_superuser) {
+            navigate("/control-center");
+          } else {
+            navigate("/dashboard");
+          }
+        } catch (error) {
+          console.error("Backend login error:", error);
+          if (error.message.includes("not found")) {
+            showToast(
+              { message: "Account not found. Please register first." },
+              "error",
+              "Login Failed",
+            );
+          } else {
+            throw error;
+          }
         }
       }
     } catch (error) {
+      console.error("Authentication error:", error);
+      instance.clearCache();
+
       showToast(
-        {
-          error: error.message,
-        },
+        { error: error.message || "Login failed" },
         "error",
-        "Azure Login Failed",
+        "Login Failed",
       );
     }
   };
 
+  // FIX: when microsoft OAuth crashes the storage session isnt cleared and makes the website for that user completely unusable
+  useEffect(() => {
+    // Clear Microsoft auth state on component mount
+    const clearMicrosoftState = () => {
+      if (instance) {
+        // Remove error states
+        sessionStorage.removeItem("msal.error");
+        localStorage.removeItem("msal.error");
+
+        // Clear all tokens and cache
+        instance.clearCache();
+
+        // Optional: ensure logout is complete
+        instance.logoutRedirect().catch(() => {
+          // Silent fail - just log it
+          console.log("Microsoft logout silent fail - continuing");
+        });
+      }
+    };
+
+    clearMicrosoftState();
+
+    // No cleanup needed here as we're handling it in the unmount effect
+  }, [instance]);
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };

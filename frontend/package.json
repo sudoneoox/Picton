@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000 & sass --watch src/styles:src/styles & npx tailwindcss -i src/styles/App.css -o src/styles/output.css --watch",
+    "dev": "vite --port 3000 --host & sass --watch src/styles:src/styles & npx tailwindcss -i src/styles/App.css -o src/styles/output.css --watch",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
