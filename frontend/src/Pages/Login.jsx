@@ -43,7 +43,10 @@ const Login = () => {
           console.log("Login successful:", response);
 
           showToast(
-            { message: "Login successful", user: response.user.email },
+            {
+              message: "Login successful",
+              user: response.user.email,
+            },
             "success",
             "Welcome",
           );
@@ -126,7 +129,7 @@ const Login = () => {
       );
 
       // Route based on user role
-      if (response.user.is_admin) {
+      if (response.user.is_superuser) {
         navigate("/control-center");
       } else {
         navigate("/dashboard");
