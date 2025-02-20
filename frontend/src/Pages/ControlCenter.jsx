@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../styles/output.css";
+import "@styles/output.css";
 
 const ControlCenter = () => {
   const [users, setUsers] = useState([]); // State to store user data

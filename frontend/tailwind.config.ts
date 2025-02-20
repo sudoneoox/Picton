@@ -1,13 +1,7 @@
 const plugin = require("tailwindcss/plugin");
 
 module.exports = {
-  content: [
-    "./src/Components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/Components/ui/shadcn/*.{js,ts,jsx,tsx,mdx}",
-    "./src/Components/*.{js.ts.jsx.tsx.mdx}",
-    "./src/*.{js,ts,jsx,tsx,mdx}",
-    "./src/Pages/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   darkMode: ["class", "class"],
   theme: {
     container: {
@@ -61,6 +55,16 @@ module.exports = {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar-background))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))",
+        },
       },
     },
   },
@@ -85,7 +89,7 @@ module.exports = {
       addBase({
         ":root": {
           ...extractVars(theme("colors"), "", "color"),
-          ...extractVars(theme("boxShadow"), "", "box-shadow"),
+          // ...extractVars(theme("boxShadow"), "", "box-shadow"),
         },
       });
     }),

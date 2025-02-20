@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { useToast } from "../Components/ui/ToastNotification.jsx";
+import { useToast } from "@/components/ToastNotification";
 import { KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../Components/ui/shadcn/button.tsx";
-import { Input } from "../Components/ui/shadcn/input.tsx";
-import { api } from "../api.js";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { api } from "../../api.js";
 import { motion, AnimatePresence } from "framer-motion";
-import "../styles/output.css";
 import { useMsal } from "@azure/msal-react";
+import "@styles/output.css";
 
 const Registrations = () => {
   const { instance } = useMsal();

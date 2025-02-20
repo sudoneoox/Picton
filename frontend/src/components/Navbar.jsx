@@ -1,7 +1,7 @@
 import { User, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import "../styles/output.css";
+import "@styles/output.css";
 
 const Navbar = ({ config = defaultNavConfig }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -21,18 +21,14 @@ const Navbar = ({ config = defaultNavConfig }) => {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label="Toggle menu"
         >
-          <Menu size={24}/>
+          <Menu size={24} />
         </button>
         {/* MOBILE MENU END */}
 
         {/* Menu Items START */}
         <div className={`navbar-menu ${isMobileMenuOpen ? "active" : ""}`}>
           {config.menuItems.map((item) => (
-            <Link
-              to={item.navigation}
-              key={item.name}
-              className="navbar-item"
-            >
+            <Link to={item.navigation} key={item.name} className="navbar-item">
               {item.name}
             </Link>
           ))}

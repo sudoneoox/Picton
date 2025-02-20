@@ -1,8 +1,9 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "./Components/Navbar.jsx";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import Navbar from "@/components/Navbar";
 import { useLocation } from "react-router-dom";
-import Footer from "./Components/Footer.jsx";
-import "./styles/output.css";
+import Footer from "@/components/Footer";
+import "@styles/output.css";
 
 const Layout = () => {
   const location = useLocation();
@@ -12,15 +13,24 @@ const Layout = () => {
   return (
     <div className="app-container">
       {/* DONT SHOW NAVBAR ON DASHBOARDS */}
-      {pathname === "/control-center" || pathname === "/dashboard" ? (
-        <></>
+      {pathname === "/admin/dashboard" || pathname === "/dashboard" ? (
+        <>
+          <SidebarProvider>
+            <main>
+              <SidebarTrigger />
+              <Outlet />
+            </main>
+          </SidebarProvider>
+        </>
       ) : (
-        <Navbar />
+        <>
+          <Navbar />
+          <main className={`main-content-container`}>
+            <Outlet />
+          </main>
+          <Footer />
+        </>
       )}
-      <main className={`main-content-container`}>
-        <Outlet />
-      </main>
-      <Footer />
     </div>
   );
 };

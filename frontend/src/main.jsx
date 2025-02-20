@@ -2,10 +2,10 @@ import { BrowserRouter } from "react-router-dom";
 import { StrictMode } from "react";
 import { MsalProvider } from "@azure/msal-react";
 import { EventType } from "@azure/msal-browser";
-import msalInstance from "./msalConfig.js";
+import msalInstance from "@/msalConfig.js";
 import { createRoot } from "react-dom/client";
-import App from "./App.jsx";
-import "./styles/output.css";
+import App from "@/App.jsx";
+import "@styles/output.css";
 
 // Only handle redirects on the callback page
 const shouldHandleRedirect = window.location.pathname.includes(

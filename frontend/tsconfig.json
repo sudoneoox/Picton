@@ -22,9 +22,9 @@
     "jsx": "react-jsx",
     // Interop between ESM and CJS modules
     "moduleDetection": "force",
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./*"]
     },
     "lib": [
       "dom",

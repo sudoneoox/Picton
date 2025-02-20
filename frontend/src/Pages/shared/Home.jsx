@@ -1,7 +1,6 @@
-import React from "react";
-import "../styles/modules/_home.scss";
-import { Button } from "@/Components/ui/shadcn/button";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import "@styles/output.css";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -17,8 +16,15 @@ const Home = () => {
     <div className="home-container">
       {/* Hero Section */}
       <section className="hero">
-        <h1>Welcome to <span>Picton</span></h1>
-        <Button className="cta-button" onClick={() => navigate("/registration")}>Get Started</Button>
+        <h1>
+          Welcome to <span>Picton</span>
+        </h1>
+        <Button
+          className="cta-button"
+          onClick={() => navigate("/registration")}
+        >
+          Get Started
+        </Button>
       </section>
 
       {/* Creator Panel */}

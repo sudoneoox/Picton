@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, XCircle, X } from "lucide-react";
-import "../../styles/output.css";
+import "@styles/output.css";
 
 // NOTE: popup notifcation system that shows up after submitting forms
 // similiar to shadcn's website

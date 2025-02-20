@@ -8,6 +8,8 @@ from django_auth_adfs.backend import AdfsAccessTokenBackend
 from django.core.exceptions import PermissionDenied
 import jwt
 import os
+
+import api
 from .models import User
 
 
@@ -128,6 +130,29 @@ def get_users(request):
         "is_superuser",
     )
     return Response(users)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_users_me(request):
+    if os.getenv("DEBUG"):
+        print(f"DEBUG: received request insdie get_users_me {request}")
+    try:
+        users = User.objects.get(username=request.user.username)
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Fetched User inside get_users_me {users}")
+        return Response({"is_superuser": users.is_superuser}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        if os.getenv("DEUG"):
+            print("DEBUG: Exception Occured inside get_users_me UserDoesNotExists")
+        return Response({"error": "User Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Exception occured inside get_users_me {str(e)}")
+    return Response(
+        {"error": "Ecception occured while fetching user status"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
 
 
 # NOTE: activate deactivate accounts (superuser only)

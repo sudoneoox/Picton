@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { KeyRound, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../Components/ui/shadcn/button.tsx";
-import { Input } from "../Components/ui/shadcn/input.tsx";
-import { useToast } from "../Components/ui/ToastNotification.jsx";
-import { api } from "../api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ToastNotification";
+import { api } from "../../api";
 import { useMsal } from "@azure/msal-react";
-import "../styles/output.css";
+import "@styles/output.css";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ const Login = () => {
           );
 
           if (response.user.is_superuser) {
-            navigate("/control-center");
+            navigate("/admin/dashboard");
           } else {
             navigate("/dashboard");
           }
@@ -130,7 +130,7 @@ const Login = () => {
 
       // Route based on user role
       if (response.user.is_superuser) {
-        navigate("/control-center");
+        navigate("/admin/dashboard");
       } else {
         navigate("/dashboard");
       }

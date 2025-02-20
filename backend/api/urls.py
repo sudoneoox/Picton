@@ -10,6 +10,8 @@ urlpatterns = [
         views.toggle_user_status,
         name="toggle_user_status",
     ),
+    # dashboard passthrough middleware
+    path("users/me/", views.get_users_me, name="get_users_me"),
     # for microsoft authentication
     path("azure/login/", views.azure_login, name="azure_login"),
     path("azure/register/", views.azure_register, name="azure_register"),

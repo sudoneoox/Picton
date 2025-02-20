@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
-import { useToast } from "./ui/ToastNotification";
+import { useToast } from "@/components/ToastNotification";
 
 export const MicrosoftCallback = () => {
   const { instance } = useMsal();
