@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { api } from "../../api.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMsal } from "@azure/msal-react";
-import "@styles/output.css";
 
 const Registrations = () => {
   const { instance } = useMsal();

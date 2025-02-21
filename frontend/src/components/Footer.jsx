@@ -1,5 +1,3 @@
-import "@styles/output.css";
-
 const Footer = () => {
   return (
     <footer className="main-footer bg-white dark:bg-zinc-900/80 border-zinc-200 dark:border-zinc-800 ">

@@ -1,7 +1,6 @@
-import { User, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import "@styles/output.css";
 
 const Navbar = ({ config = defaultNavConfig }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

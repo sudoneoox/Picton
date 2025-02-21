@@ -1,11 +1,15 @@
-import { BrowserRouter } from "react-router-dom";
 import { StrictMode } from "react";
-import { MsalProvider } from "@azure/msal-react";
-import { EventType } from "@azure/msal-browser";
 import msalInstance from "@/msalConfig.js";
+import { MsalProvider } from "@azure/msal-react";
 import { createRoot } from "react-dom/client";
 import App from "@/App.jsx";
+import { EventType } from "@azure/msal-browser";
+import { BrowserRouter } from "react-router-dom";
+import { ToastProvider } from "@/components/ToastNotification.jsx";
+import { ThemeProvider } from "@/components/theme-provider";
+
 import "@styles/output.css";
+import "@styles/permenant.css";
 
 // Only handle redirects on the callback page
 const shouldHandleRedirect = window.location.pathname.includes(
@@ -41,11 +45,15 @@ msalInstance
     // Always render the app, regardless of redirect handling
     createRoot(document.getElementById("root")).render(
       <StrictMode>
-        <MsalProvider instance={msalInstance}>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </MsalProvider>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <MsalProvider instance={msalInstance}>
+            <BrowserRouter>
+              <ToastProvider>
+                <App />
+              </ToastProvider>
+            </BrowserRouter>
+          </MsalProvider>
+        </ThemeProvider>
       </StrictMode>,
     );
   });

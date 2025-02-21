@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ToastNotification";
 import { api } from "../../api";
 import { useMsal } from "@azure/msal-react";
-import "@styles/output.css";
 
 const Login = () => {
   const navigate = useNavigate();

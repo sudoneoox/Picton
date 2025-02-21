@@ -3,56 +3,49 @@ import { useState, useEffect } from "react";
 import { api } from "@/api.js";
 import Layout from "@/Layout.jsx";
 import { Shared, Dashboard } from "@/Pages/imports.jsx";
-import { ToastProvider } from "@/components/ToastNotification.jsx";
 import { MicrosoftCallback } from "@/components/MicrosoftCallback.jsx";
-import { ThemeProvider } from "@/lib/ThemeProvider";
-import "@styles/output.css";
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Shared.Home />} />
-            <Route path="login" element={<Shared.Login />} />
-            <Route path="registration" element={<Shared.Registrations />} />
-            <Route
-              path="/auth/microsoft/callback"
-              element={<MicrosoftCallback />}
-            />
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Shared.Home />} />
+        <Route path="login" element={<Shared.Login />} />
+        <Route path="registration" element={<Shared.Registrations />} />
+        <Route
+          path="/auth/microsoft/callback"
+          element={<MicrosoftCallback />}
+        />
 
-            {/* Admin Routes */}
-            <Route
-              path="admin/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <Dashboard.AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
+        {/* Admin Routes */}
+        <Route
+          path="admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Dashboard.AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-            {/* User Routes */}
-            {/* IMPORTANT: we dont know what were building so leave this commented out for now  */}
-            {/* <Route */}
-            {/*   path="dashboard" */}
-            {/*   element={ */}
-            {/*     <ProtectedRoute allowedRoles={["user", "admin"]}> */}
-            {/*       <DashboardSkeleton> */}
-            {/*         <UserDashboard /> */}
-            {/*       </DashboardSkeleton> */}
-            {/*     </ProtectedRoute> */}
-            {/*   } */}
-            {/* /> */}
+        {/* User Routes */}
+        {/* IMPORTANT: we dont know what were building so leave this commented out for now  */}
+        {/* <Route */}
+        {/*   path="dashboard" */}
+        {/*   element={ */}
+        {/*     <ProtectedRoute allowedRoles={["user", "admin"]}> */}
+        {/*       <DashboardSkeleton> */}
+        {/*         <UserDashboard /> */}
+        {/*       </DashboardSkeleton> */}
+        {/*     </ProtectedRoute> */}
+        {/*   } */}
+        {/* /> */}
 
-            <Route
-              path="unauthorized"
-              element={<div>You are not authorized to view this page</div>}
-            />
-          </Route>
-        </Routes>
-      </ToastProvider>
-    </ThemeProvider>
+        <Route
+          path="unauthorized"
+          element={<div>You are not authorized to view this page</div>}
+        />
+      </Route>
+    </Routes>
   );
 }
 

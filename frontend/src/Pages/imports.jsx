@@ -1,7 +1,7 @@
-import Registrations from "./shared/Registrations.jsx";
-import Login from "./shared/Login.jsx";
-import Home from "./shared/Home.jsx";
-import AdminDashboard from "./dashboard/page.js";
+import Registrations from "@/Pages/shared/Registrations.jsx";
+import Login from "@/Pages/shared/Login.jsx";
+import Home from "@/Pages/shared/Home.jsx";
+import AdminDashboard from "@/Pages/dashboard/AdminDashboard.jsx";
 
 export const Shared = {
   Home,
