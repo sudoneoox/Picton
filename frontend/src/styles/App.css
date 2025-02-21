@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
 .home-container {
   display: flex;
   flex-direction: column;
@@ -546,34 +545,16 @@
   width: 1rem;
 }
 
-@config "../../tailwind.config";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.left-sidebar-container {
+  width: 100%;
+  background-color: red !important;
+}
+
 body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  background-color: #121212;
-  color: #ffffff;
-}
-
-:root {
-  --background-color: c.$DARK-MODE-PRIMARY;
-  --text-color: c.$text-color;
-}
-
-.light {
-  --background-color: c.$LIGHT-MODE-PRIMARY;
-  --text-color: black;
-  color-scheme: light;
-}
-
-.dark {
-  --background-color: c.$DARK-MODE-PRIMARY;
-  --text-color: white;
-  color-scheme: dark;
 }
 
 /*# sourceMappingURL=App.css.map */
