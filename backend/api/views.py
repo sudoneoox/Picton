@@ -13,8 +13,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 import jwt
 import os
-import secrets
 
+import api
 from .models import User
 from .serializers import UserSerializer
 
@@ -165,8 +165,75 @@ def login_user(request):
         raise ve
     except Exception as e:
         if os.getenv("DEBUG"):
-            print(f"\nDEBUG: Exception in login_user: {str(e)}")
-        raise APIException(str(e))
+            print(f"\nDEBUG: Exception occured inside login_user {str(e)}")
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def get_users(request):
+    # IMPORTANT: only admin can view this
+    if not request.user.is_superuser:
+        return Response({"error": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    users = User.objects.all().values(
+        "id",
+        "email",
+        "username",
+        "first_name",
+        "last_name",
+        "is_active",
+        "is_superuser",
+    )
+    return Response(users)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_users_me(request):
+    if os.getenv("DEBUG"):
+        print(f"DEBUG: received request insdie get_users_me {request}")
+    try:
+        users = User.objects.get(username=request.user.username)
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Fetched User inside get_users_me {users}")
+        return Response({"is_superuser": users.is_superuser}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        if os.getenv("DEUG"):
+            print("DEBUG: Exception Occured inside get_users_me UserDoesNotExists")
+        return Response({"error": "User Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Exception occured inside get_users_me {str(e)}")
+    return Response(
+        {"error": "Ecception occured while fetching user status"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+# NOTE: activate deactivate accounts (superuser only)
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def toggle_user_status(request, user_id):
+    if not request.user.is_superuser:
+        return Response({"error": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        user = User.objects.get(id=user_id)
+        user.is_active = not user.is_active
+        user.save()
+
+        return Response(
+            {"id": user.id, "email": user.email, "is_active": user.is_active}
+        )
+    except User.DoesNotExist:
+        if os.getenv("DEBUG"):
+            print(
+                "\nDEBUG: Exception Occured inside toggle_user_status User.DoesNotExist"
+            )
+        return Response(
+            {"error": "User is not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 @api_view(["POST"])
@@ -294,4 +361,73 @@ def azure_login(request):
     except Exception as e:
         if os.getenv("DEBUG"):
             print(f"DEBUG: Exception in azure_login: {str(e)}")
-        raise APIException(str(e))
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# NOTE: ADMIN DASHBOARD FUNCTIONALITIES
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_admin_users(request):
+    """
+    Endpoint for retrieving all users with pagination for admin dashboard.
+    EXAMPLE pagination
+    GET /api/admin/users/?page=1&page_size=5
+    """
+    try:
+        # Check if user is superuser
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Only administrators can access this endpoint"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Received request from get_admin_users: {request}")
+
+        # Get query parameters for pagination
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("page_size", 10))
+
+        # Calculate offset
+        offset = (page - 1) * page_size
+
+        # Get total count
+        total_users = User.objects.count()
+
+        # Get users with pagination
+        users = (
+            User.objects.all()
+            .order_by("id")[offset : offset + page_size]
+            .values(
+                "id",
+                "username",
+                "email",
+                "first_name",
+                "last_name",
+                "phone_number",
+                "date_of_birth",
+                "created_at",
+                "updated_at",
+                "is_active",
+                "is_superuser",
+                "is_staff",
+                "last_login",
+            )
+        )
+
+        # Return paginated results
+        return Response(
+            {
+                "total": total_users,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_users + page_size - 1)
+                // page_size,  # Ceiling division
+                "results": list(users),
+            }
+        )
+
+    except Exception as e:
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Exception in get_admin_users: {str(e)}")
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

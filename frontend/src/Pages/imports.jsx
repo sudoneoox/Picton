@@ -1,13 +1,14 @@
-import Registrations from "./Registrations.jsx";
-import Login from "./Login.jsx";
-import ControlCenter from "./ControlCenter.jsx";
-import Home from "./Home.jsx";
+import Registrations from "@/Pages/shared/Registrations.jsx";
+import Login from "@/Pages/shared/Login.jsx";
+import Home from "@/Pages/shared/Home.jsx";
+import AdminDashboard from "@/Pages/dashboard/AdminDashboard.jsx";
 
-const Pages = {
+export const Shared = {
   Home,
   Registrations,
   Login,
-  ControlCenter,
 };
 
-export default Pages;
+export const Dashboard = {
+  AdminDashboard,
+};
