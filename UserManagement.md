@@ -6,18 +6,22 @@ The User Management module is a core component of the Picton project. It provide
 
 ## Functional Requirements
 - Homepage
+Homepage
 ![Homepage](images/V0.01/homepage.png)
 
 - **Authentication:**  
   - Users can sign in using their Office365 credentials.  
   - Traditional email/username and password authentication is also supported.
+Registration Page
 ![Registration Page](images/V0.01/register.png)
+Login Page
 ![Login Page](images/V0.01/login.png)
 
 - **User Management:**  
   - Administrators can perform CRUD operations on user accounts.  
   - User attributes include name, email, role, status, phone number, and more.  
   - The default role for new users is a boolean state that checks whether they're an admin or not.
+Admin Dashboard
 ![User Management](images/V0.01/dashboard.png)
 
 - **Role-Based Access Control (RBAC):**  
