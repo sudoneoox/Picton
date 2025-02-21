@@ -409,3 +409,72 @@ def azure_login(request):
         if os.getenv("DEBUG"):
             print(f"DEBUG: Exception in azure_login: {str(e)}")
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# NOTE: ADMIN DASHBOARD FUNCTIONALITIES
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_admin_users(request):
+    """
+    Endpoint for retrieving all users with pagination for admin dashboard.
+    EXAMPLE pagination
+    GET /api/admin/users/?page=1&page_size=5
+    """
+    try:
+        # Check if user is superuser
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Only administrators can access this endpoint"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Received request from get_admin_users: {request}")
+
+        # Get query parameters for pagination
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("page_size", 10))
+
+        # Calculate offset
+        offset = (page - 1) * page_size
+
+        # Get total count
+        total_users = User.objects.count()
+
+        # Get users with pagination
+        users = (
+            User.objects.all()
+            .order_by("id")[offset : offset + page_size]
+            .values(
+                "id",
+                "username",
+                "email",
+                "first_name",
+                "last_name",
+                "phone_number",
+                "date_of_birth",
+                "created_at",
+                "updated_at",
+                "is_active",
+                "is_superuser",
+                "is_staff",
+                "last_login",
+            )
+        )
+
+        # Return paginated results
+        return Response(
+            {
+                "total": total_users,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_users + page_size - 1)
+                // page_size,  # Ceiling division
+                "results": list(users),
+            }
+        )
+
+    except Exception as e:
+        if os.getenv("DEBUG"):
+            print(f"DEBUG: Exception in get_admin_users: {str(e)}")
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

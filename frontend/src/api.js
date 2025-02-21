@@ -142,6 +142,7 @@ export const api = {
   // IMPORTANT:
   // NOTE: admin dashoard utilities
   // INFO: TOGGLE USER STATUS FUNCTIONALITY
+  // TODO: implement in backend
   async toggleUserStatus(userId) {
     const response = await fetch(
       `${API_BASE_URL}/users/${userId}/toggle-status/`,
@@ -178,6 +179,7 @@ export const api = {
   },
 
   // INFO: Create user (admin version)
+  // TODO: backend inmplementaion
   async createUser(userData) {
     const response = await fetch(`${API_BASE_URL}/admin/users/`, {
       method: "POST",
@@ -197,6 +199,7 @@ export const api = {
   },
 
   //INFO: Update user
+  //TODO: backend implementation
   async updateUser(userId, userData) {
     const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/`, {
       method: "PATCH",
@@ -216,6 +219,7 @@ export const api = {
   },
 
   // INFO: Delete user
+  // TODO: backend implementation
   async deleteUser(userId) {
     const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/`, {
       method: "DELETE",

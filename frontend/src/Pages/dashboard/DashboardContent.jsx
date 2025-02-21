@@ -22,18 +22,28 @@ const DashboardContent = ({ activeView }) => {
         // but that should change
         switch (activeView) {
           case "view-users":
-            response = await api.getUsers();
-            break;
           case "delete-users":
+          case "update-users":
             response = await api.getUsers(); // Same endpoint, different UI
+            // check if response ahs results property (paginationn)
+
+            if (response && response.results) {
+              setData(response.results); // extract array from result
+            } else if (Array.isArray(response)) {
+              setData(response); // use directly if alraedy array
+            } else {
+              setData([]); // fallback to empty data
+              console.error(
+                "Unexpected Data Type Received",
+                response,
+                typeof response,
+              );
+            }
             break;
           case "create-users":
             setData([]);
             setLoading(false);
             return;
-          case "update-users":
-            response = await api.getUsers(); // Same endpoint, different UI
-            break;
           default:
             // IMPORTANT:
             // TODO:
@@ -42,8 +52,6 @@ const DashboardContent = ({ activeView }) => {
             setLoading(false);
             return;
         }
-
-        setData(response);
       } catch (error) {
         console.error(`Error fetching data for ${activeView}:`, error);
         showToast(
@@ -143,6 +151,7 @@ const DashboardContent = ({ activeView }) => {
 };
 
 // Loading skeleton
+// I.E. its an empty blurry table
 const LoadingSkeleton = () => (
   <Card>
     <CardHeader>
@@ -160,7 +169,9 @@ const LoadingSkeleton = () => (
   </Card>
 );
 
+// INFO:
 // Mock data for development when API is unavailable
+// Or Something breaks ;(
 const getMockData = (view) => {
   if (view.includes("user")) {
     return [
