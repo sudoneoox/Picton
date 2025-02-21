@@ -10,7 +10,7 @@ const Navbar = ({ config = defaultNavConfig }) => {
     <nav className="main-navbar">
       <div className="navbar-container">
         {/* BRAND (LOGO ) START */}
-        <Link to="/" className="navbar-brand">
+        <Link reloadDocument to="/" className="navbar-brand">
           PICTON
         </Link>
         {/* BRAND (LOGO ) END */}
@@ -29,6 +29,7 @@ const Navbar = ({ config = defaultNavConfig }) => {
         <div className={`navbar-menu ${isMobileMenuOpen ? "active" : ""}`}>
           {config.menuItems.map((item) => (
             <Link
+            reloadDocument
               to={item.navigation}
               key={item.name}
               className="navbar-item"

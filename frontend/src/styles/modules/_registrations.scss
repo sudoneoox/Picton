@@ -227,11 +227,18 @@ $hover-color: #565f89;
   &__sign-in {
     margin-left: 0.25rem;
     padding: 0.1rem 0.4rem;
-    background-color: transparent;
+    background-color: #fff;
     color: $text-primary;
     font-size: 0.9rem;
+
     &:hover {
-      text-decoration: underline;
+      background-color: #333333;
+      color: #ffffff;
+    }
+  
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(#000, 0.2);
     }
   }
 }

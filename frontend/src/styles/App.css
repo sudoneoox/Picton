@@ -438,12 +438,17 @@
 .registration-formCard__sign-in {
   margin-left: 0.25rem;
   padding: 0.1rem 0.4rem;
-  background-color: transparent;
+  background-color: #fff;
   color: #e5e5e5;
   font-size: 0.9rem;
 }
 .registration-formCard__sign-in:hover {
-  text-decoration: underline;
+  background-color: #333333;
+  color: #ffffff;
+}
+.registration-formCard__sign-in:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Slide Down Animation */

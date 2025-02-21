@@ -5,6 +5,11 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 
+ROLE_CHOICES = (
+    ('basicuser', 'Basic User'),
+    ('admin', 'Admin'),
+    # add additional roles as needed
+)
 
 # IMPORTANT: override default django user table
 class CustomUserManager(BaseUserManager):
@@ -14,16 +19,23 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError("Email is required")
 
+        extra_fields.setdefault('role', 'basicuser')
         user = self.model(
-            username=username, email=self.normalize_email(email), **extra_fields
+            username=username, 
+            email=self.normalize_email(email), 
+            **extra_fields
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     def create_superuser(self, username, email, password=None, **extra_fields):
+        extra_fields.setdefault('role', 'admin')
         user = self.create_user(
-            username=username, email=email, password=password, **extra_fields
+            username=username, 
+            email=email, 
+            password=password, 
+            **extra_fields
         )
         user.is_superuser = True
         user.is_staff = True
@@ -42,6 +54,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Optional fields
     phone_number = models.CharField(max_length=15, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
+
+    # User role
+    role = models.CharField(max_length=30, choices=ROLE_CHOICES, default='basicuser')
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

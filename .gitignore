@@ -13,5 +13,5 @@ backend/.env
 frontend/.env
 
 # other
-start_dev.bat
-start_dev.sh
+./start_frontend.bat
+./start_backend.sh

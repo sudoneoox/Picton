@@ -260,7 +260,7 @@ const Registrations = () => {
                       }
                       value={formData.username}
                       placeholder="Enter Your Username"
-                      className="registration-formContainer__input registration-formContainer__input"
+                      className="registration-formCard__input"
                     />
                     <Input
                       type="tel"
@@ -269,7 +269,7 @@ const Registrations = () => {
                       onChange={(e) =>
                         handleInputChange("phone", e.target.value)
                       }
-                      className="registration-formContainer__input registration-formContainer__input"
+                      className="registration-formCard__input"
                     />
                   </>
                 )}
@@ -329,7 +329,7 @@ const Registrations = () => {
                       Previous
                     </Button>
                   )}
-                  <Button type="submit" className="registration-formCard__btn">
+                  <Button variant="homepage" type="submit" className="registration-formCard__btn">
                     {currentStep === formSteps.length ? "Complete" : "Next"}
                   </Button>
                 </div>
@@ -343,6 +343,7 @@ const Registrations = () => {
                 </div>
 
                 <Button
+                  variant="homepage"
                   className="registration-formCard__outlook"
                   onClick={handleAzureRegistration}
                 >
