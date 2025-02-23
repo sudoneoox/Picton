@@ -1,14 +1,15 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-
+from utils import pretty_print
+import sys
 
 # Load dotenv variables
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -121,19 +122,24 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 if DEBUG:
-    print("DEBUG: Got .env file this should not be empty")
-    print(f"DB_NAME: {os.getenv('DB_NAME')}")
-    print(f"DB_USER: {os.getenv('DB_USER')}")
-    print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
-    print(f"DB_HOST: {os.getenv('DB_HOST')}")
-    print(f"DB_PORT: {os.getenv('DB_PORT')}")
-    print(f"MICROSOFT_GRAPH_KEY: {os.getenv("MICROSOFT_GRAPH_KEY")}")
-    print(f"MICROSOFT_GRAPH_SECRET: {os.getenv("MICROSOFT_GRAPH_SECRET")}")
-    print(
-        f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv("MICROSOFT_BACKEND_REDIRECT_URL")}"
+    pretty_print("Got .env THIS FILE SHOULD NOT BE EMPTY", "WARNING")
+    pretty_print(f"DB_NAME: {os.getenv('DB_NAME')}", "WARNING")
+    pretty_print(f"DB_USER: {os.getenv('DB_USER')}", "WARNING")
+    pretty_print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}", "WARNING")
+    pretty_print(f"DB_HOST: {os.getenv('DB_HOST')}", "WARNING")
+    pretty_print(f"DB_PORT: {os.getenv('DB_PORT')}", "WARNING")
+    pretty_print(f"MICROSOFT_GRAPH_KEY: {os.getenv("MICROSOFT_GRAPH_KEY")}", "WARNING")
+    pretty_print(f"MICROSOFT_GRAPH_KEY: {os.getenv("MICROSOFT_GRAPH_KEY")}", "WARNING")
+    pretty_print(
+        f"MICROSOFT_GRAPH_SECRET: {os.getenv("MICROSOFT_GRAPH_SECRET")}", "WARNING"
     )
-    print(
-        f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv("MICROSOFT_FRONTEND_REDIRECT_URL")}"
+    pretty_print(
+        f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv("MICROSOFT_BACKEND_REDIRECT_URL")}",
+        "WARNING",
+    )
+    pretty_print(
+        f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv("MICROSOFT_FRONTEND_REDIRECT_URL")}",
+        "WARNING",
     )
 
 

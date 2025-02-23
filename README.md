@@ -80,6 +80,8 @@ MICROSOFT_REDIRECT_URL=
 # azure registrations id's
 VITE_AZURE_CLIENT_ID=
 VITE_AZURE_TENANT_ID=
+
+DEBUG=true
 ```
 
 3. Start up developmental environment
