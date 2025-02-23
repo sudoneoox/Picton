@@ -11,7 +11,8 @@ echo "4) Open the database shell"
 echo "5) Run Django shell"
 echo "6) Collect static files"
 echo "7) Check for system checks"
-echo "8) Exit"
+echo "8) View all urls in Django App"
+echo "9) Exit"
 echo "=========================================="
 read -p "Enter your choice: " choice
 
@@ -46,6 +47,10 @@ case $choice in
         python manage.py check
         ;;
     8)
+        echo "Checking Django urls..."
+        python manage.py show_urls
+        ;;
+    9)
         echo "Exiting..."
         exit 0
         ;;
