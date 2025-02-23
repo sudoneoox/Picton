@@ -1,13 +1,12 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-
-from api.serializers import UserSerializer
-from ..serializers import AdminUserSerializer
-from .common import AdminRequiredMixin
-from utils import MethodNameMixin
-from ..models import User
-from utils import pretty_print
 from rest_framework.response import Response
+
+from ..serializers import AdminUserSerializer, UserSerializer
+from .common import AdminRequiredMixin
+from ..models import User
+from utils import pretty_print, MethodNameMixin
+
 from os import getenv
 
 DEBUG = getenv("DEBUG")

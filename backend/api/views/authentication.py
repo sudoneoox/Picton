@@ -1,4 +1,7 @@
 from django.forms import ValidationError
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.hashers import make_password
+
 from rest_framework import viewsets, status, views
 from rest_framework.decorators import action
 from rest_framework.exceptions import (
@@ -6,20 +9,19 @@ from rest_framework.exceptions import (
     NotFound,
     PermissionDenied as DRFPermissionDenied,
 )
-
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from django.contrib.auth import authenticate, login
-from os import getenv as getenv
-from ..serializers import LoginSerializer
-from ..models import User
-from utils import pretty_print, MethodNameMixin
-from django.contrib.auth.hashers import make_password
+
 import jwt
 import secrets
 
+from utils import pretty_print, MethodNameMixin
+from ..core import AccountInactiveError, InvalidCredentialsError
+from ..serializers import LoginSerializer
+from ..models import User
+from django.conf import settings
 
-DEBUG = getenv("DEBUG")
+DEBUG = settings.DEBUG
 
 
 # TODO: expand to also interchangebly accept either username or email
@@ -53,7 +55,14 @@ class LoginView(views.APIView, MethodNameMixin):
                 f"Error Encountered from {self._get_method_name()}: Invalid Credentials",
                 "ERROR",
             )
-            raise AuthenticationFailed("Invalid Credentials")
+            raise InvalidCredentialsError()
+
+        # check if account is activated or not
+        if not user.is_active:
+            pretty_print(
+                f"Error logging in user: {user.username} is not activated", "ERROR"
+            )
+            raise AccountInactiveError()
 
         # no errors log that user in
         login(request, user)

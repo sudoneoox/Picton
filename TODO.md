@@ -5,6 +5,7 @@
 
 - [ ] **Test After Code Cleanup**  
   I haven't tested whether the code cleanup broke any existing logic, but it runs with no errors. I have to test it after completing the above TODO first.
+  - [ ] Login works but admin gets sent do /unauthorized url need to fix
 
 - [ ] **Cleanup Frontend**  
   The frontend code is somewhat messy. After completing the above two TODOs, I need to find a way to make the frontend project more scalable for long-term maintenance.
