@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate, login
 from os import getenv as getenv
+from ..serializers import LoginSerializer
 from ..models import User
 from utils import pretty_print, MethodNameMixin
 from django.contrib.auth.hashers import make_password
@@ -28,6 +29,9 @@ class LoginView(views.APIView, MethodNameMixin):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         if DEBUG:
             pretty_print(
                 f"Received Request from {self._get_method_name()}: {request}", "DEBUG"

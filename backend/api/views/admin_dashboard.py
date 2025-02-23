@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 
 from api.serializers import UserSerializer
+from ..serializers import AdminUserSerializer
 from .common import AdminRequiredMixin
 from utils import MethodNameMixin
 from ..models import User
@@ -18,7 +19,7 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
     Includes user management and analytics
     """
 
-    serializer_class = UserSerializer
+    serializer_class = AdminUserSerializer
     queryset = User.objects.all()
 
     @action(detail=False, methods=["GET"])
