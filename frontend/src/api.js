@@ -4,9 +4,45 @@ export const API_BASE_URL =
 export const MICROSOFT_FRONTEND_REDIRECT_URL =
   import.meta.env.MICROSOFT_REDIRECT_URL || "/auth/microsoft/callback";
 
+export const DEBUG = import.meta.env.DEBUG || true;
+
+// This works to make colored outputs in web developer tools consoles
+export const pretty_log = (msg, msg_type) => {
+  // NOTE: only output "DEBUG" messages if DEBUG is set to true in .env
+  if (msg_type.toUpperCase() == "DEBUG" && !DEBUG) return;
+
+  let style = "";
+
+  switch (msg_type.toUpperCase()) {
+    case "WARNING":
+      style =
+        "background: #ffcc00; color: #000; font-weight: bold; padding: 2px 5px;";
+      break;
+    case "ERROR":
+      style =
+        "background: #ff0000; color: #fff; font-weight: bold; padding: 2px 5px;";
+      break;
+    case "INFO":
+      style =
+        "background: #008000; color: #fff; font-weight: bold; padding: 2px 5px;";
+      break;
+    case "DEBUG":
+      style =
+        "background: #0000ff; color: #fff; font-weight: bold; padding: 2px 5px;";
+      break;
+    default:
+      style =
+        "background: #008000; color: #fff; font-weight: bold; padding: 2px 5px;";
+      break;
+  }
+
+  console.log(`%c[${msg_type.toUpperCase()}] ${msg}`, style);
+};
+
 export const api = {
   // NOTE: USER LOGIN FUNCTIONALITY
   async loginUser(username, password) {
+    pretty_log("Entering loginUser API", "INFO");
     const response = await fetch(`${API_BASE_URL}/login/`, {
       method: "POST",
       credentials: "include", // for sessions cookies,
@@ -15,6 +51,7 @@ export const api = {
       },
       body: JSON.stringify({ username, password }),
     });
+    pretty_log("Received Request inside login_user", "DEBUG");
 
     if (!response.ok) {
       const error = await response.json();

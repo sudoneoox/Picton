@@ -12,6 +12,7 @@ from ..core import IsAdminOrSelf, IsActiveUser
 
 from typing import List
 
+
 DEBUG = settings.DEBUG
 
 
@@ -39,7 +40,7 @@ class UserManagementViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 f"Received Request from {self._get_method_name()}: {request}", "DEBUG"
             )
 
-        serializer = self.get_serializer(request.user)
+        serializer = UserDetailSerializer(request.user)
         return Response(serializer.data)
 
     def get_permissions(self) -> List:
