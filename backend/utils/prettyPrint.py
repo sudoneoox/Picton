@@ -36,5 +36,5 @@ def pretty_print(console_text: str, text_type: str = "DEBUG") -> None:
     # printing actual message
     # Style.RESET_ALL is used to revert pack to default terminal fg,bg,style
     print(
-        f"{fg}{bg if bg is not None else ''}{style}[{text_type}]{console_text}{Style.RESET_ALL}"
+        f"{fg}{bg if bg is not None else ''}{style}[{text_type}] {console_text}{Style.RESET_ALL}"
     )
