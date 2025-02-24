@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserDataTable from "@/Pages/dashboard/UserDataTable";
-import { api } from "@/api";
+import { api } from "@/api/api.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ToastNotification";
 
@@ -24,7 +24,7 @@ const DashboardContent = ({ activeView }) => {
           case "view-users":
           case "delete-users":
           case "update-users":
-            response = await api.getUsers(); // Same endpoint, different UI
+            response = await api.admin.getUsers(); // Same endpoint, different UI
             // check if response ahs results property (paginationn)
 
             if (response && response.results) {
@@ -72,7 +72,7 @@ const DashboardContent = ({ activeView }) => {
 
   const handleToggleStatus = async (userId) => {
     try {
-      await api.toggleUserStatus(userId);
+      await api.admin.toggleUserStatus(userId);
 
       // Update local state
       setData((prevData) =>

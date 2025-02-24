@@ -1,5 +1,5 @@
 import { PublicClientApplication, LogLevel } from "@azure/msal-browser";
-import { MICROSOFT_FRONTEND_REDIRECT_URL } from "@/api";
+import { MICROSOFT_FRONTEND_REDIRECT_URL } from "@/api/common_util.js";
 
 const msalConfig = {
   auth: {

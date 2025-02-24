@@ -4,7 +4,7 @@ import { KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api } from "../../api.js";
+import { api } from "@/api/api.js"
 import { motion, AnimatePresence } from "framer-motion";
 import { useMsal } from "@azure/msal-react";
 
@@ -49,7 +49,7 @@ const Registrations = () => {
       if (loginResponse && loginResponse.accessToken) {
         try {
           // Register with backend
-          const response = await api.azureRegister(loginResponse.accessToken);
+          const response = await api.auth.azureRegister(loginResponse.accessToken);
 
           console.log("Registration successful:", response);
           showToast(
@@ -172,7 +172,7 @@ const Registrations = () => {
       }
 
       // NOTE: Final submission sending this to backend api
-      const response = await api.registerUser({
+      const response = await api.auth.registerUser({
         email: formData.email,
         username: formData.username,
         password: formData.password,

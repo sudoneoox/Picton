@@ -11,7 +11,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { SidebarLogo } from "@/components/sidebar-logo";
-import { api } from "@/api.js";
+import { api } from "@/api/api.js";
 
 export function SidebarConfig({
   onViewChange,

@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { api, pretty_log } from "@/api.js";
+import { api } from "@/api/api.js";
+import { pretty_log } from "@/api/common_util";
+
 import Layout from "@/Layout.jsx";
 import { Shared, Dashboard } from "@/Pages/imports.jsx";
 import { MicrosoftCallback } from "@/components/MicrosoftCallback.jsx";
@@ -20,7 +22,8 @@ export default function App() {
         {/* Admin Routes */}
         <Route
           path="admin/dashboard"
-          element={
+          element=
+          {
             <ProtectedRoute allowedRoles={["admin"]}>
               <Dashboard.AdminDashboard />
             </ProtectedRoute>
@@ -61,7 +64,7 @@ const ProtectedRoute = ({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const userData = await api.getCurrentUser();
+        const userData = await api.auth.getCurrentUser();
         pretty_log(
           `Received Response from getCurrentUser from inside checkAuth:  ${JSON.stringify(userData, null, 4)}`,
           "DEBUG",

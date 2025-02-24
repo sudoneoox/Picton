@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ToastNotification";
-import { api } from "../../api";
+import { api } from "@/api/api.js"
 import { useMsal } from "@azure/msal-react";
 
 const Login = () => {
@@ -38,7 +38,7 @@ const Login = () => {
           console.log(
             `Attempting login with email: ${loginResponse.account?.username}`,
           );
-          const response = await api.azureLogin(loginResponse.accessToken);
+          const response = await api.auth.azureLogin(loginResponse.accessToken);
           console.log("Login successful:", response);
 
           showToast(
@@ -113,7 +113,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await api.loginUser(
+      const response = await api.auth.loginUser(
         formData.username,
         formData.password,
       );
