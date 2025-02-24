@@ -14,8 +14,10 @@ $hover-color: #565f89;
 
 // Local mixin for homepage-style buttons
 @mixin homepage-button {
-  background-color: #fff;  /* White background */
-  color: #333;             /* Black text */
+  background-color: #fff;
+  /* White background */
+  color: #333;
+  /* Black text */
   border-radius: 5px;
   padding: 0.65rem 1.25rem;
   font-weight: 500;
@@ -73,6 +75,7 @@ $hover-color: #565f89;
       margin-bottom: 0.5rem;
       color: $text-primary;
     }
+
     span {
       font-size: 0.95rem;
       color: $text-secondary;
@@ -176,19 +179,22 @@ $hover-color: #565f89;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 2rem 0;
+    margin: 0.5rem 0;
 
     &-line {
       width: 90%;
     }
+
     &-border {
       width: 100%;
       border-top: 1px solid $border-color;
     }
+
     &-text {
       margin-top: -0.7rem;
       background-color: rgba($dark-card, 0.85);
       padding: 0 0.5rem;
+
       span {
         font-size: 0.85rem;
         color: $text-secondary;
@@ -208,9 +214,7 @@ $hover-color: #565f89;
     gap: 0.5rem;
   }
 
-  &__icon {
-
-  }
+  &__icon {}
 
   /* Footer (Sign in) */
   &__footer {
@@ -225,22 +229,43 @@ $hover-color: #565f89;
   }
 
   &__sign-in {
-    margin-left: 0.25rem;
+    margin-left: 0.5rem;
     padding: 0.1rem 0.4rem;
     background-color: #fff;
-    color: $text-primary;
+    // color: $text-primary;
     font-size: 0.9rem;
 
     &:hover {
       background-color: #333333;
       color: #ffffff;
     }
-  
+
     &:focus {
       outline: none;
       box-shadow: 0 0 0 2px rgba(#000, 0.2);
     }
   }
+}
+
+.registration-formCard__register {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  background-color: #fff;
+  color: black;
+  font-size: 0.9rem;
+  text-decoration: none;
+
+  &:hover {
+    background-color: #333333;
+    color: #ffffff;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(#000, 0.2);
+  }
+
+
 }
 
 /* Slide Down Animation */
@@ -249,6 +274,7 @@ $hover-color: #565f89;
     transform: translateY(-10px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;

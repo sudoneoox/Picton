@@ -219,12 +219,13 @@ const Login = () => {
             </Button>
           </form>
 
-          <div className="space-y-4 text-center text-sm">
-            <p className="text-zinc-400">
+          <div className="registration-formCard__footer">
+            <p className="registration-formCard__register-text"
+            >
               Dont have an account?
               <Button
                 variant="link"
-                className="registration-formCard__sign-in"
+                className="registration-formCard__register"
                 onClick={() => navigate("/registration")}
               >
                 Register

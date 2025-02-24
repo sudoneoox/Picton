@@ -328,7 +328,7 @@ const Registrations = () => {
                       Previous
                     </Button>
                   )}
-                  <Button variant="homepage" type="submit" className="registration-formCard__btn">
+                  <Button variant="" type="submit" className="registration-formCard__btn">
                     {currentStep === formSteps.length ? "Complete" : "Next"}
                   </Button>
                 </div>
@@ -357,7 +357,7 @@ const Registrations = () => {
             <p>
               Already have an account?{" "}
               <Button
-                variant="homepage"
+                variant=""
                 className="registration-formCard__sign-in"
                 onClick={() => navigate("/login")}
               >
