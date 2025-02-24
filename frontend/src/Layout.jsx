@@ -2,17 +2,20 @@ import { Outlet } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useLocation } from "react-router-dom";
 import Footer from "@/components/Footer";
-import AdminDashboard from "@/Pages/dashboard/AdminDashboard";
+import { pretty_log } from "@/api/common_util";
 
 const Layout = () => {
   const location = useLocation();
-  const { hash, pathname, search } = location;
-  console.log("DEBUG: current pathname -> ", pathname);
+  const { pathname } = location
+
+  // IMPORTANT: Dont Show Navbar or Footers on these Pages and dont apply main-content-container styles
+  const hideLayout = ["/admin/dashboard", "/dashboard", "/unauthorized"].some((route) => pathname.includes(route)) || pathname == "/404"
+  pretty_log(`current pathname -> ${pathname}`, "DEBUG");
 
   return (
     <div className="app-container">
-      {/* IMPORTANT: DONT SHOW NAVBAR OR FOOTER ON DASHBOARDS */}
-      {pathname === "/admin/dashboard" || pathname === "/dashboard" ? (
+      {/* IMPORTANT: DONT SHOW NAVBAR OR FOOTER ON THESE PAGES*/}
+      {hideLayout ? (
         <>
           <Outlet />
         </>
