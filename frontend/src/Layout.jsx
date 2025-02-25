@@ -9,6 +9,7 @@ const Layout = () => {
   const { pathname } = location
 
   // IMPORTANT: Dont Show Navbar or Footers on these Pages and dont apply main-content-container styles
+  // we include (pathname == 404) because unknown paths get redirected to this url
   const hideLayout = ["/admin/dashboard", "/dashboard", "/unauthorized"].some((route) => pathname.includes(route)) || pathname == "/404"
   pretty_log(`current pathname -> ${pathname}`, "DEBUG");
 

@@ -25,7 +25,7 @@ export default function App() {
           element=
           {
             <ProtectedRoute allowedRoles={["admin"]}>
-              <Dashboard.AdminDashboard />
+              {(userData) => <Dashboard.AdminDashboard userData={userData} />}
             </ProtectedRoute>
           }
         />
@@ -116,5 +116,6 @@ const ProtectedRoute = ({
     return <Navigate to="/unauthorized" replace />;
   }
 
-  return children;
+  // pass user data to children if its a function 
+  return typeof children === "function" ? children(user) : children;
 };
