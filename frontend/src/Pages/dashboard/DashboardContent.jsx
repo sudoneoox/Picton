@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserDataTable from "@/Pages/dashboard/UserDataTable";
-import { api } from "@/api";
+import UserCreationForm from "@/Pages/dashboard/UserCreationForm"
+import { api } from "@/api/api.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ToastNotification";
+import { pretty_log } from "@/api/common_util"
 
 const DashboardContent = ({ activeView }) => {
   const [data, setData] = useState([]);
@@ -21,11 +23,9 @@ const DashboardContent = ({ activeView }) => {
         // TODO:  change api endpoint functions right now they have the same UI
         // but that should change
         switch (activeView) {
-          case "view-users":
-          case "delete-users":
-          case "update-users":
-            response = await api.getUsers(); // Same endpoint, different UI
-            // check if response ahs results property (paginationn)
+          case "manage-users":
+            response = await api.admin.getUsers(); // gets all users in system
+            // check if response has results property (paginationn)
 
             if (response && response.results) {
               setData(response.results); // extract array from result
@@ -33,27 +33,22 @@ const DashboardContent = ({ activeView }) => {
               setData(response); // use directly if alraedy array
             } else {
               setData([]); // fallback to empty data
-              console.error(
-                "Unexpected Data Type Received",
-                response,
-                typeof response,
-              );
+              pretty_log(`Unexpected Data Type Received ${response} ${typeof response}`, "ERROR");
             }
             break;
           case "create-users":
+            // EMPTY there should be a form here nothing for the admin to view
             setData([]);
             setLoading(false);
             return;
           default:
-            // IMPORTANT:
-            // TODO:
-            // Default dashboard view, perhaps summary stats
+            // TODO: Default dashboard view, perhaps chart view stats of users?
             setData([]);
             setLoading(false);
             return;
         }
       } catch (error) {
-        console.error(`Error fetching data for ${activeView}:`, error);
+        pretty_log(`Error fetching data for ${activeView}: ${error}`, "ERROR");
         showToast(
           { error: error.message || "Failed to load data" },
           "error",
@@ -61,6 +56,7 @@ const DashboardContent = ({ activeView }) => {
         );
 
         // For development: use mock data when API fails
+        pretty_log(`API Failed for ${activeView} showing mock data`, "INFO")
         setData(getMockData(activeView));
       } finally {
         setLoading(false);
@@ -70,9 +66,11 @@ const DashboardContent = ({ activeView }) => {
     fetchData();
   }, [activeView, showToast]);
 
+
+  // TODO: implement in frontend API and backend
   const handleToggleStatus = async (userId) => {
     try {
-      await api.toggleUserStatus(userId);
+      await api.admin.toggleUserStatus(userId);
 
       // Update local state
       setData((prevData) =>
@@ -83,12 +81,29 @@ const DashboardContent = ({ activeView }) => {
 
       showToast({ message: "User status updated successfully" }, "success");
     } catch (error) {
-      console.error("Error toggling user status:", error);
-      showToast(
-        { error: error.message || "Failed to update user status" },
-        "error",
-        "Error",
-      );
+      pretty_log(`Error toggling user status: ${error}`, "ERROR");
+      const errorMessage = error.message || "Failed to update user status"
+
+      // Check for specific error types
+      if (errorMessage.includes("superuser")) {
+        showToast(
+          { error: "Cannot change status of superuser accounts" },
+          "error",
+          "Permission Denied"
+        );
+      } else if (errorMessage.includes("own account")) {
+        showToast(
+          { error: "You cannot deactivate your own account" },
+          "error",
+          "Permission Denied"
+        );
+      } else {
+        showToast(
+          { error: errorMessage },
+          "error",
+          "Error"
+        );
+      }
     }
   };
 
@@ -99,18 +114,12 @@ const DashboardContent = ({ activeView }) => {
     }
 
     switch (activeView) {
-      case "view-users":
-      case "delete-users":
-      case "update-users":
+      case "manage-users":
         return (
           <Card>
             <CardHeader>
               <CardTitle>
-                {activeView === "view-users"
-                  ? "User Management"
-                  : activeView === "delete-users"
-                    ? "Delete Users"
-                    : "Update Users"}
+                User Management
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -128,8 +137,7 @@ const DashboardContent = ({ activeView }) => {
               <CardTitle>Create User</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* TODO: Add user creation form */}
-              <p>TODO: User creation form</p>
+              <UserCreationForm />
             </CardContent>
           </Card>
         );

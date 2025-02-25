@@ -1,15 +1,17 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { api, pretty_log } from "@/api.js";
-import Layout from "@/Layout.jsx";
+import { api } from "@/api/api.js";
+import { pretty_log } from "@/api/common_util";
 import { Shared, Dashboard } from "@/Pages/imports.jsx";
 import { MicrosoftCallback } from "@/components/MicrosoftCallback.jsx";
+import Layout from "@/Layout.jsx";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Shared.Home />} />
+
         <Route path="login" element={<Shared.Login />} />
         <Route path="registration" element={<Shared.Registrations />} />
         <Route
@@ -20,30 +22,43 @@ export default function App() {
         {/* Admin Routes */}
         <Route
           path="admin/dashboard"
-          element={
+          element=
+          {
             <ProtectedRoute allowedRoles={["admin"]}>
-              <Dashboard.AdminDashboard />
+              {(userData) => <Dashboard.AdminDashboard userData={userData} />}
             </ProtectedRoute>
           }
         />
 
         {/* User Routes */}
-        {/* IMPORTANT: we dont know what were building so leave this commented out for now  */}
-        {/* <Route */}
-        {/*   path="dashboard" */}
-        {/*   element={ */}
-        {/*     <ProtectedRoute allowedRoles={["user", "admin"]}> */}
-        {/*       <DashboardSkeleton> */}
-        {/*         <UserDashboard /> */}
-        {/*       </DashboardSkeleton> */}
-        {/*     </ProtectedRoute> */}
-        {/*   } */}
-        {/* /> */}
+        {/*WARNING: We dont know what were building for a default user so send an error code for now  */}
+
+        <Route
+          path="dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["user", "admin"]}>
+              {/* <UserDashboard /> */}
+              <Shared.ErrorCodes statuscode={202} />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="unauthorized"
-          element={<div>You are not authorized to view this page</div>}
+          element={<Shared.ErrorCodes statuscode={401} />}
         />
+
+        {/* REROUTE all non defined paths to 404 status page */}
+
+        <Route
+          path="*"
+          element={<Navigate to="/404" replace />}
+        />
+
+        <Route
+          path="404"
+          element={<Shared.ErrorCodes statuscode={404} />} />
+
       </Route>
     </Routes>
   );
@@ -61,7 +76,7 @@ const ProtectedRoute = ({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const userData = await api.getCurrentUser();
+        const userData = await api.auth.getCurrentUser();
         pretty_log(
           `Received Response from getCurrentUser from inside checkAuth:  ${JSON.stringify(userData, null, 4)}`,
           "DEBUG",
@@ -101,5 +116,6 @@ const ProtectedRoute = ({
     return <Navigate to="/unauthorized" replace />;
   }
 
-  return children;
+  // pass user data to children if its a function 
+  return typeof children === "function" ? children(user) : children;
 };

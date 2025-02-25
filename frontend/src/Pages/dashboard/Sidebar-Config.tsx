@@ -11,41 +11,52 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { SidebarLogo } from "@/components/sidebar-logo";
-import { api } from "@/api.js";
+import { api } from "@/api/api.js";
+import { pretty_log } from "@/api/common_util.js"
 
 export function SidebarConfig({
   onViewChange,
+  userData = null,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   onViewChange: (view: string) => void;
+  userData?: any
 }) {
-  const [userData, setUserData] = useState({
-    // TODO:
-    // // IMPORTANT: change when fetched from api pass to tihs function
-    name: "Admin",
-    email: "admin@picton.com",
-    avatar: "/avatars/shadcn.jpg",
-  });
+
+  // if userData is passed, use it , otherwise fetch it 
+  const [userDataState, setUserDataState] = useState(
+    userData ? {
+      name: userData.username || "Admin",
+      email: userData.email || "email error",
+      avatar: userData.avatar || "/avatars/shadcn.jpg",
+    } : {
+      name: "Admin",
+      email: "admin@picton.com",
+      avatar: "/avatars/shadcn.jpg",
+    }
+  );
   const [activeItem, setActiveItem] = useState("view-users");
 
-  // Fetch user data when component mounts
+  // Only fetch user data if not provided
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const user = await api.getCurrentUser();
-        setUserData({
-          name: user.username || "Admin",
-          email: user.email || "admin@picton.com",
-          avatar: user.avatar || "/avatars/shadcn.jpg",
-        });
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        // Keep default user data
-      }
-    };
+    if (!userData) {
+      const fetchUserData = async () => {
+        try {
+          const user = await api.getCurrentUser();
+          setUserDataState({
+            name: user.username || "Admin",
+            email: user.email || "admin@picton.com",
+            avatar: user.avatar || "/avatars/shadcn.jpg",
+          });
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          // Keep default user data
+        }
+      };
 
-    fetchUserData();
-  }, []);
+      fetchUserData();
+    }
+  }, [userData]);
 
   // Handle sidebar item click
   const handleItemClick = (itemId: string) => {
@@ -54,7 +65,7 @@ export function SidebarConfig({
   };
 
   const navData = {
-    user: userData,
+    user: userDataState,
     navMain: [
       {
         title: "User Management",
@@ -64,18 +75,11 @@ export function SidebarConfig({
         // IMPORTANT: items send out api requests
         items: [
           {
-            id: "view-users",
-            title: "View Users",
+            id: "manage-users",
+            title: "Manage Users",
             url: "#",
-            isActive: activeItem === "view-users",
-            onClick: () => handleItemClick("view-users"),
-          },
-          {
-            id: "delete-users",
-            title: "Delete Users",
-            url: "#",
-            isActive: activeItem === "delete-users",
-            onClick: () => handleItemClick("delete-users"),
+            isActive: activeItem === "manage-users",
+            onClick: () => handleItemClick("manage-users"),
           },
           {
             id: "create-users",
@@ -83,13 +87,6 @@ export function SidebarConfig({
             url: "#",
             isActive: activeItem === "create-users",
             onClick: () => handleItemClick("create-users"),
-          },
-          {
-            id: "update-users",
-            title: "Update Users",
-            url: "#",
-            isActive: activeItem === "update-users",
-            onClick: () => handleItemClick("update-users"),
           },
         ],
       },
