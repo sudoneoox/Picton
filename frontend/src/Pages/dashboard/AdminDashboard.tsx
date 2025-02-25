@@ -7,12 +7,16 @@ import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { SidebarConfig } from "@/Pages/dashboard/Sidebar-Config";
 import DashboardContent from "@/Pages/dashboard/DashboardContent";
+import { pretty_log } from "@/api/common_util.js"
 
-export default function AdminDashboard() {
-  const [activeView, setActiveView] = useState("view-users");
+export default function AdminDashboard({ data }: { data: Object }) {
+  pretty_log(`Received Data in Dashboard ${data}`, "DEBUG")
+
+
+  const [activeView, setActiveView] = useState("manage-users");
   return (
     <SidebarProvider>
-      {/* NOTE: SIDEBAR HERE */}
+      {/* NOTE: SIDEBAR NAV HERE */}
       <SidebarConfig onViewChange={setActiveView} />
       {/* NOTE: RIGHT OF SIDEBAR MAIN CONTENT */}
       <SidebarInset>

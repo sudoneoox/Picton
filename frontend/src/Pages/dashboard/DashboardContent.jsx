@@ -4,6 +4,7 @@ import UserDataTable from "@/Pages/dashboard/UserDataTable";
 import { api } from "@/api/api.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ToastNotification";
+import { pretty_log } from "@/api/common_util"
 
 const DashboardContent = ({ activeView }) => {
   const [data, setData] = useState([]);
@@ -21,11 +22,9 @@ const DashboardContent = ({ activeView }) => {
         // TODO:  change api endpoint functions right now they have the same UI
         // but that should change
         switch (activeView) {
-          case "view-users":
-          case "delete-users":
-          case "update-users":
-            response = await api.admin.getUsers(); // Same endpoint, different UI
-            // check if response ahs results property (paginationn)
+          case "manage-users":
+            response = await api.admin.getUsers(); // gets all users in system
+            // check if response has results property (paginationn)
 
             if (response && response.results) {
               setData(response.results); // extract array from result
@@ -33,27 +32,22 @@ const DashboardContent = ({ activeView }) => {
               setData(response); // use directly if alraedy array
             } else {
               setData([]); // fallback to empty data
-              console.error(
-                "Unexpected Data Type Received",
-                response,
-                typeof response,
-              );
+              pretty_log(`Unexpected Data Type Received ${response} ${typeof response}`, "ERROR");
             }
             break;
           case "create-users":
+            // EMPTY there should be a form here nothing for the admin to view
             setData([]);
             setLoading(false);
             return;
           default:
-            // IMPORTANT:
-            // TODO:
-            // Default dashboard view, perhaps summary stats
+            // TODO: Default dashboard view, perhaps chart view stats of users?
             setData([]);
             setLoading(false);
             return;
         }
       } catch (error) {
-        console.error(`Error fetching data for ${activeView}:`, error);
+        pretty_log(`Error fetching data for ${activeView}: ${error}`, "ERROR");
         showToast(
           { error: error.message || "Failed to load data" },
           "error",
@@ -61,6 +55,7 @@ const DashboardContent = ({ activeView }) => {
         );
 
         // For development: use mock data when API fails
+        pretty_log(`API Failed for ${activeView} showing mock data`, "INFO")
         setData(getMockData(activeView));
       } finally {
         setLoading(false);
@@ -70,6 +65,8 @@ const DashboardContent = ({ activeView }) => {
     fetchData();
   }, [activeView, showToast]);
 
+
+  // TODO: implement in frontend API and backend
   const handleToggleStatus = async (userId) => {
     try {
       await api.admin.toggleUserStatus(userId);
@@ -99,18 +96,12 @@ const DashboardContent = ({ activeView }) => {
     }
 
     switch (activeView) {
-      case "view-users":
-      case "delete-users":
-      case "update-users":
+      case "manage-users":
         return (
           <Card>
             <CardHeader>
               <CardTitle>
-                {activeView === "view-users"
-                  ? "User Management"
-                  : activeView === "delete-users"
-                    ? "Delete Users"
-                    : "Update Users"}
+                User Management
               </CardTitle>
             </CardHeader>
             <CardContent>

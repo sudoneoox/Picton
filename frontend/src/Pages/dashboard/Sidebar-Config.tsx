@@ -64,18 +64,11 @@ export function SidebarConfig({
         // IMPORTANT: items send out api requests
         items: [
           {
-            id: "view-users",
-            title: "View Users",
+            id: "manage-users",
+            title: "Manage Users",
             url: "#",
-            isActive: activeItem === "view-users",
-            onClick: () => handleItemClick("view-users"),
-          },
-          {
-            id: "delete-users",
-            title: "Delete Users",
-            url: "#",
-            isActive: activeItem === "delete-users",
-            onClick: () => handleItemClick("delete-users"),
+            isActive: activeItem === "manage-users",
+            onClick: () => handleItemClick("manage-users"),
           },
           {
             id: "create-users",
@@ -83,13 +76,6 @@ export function SidebarConfig({
             url: "#",
             isActive: activeItem === "create-users",
             onClick: () => handleItemClick("create-users"),
-          },
-          {
-            id: "update-users",
-            title: "Update Users",
-            url: "#",
-            isActive: activeItem === "update-users",
-            onClick: () => handleItemClick("update-users"),
           },
         ],
       },
