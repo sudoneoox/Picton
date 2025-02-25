@@ -103,3 +103,51 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
         return Response(
             {"id": user.id, "email": user.email, "is_active": user.is_active}
         )
+
+    @action(detail=True, methods=["patch"])
+    def update_user(self, request, pk=None):
+        """Update user information"""
+        user = self.get_object()
+
+        # Check if trying to update a superuser
+        if user.is_superuser and not request.user.is_superuser:
+            return Response(
+                {"error": "Only superusers can modify other superuser accounts"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Check for unique constraint violations before applying changes
+        email = request.data.get("email")
+        username = request.data.get("username")
+
+        errors = {}
+
+        # Check email uniqueness
+        if email and email != user.email and User.objects.filter(email=email).exists():
+            errors["email"] = ["This email is already taken by another user."]
+
+        # Check username uniqueness
+        if (
+            username
+            and username != user.username
+            and User.objects.filter(username=username).exists()
+        ):
+            errors["username"] = ["This username is already taken by another user."]
+
+        # If found constraint violations, return early with error messages
+        if errors:
+            if DEBUG:
+                pretty_print(f"Validation errors for user {user.id}: {errors}", "DEBUG")
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # No errors found continue
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            if DEBUG:
+                pretty_print(
+                    f"Updated user {user.id} with data: {request.data}", "DEBUG"
+                )
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

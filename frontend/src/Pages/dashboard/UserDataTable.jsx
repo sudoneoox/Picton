@@ -20,15 +20,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import EditUserDialog from "@/Pages/dashboard/EditUserDialog"
+import { useEffect } from "react";
 
 const UserDataTable = ({ userData, onToggleStatus }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [localUserData, setLocalUserData] = useState(userData)
+
   const rowsPerPage = 5;
 
   // Calculate pagination
   const totalPages = Math.ceil(userData.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const visibleUsers = userData.slice(startIndex, startIndex + rowsPerPage);
+
+  useEffect(() => {
+    setLocalUserData(userData);
+  }, [userData])
+
+  // Handle user update from dialog
+  const handleUserUpdated = (updatedUser) => {
+    setLocalUserData(prevData =>
+      prevData.map(user => user.id === updatedUser.id ? updatedUser : user)
+    );
+  };
 
   return (
     <div className="w-full">
@@ -62,9 +77,8 @@ const UserDataTable = ({ userData, onToggleStatus }) => {
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="sm">
-                  Edit
-                </Button>
+                {/* Pass user to prefill data  */}
+                <EditUserDialog user={user} onUserUpdated={handleUserUpdated} />
               </TableCell>
             </TableRow>
           ))}

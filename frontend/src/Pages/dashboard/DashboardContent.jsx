@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserDataTable from "@/Pages/dashboard/UserDataTable";
+import UserCreationForm from "@/Pages/dashboard/UserCreationForm"
 import { api } from "@/api/api.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ToastNotification";
@@ -80,12 +81,29 @@ const DashboardContent = ({ activeView }) => {
 
       showToast({ message: "User status updated successfully" }, "success");
     } catch (error) {
-      console.error("Error toggling user status:", error);
-      showToast(
-        { error: error.message || "Failed to update user status" },
-        "error",
-        "Error",
-      );
+      pretty_log(`Error toggling user status: ${error}`, "ERROR");
+      const errorMessage = error.message || "Failed to update user status"
+
+      // Check for specific error types
+      if (errorMessage.includes("superuser")) {
+        showToast(
+          { error: "Cannot change status of superuser accounts" },
+          "error",
+          "Permission Denied"
+        );
+      } else if (errorMessage.includes("own account")) {
+        showToast(
+          { error: "You cannot deactivate your own account" },
+          "error",
+          "Permission Denied"
+        );
+      } else {
+        showToast(
+          { error: errorMessage },
+          "error",
+          "Error"
+        );
+      }
     }
   };
 
@@ -119,8 +137,7 @@ const DashboardContent = ({ activeView }) => {
               <CardTitle>Create User</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* TODO: Add user creation form */}
-              <p>TODO: User creation form</p>
+              <UserCreationForm />
             </CardContent>
           </Card>
         );

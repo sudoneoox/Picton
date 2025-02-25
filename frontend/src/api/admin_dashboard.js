@@ -74,22 +74,41 @@ export const admin = {
 
 
   // INFO: update a users acouunt information such as email, password, etc.
-  // TODO: implement frontend form for this and backend request
   async updateUser(userId, userData) {
-    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
+    const csrfToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrftoken='))
+      ?.split('=')[1];
+
+    pretty_log(`Got CSRFToken from toggleUserStatus: ${csrfToken}`, "DEBUG")
+
+
+    const response = await fetch(
+      `${API_BASE_URL}/admin/${userId}/update_user/`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify(userData),
       },
-      body: JSON.stringify(userData),
-    });
+    );
+
+    const data = await response.json();
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to update user");
+      const error = new Error(data.error || "Failed to update user");
+
+      // Add the error fields if they exist component expects this format
+      if (typeof data === 'object' && Object.keys(data).length > 0) {
+        error.errors = data;
+      }
+
+      throw error;
     }
 
-    return response.json();
-  },
+    return data;
+  }
 }
