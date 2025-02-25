@@ -5,16 +5,29 @@ import { pretty_log, API_BASE_URL, MICROSOFT_FRONTEND_REDIRECT_URL, DEBUG } from
 export const admin = {
   // INFO: Toggle a Users status if a user is inactive they can no longer log in
   async toggleUserStatus(userId) {
+    // IMPORTANT: django needs a csrfToken for privileged commands when doing POST,PUT,PATCH, and DELETE
+    const csrfToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrftoken='))
+      ?.split('=')[1];
+
+    pretty_log(`Got CSRFToken from toggleUserStatus: ${csrfToken}`, "DEBUG")
+
     const response = await fetch(
-      `${API_BASE_URL}/users/${userId}/toggle-status/`,
+      `${API_BASE_URL}/admin/${userId}/toggle_status/`,
       {
         method: "PATCH",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken
+        }
       },
     );
 
     if (!response.ok) {
       const error = await response.json();
+      pretty_log(` Received when trying to toggle user status (id, error) ${userId} ${error}`, "ERROR")
       throw new Error(error.error || "Failed to toggle user status");
     }
 
@@ -75,22 +88,6 @@ export const admin = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Failed to update user");
-    }
-
-    return response.json();
-  },
-
-  // INFO: allows an admin to delete an accont
-  // BUG: maybe this shouldnt be allowed? a deactivated user is enough 
-  async deleteUser(userId) {
-    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to delete user");
     }
 
     return response.json();

@@ -3,7 +3,6 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import { useLocation } from "react-router-dom";
 import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { SidebarConfig } from "@/Pages/dashboard/Sidebar-Config";

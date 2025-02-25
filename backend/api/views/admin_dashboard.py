@@ -51,6 +51,7 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
             }
         )
 
+    # TODO: implement chart view or stat view for frontend its going to utilize this
     @action(detail=False, methods=["get"])
     def user_stats(self, _):
         """Get user statistics for dashboard"""
@@ -78,8 +79,25 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
     def toggle_status(self, request, pk=None):
         """Toggle user active status"""
         user = self.get_object()
+        # Can not deactivate account for admin
+        if user.is_superuser:
+            return Response(
+                {"error": "Cannot change status of superuser accounts"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # prevent deactivating self
+        # note that this case is covered by the one above since
+        # an admin cant deactivate an admin but this is added as extra precautions
+        if user.id == request.user.id:
+            return Response(
+                {"error": "Cannot change your own account status"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         if DEBUG:
             pretty_print(f"Toggling User Activity Status for {user.id}", "DEBUG")
+
         user.is_active = not user.is_active
         user.save()
         return Response(
