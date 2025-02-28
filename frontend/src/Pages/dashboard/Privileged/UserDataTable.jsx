@@ -17,13 +17,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import EditUserDialog from "@/Pages/dashboard/EditUserDialog"
+import EditUserDialog from "@/Pages/dashboard/Privileged/EditUserDialog"
 import { useEffect } from "react";
 
-const UserDataTable = ({ userData, onToggleStatus }) => {
+const UserDataTable = ({ userData, onToggleStatus, canToggleStatus = true }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [localUserData, setLocalUserData] = useState(userData)
 
@@ -54,6 +53,7 @@ const UserDataTable = ({ userData, onToggleStatus }) => {
             <TableHead className="w-[100px]">ID</TableHead>
             <TableHead>Username</TableHead>
             <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -64,12 +64,14 @@ const UserDataTable = ({ userData, onToggleStatus }) => {
               <TableCell className="font-medium">{user.id}</TableCell>
               <TableCell>{user.username}</TableCell>
               <TableCell>{user.email}</TableCell>
+              <TableCell>{user.role}</TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <Switch
                     id={`user-status-${user.id}`}
                     checked={user.is_active}
                     onCheckedChange={() => onToggleStatus(user.id)}
+                    disabled={!canToggleStatus}
                   />
                   <Label htmlFor={`user-status-${user.id}`}>
                     {user.is_active ? "Active" : "Inactive"}

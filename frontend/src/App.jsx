@@ -25,7 +25,7 @@ export default function App() {
           element=
           {
             <ProtectedRoute allowedRoles={["admin"]}>
-              {(userData) => <Dashboard.AdminDashboard userData={userData} />}
+              {(userData) => <Dashboard.SharedDashboard userData={userData} />}
             </ProtectedRoute>
           }
         />
@@ -34,14 +34,23 @@ export default function App() {
         {/*WARNING: We dont know what were building for a default user so send an error code for now  */}
 
         <Route
-          path="dashboard"
+          path="student/dashboard"
           element={
-            <ProtectedRoute allowedRoles={["user", "admin"]}>
-              {/* <UserDashboard /> */}
-              <Shared.ErrorCodes statuscode={202} />
+            <ProtectedRoute allowedRoles={["student", "admin"]}>
+              {(userData) => <Dashboard.SharedDashboard userData={userData} />}
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="staff/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["staff", "admin"]}>
+              {(userData) => <Dashboard.SharedDashboard userData={userData} />}
+            </ProtectedRoute>
+          }
+        />
+
 
         <Route
           path="unauthorized"
@@ -49,7 +58,6 @@ export default function App() {
         />
 
         {/* REROUTE all non defined paths to 404 status page */}
-
         <Route
           path="*"
           element={<Navigate to="/404" replace />}
@@ -108,11 +116,8 @@ const ProtectedRoute = ({
     return <Navigate to={redirectPath} replace />;
   }
 
-  // allowed roles if admin or user
-  if (
-    allowedRoles.length > 0 &&
-    !allowedRoles.includes(user.is_superuser ? "admin" : "user")
-  ) {
+  // Ensure user has at least one of the allowed roles
+  if (!allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }
 

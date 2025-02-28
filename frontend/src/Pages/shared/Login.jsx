@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ToastNotification";
 import { api } from "@/api/api.js"
 import { useMsal } from "@azure/msal-react";
+import { pretty_log } from "@/api/common_util.js"
 
 const Login = () => {
   const navigate = useNavigate();
@@ -25,21 +26,20 @@ const Login = () => {
       instance.clearCache();
 
       // Use popup flow instead of redirect to prevent automatic redirects
-      console.log("Starting Microsoft authentication for login");
+      pretty_log("Starting Microsoft authentication for login", "INFO");
       const loginResponse = await instance.loginPopup({
         scopes: ["User.Read", "email", "profile"],
         prompt: "select_account",
       });
 
-      console.log("Microsoft authentication successful, proceeding with login");
+      pretty_log("Microsoft authentication successful, proceeding with login", "INFO");
       if (loginResponse && loginResponse.accessToken) {
         try {
-          console.log("Login response account:", loginResponse.account);
-          console.log(
-            `Attempting login with email: ${loginResponse.account?.username}`,
-          );
+          pretty_log(`Login response account: ${loginResponse.account}`, "DEBUG");
+          pretty_log(
+            `Attempting login with email: ${loginResponse.account?.username}`, "DEBUG");
           const response = await api.auth.azureLogin(loginResponse.accessToken);
-          console.log("Login successful:", response);
+          pretty_log(`Azure Login successful:" ${response}`, "DEBUG");
 
           showToast(
             {
@@ -50,11 +50,23 @@ const Login = () => {
             "Welcome",
           );
 
-          if (response.user.is_superuser) {
-            navigate("/admin/dashboard");
-          } else {
-            navigate("/dashboard");
+
+          switch (response.user.role) {
+            case "admin":
+              navigate("/admin/dashboard")
+              break;
+            case "student":
+              navigate("/student/dashboard")
+              break;
+            case "staff":
+              navigate("/staff/dashboard")
+              break;
+            default:
+              // not yet implemented
+              navigate("/202")
+              break;
           }
+
         } catch (error) {
           console.error("Backend login error:", error);
           if (error.message.includes("not found")) {
@@ -128,11 +140,22 @@ const Login = () => {
       );
 
       // Route based on user role
-      if (response.user.is_superuser) {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/dashboard");
+      switch (response.user.role) {
+        case "admin":
+          navigate("/admin/dashboard")
+          break;
+        case "student":
+          navigate("/student/dashboard")
+          break;
+        case "staff":
+          navigate("/staff/dashboard")
+          break;
+        default:
+          // not yet implemented
+          navigate("/202")
+          break;
       }
+
     } catch (error) {
       showToast(
         {

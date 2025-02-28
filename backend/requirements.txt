@@ -9,4 +9,5 @@ social-auth-app-django==5.4.3
 django-auth-adfs==1.15.0
 colorama==0.4.6
 drf_spectacular
+pillow
 
