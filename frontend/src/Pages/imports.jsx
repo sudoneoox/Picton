@@ -2,7 +2,7 @@ import Registrations from "@/Pages/shared/Registrations.jsx";
 import Login from "@/Pages/shared/Login.jsx";
 import Home from "@/Pages/shared/Home.jsx";
 import ErrorCodes from "@/Pages/shared/ErrorCodes.jsx"
-import AdminDashboard from "@/Pages/dashboard/AdminDashboard.jsx";
+import SharedDashboard from "@/Pages/dashboard/Privileged/AdminDashboard.jsx";
 
 export const Shared = {
   Home,
@@ -12,5 +12,5 @@ export const Shared = {
 };
 
 export const Dashboard = {
-  AdminDashboard,
+  SharedDashboard,
 };

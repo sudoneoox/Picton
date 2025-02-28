@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectGroup, SelectValue } from "@/components/ui/select"
 import { api } from "@/api/api.js"
 import { useToast } from "@/components/ToastNotification"
 import { useState } from "react"
@@ -22,6 +23,7 @@ export function EditUserDialog({ user, onUserUpdated }) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
+    role: "",
   })
   // multiple errors can occur so a dict is better
   const [errors, setErrors] = useState({})
@@ -35,6 +37,7 @@ export function EditUserDialog({ user, onUserUpdated }) {
       setFormData({
         username: user.username || "",
         email: user.email || "",
+        role: user.role || "",
       })
       // clear previous errors
       setErrors({})
@@ -42,6 +45,7 @@ export function EditUserDialog({ user, onUserUpdated }) {
   }, [user, open])
 
   const handleInputChange = ((field, value) => {
+    pretty_log(`Input change on ${field}: ${value}`, "DEBUG")
     setFormData((prev) => ({ ...prev, [field]: value }))
     // clear error when user starts typing
     if (errors[field]) {
@@ -113,7 +117,7 @@ export function EditUserDialog({ user, onUserUpdated }) {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="username" className="text-right">
-                Name
+                Username
               </Label>
               <div className="col-span-3">
                 <Input
@@ -128,7 +132,7 @@ export function EditUserDialog({ user, onUserUpdated }) {
               </div>            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">
-                Username
+                Email
               </Label>
               <div className="col-span-3">
                 <Input
@@ -141,9 +145,33 @@ export function EditUserDialog({ user, onUserUpdated }) {
                 {errors.email && (
                   <p className="text-red-500 text-sm mt-1">{errors.email[0]}</p>
                 )}
-              </div>            </div>
+              </div>
+            </div>
           </div>
-          <DialogFooter>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="role" className="text-right">
+              Role
+            </Label>
+            <div className="col-span-3">
+              <Select
+                id="role"
+                // value={formData.role}
+                onValueChange={(value) => handleInputChange('role', value)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue value={formData.role} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="admin"> Admin </SelectItem>
+                    <SelectItem value="staff"> Staff </SelectItem>
+                    <SelectItem value="student"> Student </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="pt-5">
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save changes"}</Button>
           </DialogFooter>
         </form>

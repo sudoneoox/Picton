@@ -6,6 +6,9 @@ from .views import (
     AzureAuthViewSet,
     AdminDashboardViewSet,
     UserManagementViewSet,
+    FormApprovalViewSet,
+    FormSubmissionViewSet,
+    FormTemplateViewSet,
 )
 
 
@@ -14,6 +17,9 @@ router.register(r"azure", AzureAuthViewSet, basename="azure")
 # makes new url admin
 router.register(r"admin", AdminDashboardViewSet, basename="admin")
 router.register(r"users", UserManagementViewSet, basename="users")
+router.register(r"forms/templates", FormTemplateViewSet, basename="form-templates")
+router.register(r"forms/submission", FormSubmissionViewSet, basename="form-submissions")
+router.register(r"forms/approvals", FormApprovalViewSet, basename="form-approvals")
 
 
 urlpatterns = [

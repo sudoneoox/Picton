@@ -109,6 +109,11 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
         """Update user information"""
         user = self.get_object()
 
+        if DEBUG:
+            pretty_print(
+                f"Received Request inside {self._get_method_name()}: {request.data.items()}"
+            )
+
         # Check if trying to update a superuser
         if user.is_superuser and not request.user.is_superuser:
             return Response(
@@ -119,8 +124,27 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
         # Check for unique constraint violations before applying changes
         email = request.data.get("email")
         username = request.data.get("username")
+        role = request.data.get("role")
 
         errors = {}
+
+        if user.role != role:
+            pretty_print(
+                f"Changing {user.username}'s role from {user.role} -> {role}", "DEBUG"
+            )
+            # if changing someone to an admin make sure they have this is_superuser set to True
+            if role == "admin":
+                user.is_superuser = True
+
+            if role == "admin" or role == "staff":
+                user.is_staff = True
+
+            if user.role == "admin" and role != "admin":
+                pretty_print(
+                    "Cannot Change and admin's role to something with lower priveleges",
+                    "WARNING",
+                )
+                errors["role"] = ["Cannot deprivilege an admin"]
 
         # Check email uniqueness
         if email and email != user.email and User.objects.filter(email=email).exists():
