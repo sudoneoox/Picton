@@ -128,17 +128,16 @@ if DEBUG:
     pretty_print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}", "WARNING")
     pretty_print(f"DB_HOST: {os.getenv('DB_HOST')}", "WARNING")
     pretty_print(f"DB_PORT: {os.getenv('DB_PORT')}", "WARNING")
-    pretty_print(f"MICROSOFT_GRAPH_KEY: {os.getenv("MICROSOFT_GRAPH_KEY")}", "WARNING")
-    pretty_print(f"MICROSOFT_GRAPH_KEY: {os.getenv("MICROSOFT_GRAPH_KEY")}", "WARNING")
+    pretty_print(f"MICROSOFT_GRAPH_KEY: {os.getenv('MICROSOFT_GRAPH_KEY')}", "WARNING")
     pretty_print(
-        f"MICROSOFT_GRAPH_SECRET: {os.getenv("MICROSOFT_GRAPH_SECRET")}", "WARNING"
+        f"MICROSOFT_GRAPH_SECRET: {os.getenv('MICROSOFT_GRAPH_SECRET')}", "WARNING"
     )
     pretty_print(
-        f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv("MICROSOFT_BACKEND_REDIRECT_URL")}",
+        f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv('MICROSOFT_BACKEND_REDIRECT_URL')}",
         "WARNING",
     )
     pretty_print(
-        f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv("MICROSOFT_FRONTEND_REDIRECT_URL")}",
+        f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv('MICROSOFT_FRONTEND_REDIRECT_URL')}",
         "WARNING",
     )
 

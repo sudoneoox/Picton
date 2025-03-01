@@ -50,7 +50,6 @@ const Login = () => {
             "Welcome",
           );
 
-
           switch (response.user.role) {
             case "admin":
               navigate("/admin/dashboard")

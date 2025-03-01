@@ -70,13 +70,14 @@ class LoginView(views.APIView, MethodNameMixin):
         # TODO: use this response in the frontend to fill up dashboard
         return Response(
             {
-                "message": "Login Successful!",
+                "message": "Login successful",
                 "user": {
                     "id": user.id,
                     "email": user.email,
                     "is_superuser": user.is_superuser,
                     "firstName": user.first_name,
                     "lastName": user.last_name,
+                    "role": user.role,
                 },
             }
         )
