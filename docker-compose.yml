@@ -1,43 +1,34 @@
 services:
-
-####### FRONTEND ########
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    environment: 
-      - NODE_ENV=development
     ports:
-      - "8080:80"
+      - "3000:80"  # Map to port 3000 for frontend
+    restart: always
     depends_on:
-      database:
-        condition: service_healthy
-    command: ["npm", "run", "start"]
+      - backend
+    networks:
+      - app-network
+    environment:
+      - NODE_ENV=development
+      - VITE_ENV=development
 
-####### BACKEND ########
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
-
-####### POSTGRESQL ########
-  database:
-    image: postgres
-    restart: always
-    environment:
-      DB_PASSWORD: xxxx
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
-      interval: 1s
-      timeout: 5s
-      retries: 10
-  
+      - "8000:8000"  # Django runs on port 8000
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./backend:/app
+    environment:
+      - DEBUG=True
+    restart: always
+    networks:
+      - app-network
+    command: python manage.py runserver 0.0.0.0:8000
 
-
-volumes:
-  pgdata:
-   
+networks:
+  app-network:
+    driver: bridge
