@@ -137,7 +137,7 @@ class RegisterView(views.APIView, MethodNameMixin):
             first_name=data["firstName"],
             last_name=data["lastName"],
             phone_number=data.get("phone", ""),
-            role="basicuser",  # Enforce default role for registration
+            role="student",  # Enforce default role for registration
         )
 
         return Response(
