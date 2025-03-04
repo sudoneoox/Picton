@@ -221,6 +221,7 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
             pretty_print(
                 f"Token Decoded, issuer: {payload.get('iss', 'unknown')}", "DEBUG"
             )
+
         if not payload["iss"].startswith("https://sts.windows.net"):
             raise AuthenticationFailed("Invalid token Issuer")
 
@@ -249,7 +250,7 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
             password=random_password,
             first_name=first_name,
             last_name=last_name,
-            role="basicuser",
+            role="student",
         )
         pretty_print(f"Azure user created successfully, user_id: {user.id}", "INFO")
 
