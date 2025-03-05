@@ -1,4 +1,3 @@
-from enum import unique
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -11,6 +10,14 @@ ROLE_CHOICES = (
     ("admin", "Admin"),
     ("staff", "Staff"),
     # add additional roles as needed
+)
+
+FORM_STATUS_CHOICES = (
+    ("draft", "Draft"),
+    ("pending", "Pending Approval"),
+    ("returned", "Returned for Changes"),
+    ("approved", "Approved"),
+    ("rejected", "Rejected"),
 )
 
 
@@ -87,11 +94,12 @@ class FormTemplate(models.Model):
     """Stores template information for different form types"""
 
     name = models.CharField(max_length=100)
+
     description = models.TextField(blank=True)
-    # store latex template content
-    latex_template = models.TextField()
+
     # store field schema as JSON
     field_schema = models.JSONField(help_text="JSON schema defining form fields")
+
     # number of approvals required
     required_approvals = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -109,6 +117,7 @@ class FormApprovalWorkflow(models.Model):
     )
 
     approver_role = models.CharField(max_length=30, choices=ROLE_CHOICES)
+
     order = models.PositiveIntegerField(help_text="Order in the approval sequence")
 
     class Meta:
@@ -122,26 +131,32 @@ class FormApprovalWorkflow(models.Model):
 class FormSubmission(models.Model):
     """Stores submitted form data"""
 
-    STATUS_CHOICES = (
-        ("draft", "Draft"),
-        ("pending", "Pending Approval"),
-        ("returned", "Returned for Changes"),
-        ("approved", "Approved"),
-        ("rejected", "Rejected"),
-    )
-
+    # Form Template Used specifically their id
     form_template = models.ForeignKey(
         FormTemplate, on_delete=models.CASCADE, related_name="submissions"
     )
+
+    # Who submitted this form
     submitter = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="form_submissions"
     )
+
     form_data = models.JSONField(help_text="JSON data containing form field values")
-    current_pdf = models.FileField(upload_to="form_pdfs/", null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+
+    # The Updated PDF created from the users input
+    current_pdf = models.FileField(upload_to="forms/form_pdfs/", null=True, blank=True)
+
+    # To be able to retrieve back should be created from
+    # form_pdfs/{user_id}_{form_template_name}_{form_submission_id}
+    pdf_url = models.TextField(null=True)
+
+    # pending | approved | rejected | ...
+    status = models.CharField(
+        max_length=20, choices=FORM_STATUS_CHOICES, default="draft"
+    )
+
     current_step = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.form_template.name} - {self.submitter.username} ({self.status})"
@@ -153,10 +168,15 @@ class FormApproval(models.Model):
     form_submission = models.ForeignKey(
         FormSubmission, on_delete=models.CASCADE, related_name="approvals"
     )
+
+    # Who approved the form should have a staff or admin role
     approver = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="form_approvals"
     )
+
+    # Final Step Number
     step_number = models.PositiveIntegerField()
+
     decision = models.CharField(
         max_length=20,
         choices=(
@@ -165,8 +185,16 @@ class FormApproval(models.Model):
             ("rejected", "Rejected"),
         ),
     )
+    # In case it was Rejected
     comments = models.TextField(blank=True)
-    signed_pdf = models.FileField(upload_to="signed_pdfs/", null=True, blank=True)
+
+    # Should have staff signature
+    signed_pdf = models.FileField(upload_to="forms/signed_pdfs/", null=True, blank=True)
+
+    # to quickly locate should be similiar to
+    # {approver_id}_{form_type}_{approval_id}
+    signed_pdf_url = models.TextField(null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
