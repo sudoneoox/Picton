@@ -9,6 +9,8 @@ from .views import (
     FormApprovalViewSet,
     FormSubmissionViewSet,
     FormTemplateViewSet,
+    SubmitSignatureView,
+    CheckSignatureView,
 )
 
 
@@ -27,4 +29,6 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     # includes above router.register
     path("", include(router.urls)),
+    path("signature/check/", CheckSignatureView.as_view(), name="check-signature"),
+    path("signature/upload/", SubmitSignatureView.as_view(), name="upload-signature"),
 ]

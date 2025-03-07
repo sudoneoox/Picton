@@ -11,7 +11,7 @@ import { pretty_log } from "@/api/common_util.js"
 import dashboardConfig, { initializeConfig } from "@/Pages/dashboard/Common/dashboard_config"
 
 
-export default function SharedDashboard({ userData }: { userData: Object }) {
+export default function SharedDashboard({ userData }: { userData: object }) {
 
   // initialize config with user data
   const config = initializeConfig(userData)
@@ -23,25 +23,22 @@ export default function SharedDashboard({ userData }: { userData: Object }) {
 
   const [activeView, setActiveView] = useState(dashboardSettings.defaultValue);
 
-
   useEffect(() => {
     setActiveView(dashboardSettings.defaultView || "");
   }, [dashboardSettings])
-
-
-
-
 
   pretty_log(`Received Data in Dashboard ${JSON.stringify(userData, null, 4)}`, "DEBUG")
   pretty_log(`Current Active View ${activeView}`, "DEBUG")
 
   return (
     <SidebarProvider>
+
       {/* NOTE: SIDEBAR NAV HERE */}
       <SidebarNav
         onViewChange={setActiveView}
         userData={userData}
         dashboardConfig={config} />
+
       {/* NOTE: RIGHT OF SIDEBAR MAIN CONTENT */}
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2">

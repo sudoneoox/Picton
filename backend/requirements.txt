@@ -10,4 +10,6 @@ django-auth-adfs==1.15.0
 colorama==0.4.6
 drf_spectacular
 pillow
+PyLaTex==1.4.1
+python-magic==0.4.27
 

@@ -79,17 +79,17 @@ const roleConfigs = {
             permissions: ["student.view_forms"]
           }
         ],
-        dashboard: {
-          defaultView: "view-forms",
-          title: "Student Dashboard",
-        },
-        permissions: {
-          canEditUsers: false,
-          canCreateUsers: false,
-          canToggleUserStatus: false
-        }
       }
-    ]
+    ],
+    dashboard: {
+      defaultView: "",
+      title: "Student Dashboard",
+    },
+    permissions: {
+      canEditUsers: false,
+      canCreateUsers: false,
+      canToggleUserStatus: false
+    }
   }
 }
 
@@ -139,6 +139,7 @@ const dashboardConfig = {
 
   // Get dashboard config
   getDashboard() {
+    pretty_log(`RECEIVED in Get Dashboard ${JSON.stringify(this.config.dashboard, null, 4)}`, "DEBUG")
     return this.config.dashboard || { defaultView: "", title: "Dashboard" };
   }
 };

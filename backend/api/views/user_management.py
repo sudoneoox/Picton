@@ -55,7 +55,7 @@ class UserManagementViewSet(viewsets.ModelViewSet, MethodNameMixin):
             permission_classes = [AllowAny]
         elif self.action in ["update", "partial_update", "destroy"]:
             permission_classes = [IsAdminUser, IsAdminOrSelf]
-        elif self.action == "me":
+        elif self.action in ["me"]:
             permission_classes = [IsAuthenticated, IsActiveUser]
         else:
             permission_classes = [IsAuthenticated]
