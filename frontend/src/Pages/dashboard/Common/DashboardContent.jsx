@@ -7,11 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ToastNotification";
 import { pretty_log } from "@/api/common_util"
 import { act } from "react";
+import SubmitForms from "../Student/SubmitForms";
+import ViewForms from "./ViewForms";
 
 const DashboardContent = ({ activeView, dashboardConfig }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  pretty_log(`ACTIVE VIEW ${activeView}`, "INFO")
 
   // get permissions from dashboardConfig
   const permissions = dashboardConfig?.config?.permissions || {
@@ -31,7 +34,7 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
         switch (activeView) {
           case "manage-users":
             if (!permissions.canEditUsers) {
-              pretty_log("User does not have permission to manage users", "WARN");
+              pretty_log("User does not have permission to manage users", "WARNING");
               setData([]);
               break;
             }
@@ -49,7 +52,7 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
 
           case "create-users":
             if (!permissions.canCreateUsers) {
-              pretty_log("User does not have permission to create users", "WARN");
+              pretty_log("User does not have permission to create users", "WARNING");
               setData([]);
               break;
             }
@@ -59,6 +62,11 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
 
           // TODO: Handle other role-specific views here
           case "submit-forms":
+            response = await api.commonAPI.checkIfSignature();
+            if (response) {
+              pretty_log(`GOT RESPONSE WITH SIGNATURE ${JSON.stringify(response, null, 4)}`, "DEBUG")
+            }
+            break;
           case "view-forms":
           case "review-forms":
             // TODO::  Fetch appropriate data based on role
@@ -70,7 +78,7 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
             // If no active view, check if we should show a default
             const dashboard = dashboardConfig?.getDashboard();
             if (dashboard?.defaultView && dashboard.defaultView !== activeView) {
-              pretty_log(`Active view ${activeView} doesn't match default ${dashboard.defaultView}`, "WARN");
+              pretty_log(`Active view ${activeView} doesn't match default ${dashboard.defaultView}`, "WARNING");
             }
 
             setData([]);
@@ -183,6 +191,7 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
             </CardContent>
           </Card>
         );
+
       case "create-users":
         if (!permissions.canCreateUsers) {
           return (
@@ -206,8 +215,33 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
             </CardContent>
           </Card>
         );
+
       case "submit-forms":
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Submit A New Form</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SubmitForms />
+            </CardContent>
+
+          </Card>
+        )
+
       case "view-forms":
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>View Your Forms</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ViewForms />
+            </CardContent>
+
+          </Card>
+        )
+
       case "review-forms":
         return (
           <Card>
@@ -222,6 +256,8 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
           </Card>
         );
 
+      // IMPORTANT:
+      // TODO: MAKE THIS THE OVERVIEW FOR PERSON LOGGING IN
       default:
         return (
           <Card>

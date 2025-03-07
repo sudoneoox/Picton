@@ -4,6 +4,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
+from utils import signature_upload_path
 
 ROLE_CHOICES = (
     ("student", "Student"),
@@ -77,7 +78,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)  # needed for admin panel
 
     # signature to automatically sign forms
-    signature = models.ImageField(upload_to="signatures/", null=True, blank=True)
+    signature = models.ImageField(
+        upload_to=signature_upload_path, null=True, blank=True
+    )
+    has_signature = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 
