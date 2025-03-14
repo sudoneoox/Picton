@@ -1,5 +1,6 @@
 FROM node:18-alpine AS build
 
+# Install PNPM globally
 RUN npm install -g pnpm
 
 WORKDIR /app
@@ -7,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install
+# Install dependencies without modifying lockfile
+RUN pnpm install --frozen-lockfile
 
 # Copy the rest of the application
 COPY . .
@@ -22,8 +23,10 @@ RUN sed -i 's/"tsc -b && vite build"/"vite build"/g' package.json || true
 # Build app
 RUN pnpm build
 
+# ---- Serve the app using Nginx ----
 FROM nginx:alpine
 
+# Copy built files to Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # IMPORTANT: nginx config file
