@@ -22,6 +22,10 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedForm, setSelectedForm] = useState(null);
   const [formData, setFormData] = useState({
+    // NOTE: common fields
+    first_name: "",
+    middle_name: "",
+    last_name: "",
     student_id: "",
     phone_number: "",
     email: "",
@@ -29,6 +33,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
     academic_career: "",
     year: new Date().getFullYear().toString(),
     season: "",
+    // NOTE: term withdrawal
     initials: {
       financial_aid: false,
       international_student: false,
@@ -50,7 +55,12 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
       student_housing: "",
       dining_services: "",
       parking_transportation: "",
-    }
+    },
+    // NOTE: Graduate Petition 
+    petition_purpose: "",
+    petition_explanation: "",
+    supporting_document: null,
+
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewPdf, setPreviewPdf] = useState(null);
@@ -62,6 +72,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
       setSelectedForm(null);
       setFormData({
         first_name: "",
+        middle_name: "",
         last_name: "",
         student_id: "",
         phone_number: "",
@@ -114,6 +125,15 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
     }));
   };
 
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData(prev => ({
+        ...prev,
+        supporting_document: e.target_files[0]
+      }))
+    }
+  };
+
   const handleInitialsChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -146,7 +166,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
       if (currentStep === 2) {
         // Validate step 2 required fields for term withdrawal
         if (selectedForm === "withdrawal") {
-          const requiredFields = ["student_id", "phone_number", "email", "program_plan", "academic_career", "season"];
+          const requiredFields = ['first_name', 'last_name', "student_id", "phone_number", "email", "program_plan", "academic_career", "season"];
           const missingFields = requiredFields.filter(field => !formData[field]);
 
           if (missingFields.length > 0) {
@@ -154,6 +174,23 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
             return;
           }
         }
+
+        if (selectedForm === "graduate") {
+          const requiredFields = ['first_name', 'last_name', 'stduent_id', 'phone_number', 'email', 'academic_career', 'program_plan', 'season', 'petition_purpose']
+          const missingFields = requiredFields.filter(field => !formData[field])
+
+          if (missingFields.length > 0) {
+            showToast({ error: "Please fill in all required fields" }, 'error')
+            return;
+          }
+          //NOTE:  if other is selected as purpose, explanation is required
+          if (formData.petition_purpose === "other" && !formData.petition_explanation) {
+            showToast({ error: "Please provide an explanation for your petition" }, "error");
+            return;
+          }
+        }
+
+
 
         // Generate PDF preview
         handleGeneratePreview();
@@ -272,6 +309,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
 
       case 2:
         return selectedForm === "withdrawal" ? (
+          // IMPORTANT: term withdrawal form 
           <div className="flex flex-col space-y-4">
             <DialogHeader>
               <DialogTitle>Term Withdrawal Form</DialogTitle>
@@ -283,6 +321,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
 
+              {/* FIRST NAME */}
               <div className="md:col-span-1">
                 <Label htmlFor="first_name">First Name<span className="text-red-500">*</span></Label>
                 <Input
@@ -294,6 +333,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
+              {/* LAST NAME */}
               <div className="md:col-span-1">
                 <Label htmlFor="last_name">Last Name<span className="text-red-500">*</span></Label>
                 <Input
@@ -305,8 +345,19 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
+              {/* MIDDLE NAME */}
+              <div className="md:col-span-1">
+                <Label htmlFor="middle_name">Middle Name<span className="text-red-500">*</span></Label>
+                <Input
+                  id="middle_name"
+                  value={formData.middle_name}
+                  onChange={(e) => handleInputChange("middle_name", e.target.value)}
+                  placeholder="Middle Name (Optional)"
+                />
+              </div>
 
-              <div className="md:col-span-2">
+              {/* STUDENT ID */}
+              <div className="md:col-span-1">
                 <Label htmlFor="student_id">MyUH ID<span className="text-red-500">*</span></Label>
                 <Input
                   id="student_id"
@@ -317,6 +368,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
+              {/* PHONE NUMBER */}
               <div>
                 <Label htmlFor="phone_number">Phone Number<span className="text-red-500">*</span></Label>
                 <Input
@@ -328,6 +380,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
+              {/* SCHOOL EMAIL  */}
               <div>
                 <Label htmlFor="email">Student Email<span className="text-red-500">*</span></Label>
                 <Input
@@ -340,6 +393,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
+              {/* PROGRAM PLAN */}
               <div className="md:col-span-2">
                 <Label htmlFor="program_plan">Program Plan<span className="text-red-500">*</span></Label>
                 <Input
@@ -351,6 +405,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
+              {/* ACADEMIC CAREER  */}
               <div className="md:col-span-2">
                 <Label>Academic Career<span className="text-red-500">*</span></Label>
                 <RadioGroup
@@ -369,6 +424,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 </RadioGroup>
               </div>
 
+              {/* WITHDRAWAL YEAR */}
               <div>
                 <Label htmlFor="year">Withdrawal Year<span className="text-red-500">*</span></Label>
                 <Input
@@ -379,6 +435,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
+              {/* WITHDRAWAL TERM */}
               <div>
                 <Label>Withdrawal Term<span className="text-red-500">*</span></Label>
                 <RadioGroup
@@ -648,20 +705,265 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
             </DialogFooter>
           </div>
         ) : (
+          // IMPORTANT: Graduate/Profesional Petition Form 
           <div className="flex flex-col space-y-4">
             <DialogHeader>
-              <DialogTitle>Graduate Petition Form</DialogTitle>
+              <DialogTitle>Graduate/Professional Petition Form</DialogTitle>
               <DialogDescription>
-                This form is not yet implemented.
+                Please fill out all required fields
               </DialogDescription>
             </DialogHeader>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+              {/* Name Fields */}
+              <div>
+                <Label htmlFor="first_name">First Name<span className="text-red-500">*</span></Label>
+                <Input
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={(e) => handleInputChange("first_name", e.target.value)}
+                  placeholder="Enter your first name"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="last_name">Last Name<span className="text-red-500">*</span></Label>
+                <Input
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={(e) => handleInputChange("last_name", e.target.value)}
+                  placeholder="Enter your last name"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="middle_name">Middle Name</Label>
+                <Input
+                  id="middle_name"
+                  value={formData.middle_name}
+                  onChange={(e) => handleInputChange("middle_name", e.target.value)}
+                  placeholder="Enter your middle name (optional)"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="student_id">MyUH ID<span className="text-red-500">*</span></Label>
+                <Input
+                  id="student_id"
+                  value={formData.student_id}
+                  onChange={(e) => handleInputChange("student_id", e.target.value)}
+                  placeholder="Enter your student ID"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="phone_number">Phone Number<span className="text-red-500">*</span></Label>
+                <Input
+                  id="phone_number"
+                  value={formData.phone_number}
+                  onChange={(e) => handleInputChange("phone_number", e.target.value)}
+                  placeholder="(xxx) xxx-xxxx"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="email">School Email<span className="text-red-500">*</span></Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder="your.email@example.com"
+                  required
+                />
+              </div>
+
+              {/* Academic Information */}
+              <div className="md:col-span-2">
+                <Label htmlFor="program_plan">Program Plan<span className="text-red-500">*</span></Label>
+                <Input
+                  id="program_plan"
+                  value={formData.program_plan}
+                  onChange={(e) => handleInputChange("program_plan", e.target.value)}
+                  placeholder="Enter your program plan"
+                  required
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <Label>Academic Career<span className="text-red-500">*</span></Label>
+                <RadioGroup
+                  value={formData.academic_career}
+                  onValueChange={(value) => handleInputChange("academic_career", value)}
+                  className="flex space-x-4 mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="undergraduate" id="grad_undergraduate" />
+                    <Label htmlFor="grad_undergraduate">Undergraduate</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="graduate" id="grad_graduate" />
+                    <Label htmlFor="grad_graduate">Graduate</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="law" id="grad_law" />
+                    <Label htmlFor="grad_law">Law</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Petition Details */}
+              <div className="md:col-span-2">
+                <Label>Petition Effective<span className="text-red-500">*</span></Label>
+                <div className="flex flex-wrap gap-4">
+                  <div>
+                    <Label htmlFor="year">Year<span className="text-red-500">*</span></Label>
+                    <Input
+                      id="year"
+                      value={formData.year}
+                      onChange={(e) => handleInputChange("year", e.target.value)}
+                      placeholder="YYYY"
+                      className="w-24"
+                    />
+                  </div>
+
+                  <RadioGroup
+                    value={formData.season}
+                    onValueChange={(value) => handleInputChange("season", value)}
+                    className="flex space-x-4 items-end"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Fall" id="grad_fall" />
+                      <Label htmlFor="grad_fall">Fall</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Spring" id="grad_spring" />
+                      <Label htmlFor="grad_spring">Spring</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Summer" id="grad_summer" />
+                      <Label htmlFor="grad_summer">Summer</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              {/* Purpose of Petition */}
+              <div className="md:col-span-2 mt-4">
+                <Label>Purpose of Petition<span className="text-red-500">*</span></Label>
+                <RadioGroup
+                  value={formData.petition_purpose}
+                  onValueChange={(value) => handleInputChange("petition_purpose", value)}
+                  className="space-y-2 mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="update_program_status" id="purpose_1" />
+                    <Label htmlFor="purpose_1">Update program status/action (term activate, discontinue, etc)</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="admission_status_change" id="purpose_2" />
+                    <Label htmlFor="purpose_2">Admission status change (conditional, unconditional)</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="add_concurrent_degree" id="purpose_3" />
+                    <Label htmlFor="purpose_3">Add new concurrent degree or certificate (career/program/plan)</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="change_degree_objective" id="purpose_4" />
+                    <Label htmlFor="purpose_4">Change current degree objective (program/plan)</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="degree_requirements_exception" id="purpose_5" />
+                    <Label htmlFor="purpose_5">Degree requirements exception or approved course substitution</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="leave_of_absence" id="purpose_6" />
+                    <Label htmlFor="purpose_6">Leave of absence (include specific term)</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="reinstate_discontinued" id="purpose_7" />
+                    <Label htmlFor="purpose_7">Reinstate to discontinued career (provide explanation)</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="request_to_graduate" id="purpose_8" />
+                    <Label htmlFor="purpose_8">Request to apply to graduate after the late filing period deadline</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="change_admin_term" id="purpose_9" />
+                    <Label htmlFor="purpose_9">Change admin term</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="early_submission" id="purpose_10" />
+                    <Label htmlFor="purpose_10">Early submission of thesis/dissertation</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="other" id="purpose_11" />
+                    <Label htmlFor="purpose_11">Other (explain below)</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Explanation */}
+              <div className="md:col-span-2 mt-2">
+                <Label htmlFor="petition_explanation">
+                  Explanation of Request
+                  {formData.petition_purpose === "other" && <span className="text-red-500">*</span>}
+                </Label>
+                <textarea
+                  id="petition_explanation"
+                  value={formData.petition_explanation}
+                  onChange={(e) => handleInputChange("petition_explanation", e.target.value)}
+                  placeholder="Provide details about your request"
+                  className="w-full min-h-[100px] p-2 border rounded mt-1"
+                />
+              </div>
+
+              {/* Supporting Documents */}
+              <div className="md:col-span-2">
+                <Label htmlFor="supporting_document">Supporting Documents (optional)</Label>
+                <Input
+                  id="supporting_document"
+                  type="file"
+                  onChange={handleFileChange}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Upload any relevant supporting documentation for your petition
+                </p>
+              </div>
+
+              {/* Date automatically generated */}
+              <div className="md:col-span-2 mt-2">
+                <p className="text-sm">
+                  Form Date: <span className="font-medium">{new Date().toLocaleDateString()}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Your signature will be automatically added from your account
+                </p>
+              </div>
+            </div>
+
             <DialogFooter>
               <Button variant="outline" onClick={handlePrevStep}>Back</Button>
-              <Button variant="outline" onClick={onClose}>Close</Button>
+              <Button onClick={handleNextStep} disabled={isSubmitting}>
+                {isSubmitting ? "Generating Preview..." : "Preview Form"}
+              </Button>
             </DialogFooter>
-          </div>
-        );
+          </div>);
 
       case 3:
         return (
