@@ -11,8 +11,6 @@ from utils import MethodNameMixin, pretty_print, FormPDFGenerator
 from django.conf import settings
 from django.db.models import OuterRef
 
-DEBUG = settings.DEBUG
-
 
 class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     """ViewSet for form submissions"""
@@ -31,10 +29,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         Generate a preview PDF from form data without storing it to the database
         So user can preview pdf inside their dashboard
         """
-        if DEBUG:
-            pretty_print(
-                f"Generating form preview from {self._get_method_name()}", "INFO"
-            )
+        pretty_print(f"Generating form preview from {self._get_method_name()}", "INFO")
 
         # NOTE: The Form Type (Graduate Petition | Term Withdrawal)
         # More should be added in the future
@@ -46,6 +41,11 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         # we should add error handling for this in its own class
         # different forms require different optional and required fields
         form_data = request.data.get("form_data")
+
+        pretty_print(
+            f"GOT DATA FROM FORM PREVIEW form_template_id: {form_template_id} form_data: {form_data}",
+            "DEBUG",
+        )
 
         # Validate required fields
         if not form_template_id or not form_data:
@@ -85,8 +85,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 {"error": "Form template not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            if DEBUG:
-                pretty_print(f"Error generating preview: {str(e)}", "ERROR")
+            pretty_print(f"Error generating preview: {str(e)}", "ERROR")
             return Response(
                 {"error": f"Error generating preview: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -122,11 +121,10 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         form_submission.current_step = approval_workflows.first().order
         form_submission.save()
 
-        if DEBUG:
-            pretty_print(
-                f"Form {form_submission.id} submitted for approval, current step: {form_submission.current_step}",
-                "INFO",
-            )
+        pretty_print(
+            f"Form {form_submission.id} submitted for approval, current step: {form_submission.current_step}",
+            "INFO",
+        )
 
         # Generate final PDF with official timestamp
         self._generate_pdf(form_submission.form_template.name, form_submission)
@@ -263,8 +261,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
             return pdf_file
         except Exception as e:
-            if DEBUG:
-                pretty_print(f"Error generating PDF: {str(e)}", "ERROR")
+            pretty_print(f"Error generating PDF: {str(e)}", "ERROR")
             return None
 
     def _generate_signed_pdf(self, form_submission, approval):
@@ -276,8 +273,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             # WARNING: for right now just send back current pdf
             return form_submission.current_pdf
         except Exception as e:
-            if DEBUG:
-                pretty_print(f"Error generating signed PDF: {str(e)}", "ERROR")
+            pretty_print(f"Error generating signed PDF: {str(e)}", "ERROR")
             return None
 
     def get_queryset(self):

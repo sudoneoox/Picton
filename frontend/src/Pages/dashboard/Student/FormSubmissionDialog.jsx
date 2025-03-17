@@ -175,8 +175,9 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
           }
         }
 
+        // Validate required fields for gradudate petition
         if (selectedForm === "graduate") {
-          const requiredFields = ['first_name', 'last_name', 'stduent_id', 'phone_number', 'email', 'academic_career', 'program_plan', 'season', 'petition_purpose']
+          const requiredFields = ['first_name', 'last_name', 'student_id', 'phone_number', 'email', 'program_plan', 'academic_career', 'season', 'petition_purpose']
           const missingFields = requiredFields.filter(field => !formData[field])
 
           if (missingFields.length > 0) {
@@ -204,7 +205,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
     try {
       setIsSubmitting(true);
 
-      // Determine form template ID based on selection (you would need to get actual IDs from your API)
+      // Determine form template ID based on selection 
       const templateId = selectedForm === "withdrawal" ? 2 : 1; // Assuming IDs from backend
 
       const response = await api.student.previewForm({
