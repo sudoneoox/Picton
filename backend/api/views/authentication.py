@@ -21,8 +21,6 @@ from ..serializers import LoginSerializer
 from ..models import User
 from django.conf import settings
 
-DEBUG = settings.DEBUG
-
 
 # TODO: expand to also interchangebly accept either username or email
 class LoginView(views.APIView, MethodNameMixin):
@@ -34,10 +32,9 @@ class LoginView(views.APIView, MethodNameMixin):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if DEBUG:
-            pretty_print(
-                f"Received Request from {self._get_method_name()}: {request}", "DEBUG"
-            )
+        pretty_print(
+            f"Received Request from {self._get_method_name()}: {request}", "DEBUG"
+        )
 
         username = request.data.get("username")
         password = request.data.get("password")
@@ -91,10 +88,9 @@ class RegisterView(views.APIView, MethodNameMixin):
     def post(self, request):
         data = request.data
 
-        if DEBUG:
-            pretty_print(
-                f"Received Request from {self._get_method_name()}: {data}", "DEBUG"
-            )
+        pretty_print(
+            f"Received Request from {self._get_method_name()}: {data}", "DEBUG"
+        )
         # Validate required fields
         required_fields = ["email", "username", "password", "firstName", "lastName"]
         for field in required_fields:
@@ -166,10 +162,9 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
             token, options={"verify_signature": False}, algorithms=["RS256"]
         )
 
-        if DEBUG:
-            pretty_print(
-                f"Token payload from {self._get_method_name()}: {payload}", "DEBUG"
-            )
+        pretty_print(
+            f"Token payload from {self._get_method_name()}: {payload}", "DEBUG"
+        )
 
         if not payload["iss"].startswith("https://sts.windows.net"):
             raise AuthenticationFailed("Invalid token issuer")
@@ -217,10 +212,7 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
         payload = jwt.decode(
             token, options={"verify_signature": False}, algorithms=["RS256"]
         )
-        if DEBUG:
-            pretty_print(
-                f"Token Decoded, issuer: {payload.get('iss', 'unknown')}", "DEBUG"
-            )
+        pretty_print(f"Token Decoded, issuer: {payload.get('iss', 'unknown')}", "DEBUG")
 
         if not payload["iss"].startswith("https://sts.windows.net"):
             raise AuthenticationFailed("Invalid token Issuer")

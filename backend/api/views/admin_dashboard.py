@@ -7,10 +7,6 @@ from .common import AdminRequiredMixin
 from ..models import User
 from utils import pretty_print, MethodNameMixin
 
-from os import getenv
-
-DEBUG = getenv("DEBUG")
-
 
 class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNameMixin):
     """
@@ -32,11 +28,10 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
         page_size = int(request.query_params.get("page_size", 10))
         offset = (page - 1) * page_size
 
-        if DEBUG:
-            pretty_print(
-                f"Calculated (page,page_size,offset) for {self._get_method_name()}: {page, page_size, offset}",
-                "DEBUG",
-            )
+        pretty_print(
+            f"Calculated (page,page_size,offset) for {self._get_method_name()}: {page, page_size, offset}",
+            "DEBUG",
+        )
 
         total_users = User.objects.count()
         users = User.objects.all().order_by("id")[offset : offset + page_size]
@@ -95,8 +90,7 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if DEBUG:
-            pretty_print(f"Toggling User Activity Status for {user.id}", "DEBUG")
+        pretty_print(f"Toggling User Activity Status for {user.id}", "DEBUG")
 
         user.is_active = not user.is_active
         user.save()
@@ -109,10 +103,9 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
         """Update user information"""
         user = self.get_object()
 
-        if DEBUG:
-            pretty_print(
-                f"Received Request inside {self._get_method_name()}: {request.data.items()}"
-            )
+        pretty_print(
+            f"Received Request inside {self._get_method_name()}: {request.data.items()}"
+        )
 
         # Check if trying to update a superuser
         if user.is_superuser and not request.user.is_superuser:
@@ -160,18 +153,14 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
 
         # If found constraint violations, return early with error messages
         if errors:
-            if DEBUG:
-                pretty_print(f"Validation errors for user {user.id}: {errors}", "DEBUG")
+            pretty_print(f"Validation errors for user {user.id}: {errors}", "DEBUG")
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
         # No errors found continue
         serializer = self.get_serializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            if DEBUG:
-                pretty_print(
-                    f"Updated user {user.id} with data: {request.data}", "DEBUG"
-                )
+            pretty_print(f"Updated user {user.id} with data: {request.data}", "DEBUG")
             return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

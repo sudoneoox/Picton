@@ -8,8 +8,6 @@ from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
-DEBUG = settings.DEBUG
-
 
 @method_decorator(csrf_exempt, name="dispatch")
 class CheckSignatureView(APIView):
@@ -18,16 +16,10 @@ class CheckSignatureView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        if DEBUG:
-            pretty_print(
-                f"Checking signature for user: {request.user.username}", "DEBUG"
-            )
+        pretty_print(f"Checking signature for user: {request.user.username}", "DEBUG")
 
-        if DEBUG:
-            pretty_print(
-                f"User authenticated: {request.user.is_authenticated}", "DEBUG"
-            )
-            pretty_print(f"Request session: {request.session.items()}", "DEBUG")
+        pretty_print(f"User authenticated: {request.user.is_authenticated}", "DEBUG")
+        pretty_print(f"Request session: {request.session.items()}", "DEBUG")
 
         has_signature = request.user.has_signature
         return Response({"has_signature": has_signature})
@@ -43,12 +35,9 @@ class SubmitSignatureView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        if DEBUG:
-            pretty_print(
-                f"Uploading signature for user: {request.user.username}", "DEBUG"
-            )
-            pretty_print(f"Request FILES: {request.FILES}", "DEBUG")
-            pretty_print(f"Request data: {request.data}", "DEBUG")
+        pretty_print(f"Uploading signature for user: {request.user.username}", "DEBUG")
+        pretty_print(f"Request FILES: {request.FILES}", "DEBUG")
+        pretty_print(f"Request data: {request.data}", "DEBUG")
 
         if "signature" not in request.FILES:
             return Response(

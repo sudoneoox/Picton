@@ -4,13 +4,15 @@ import { pretty_log } from "@/api/common_util";
 import SignatureDialog from "@/Pages/dashboard/Common/SignatureDialog";
 import { Button } from "@/components/ui/button"
 import FormSubmissionDialog from "@/Pages/dashboard/Student/FormSubmissionDialog"
+
+
 const SubmitForms = () => {
   const [hasSignature, setHasSignature] = useState(true); // Optimistic
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [showFormDialog, setShowFormDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user has a signature on component mount
+  // NOTE: Check if user has a signature on component mount
   useEffect(() => {
     const checkSignature = async () => {
       setIsLoading(true);
@@ -18,7 +20,7 @@ const SubmitForms = () => {
         const response = await api.commonAPI.checkIfSignature();
         setHasSignature(response?.has_signature || false);
 
-        // If no signature, show dialog automatically
+        // NOTE: If no signature, show dialog automatically so that they can submit their signature
         if (!response?.has_signature) {
           setShowSignatureDialog(true);
         }

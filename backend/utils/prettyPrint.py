@@ -1,4 +1,6 @@
 from colorama import Fore, Back, Style, init  # pretty print colors
+from django.conf import settings
+import os
 
 
 # For Windows
@@ -16,8 +18,11 @@ def pretty_print(console_text: str, text_type: str = "DEBUG") -> None:
     Example:
         >>> pretty_print('this is an info message', 'INFO')
     """
-    fg, bg, style = (None, None, None)
+    if not os.getenv("DEBUG"):
+        print("DEBUG SET TO FALSE NOT PRETTY_PRINTING")
+        return
 
+    fg, bg, style = (None, None, None)
     # choosing appropriate colors
     if text_type.upper() == "DEBUG":
         fg, bg, style = Fore.CYAN, None, Style.DIM

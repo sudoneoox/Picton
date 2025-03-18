@@ -105,25 +105,24 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-if DEBUG:
-    pretty_print("Got .env THIS FILE SHOULD NOT BE EMPTY", "WARNING")
-    pretty_print(f"DB_NAME: {os.getenv('DB_NAME')}", "WARNING")
-    pretty_print(f"DB_USER: {os.getenv('DB_USER')}", "WARNING")
-    pretty_print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}", "WARNING")
-    pretty_print(f"DB_HOST: {os.getenv('DB_HOST')}", "WARNING")
-    pretty_print(f"DB_PORT: {os.getenv('DB_PORT')}", "WARNING")
-    pretty_print(f"MICROSOFT_GRAPH_KEY: {os.getenv('MICROSOFT_GRAPH_KEY')}", "WARNING")
-    pretty_print(
-        f"MICROSOFT_GRAPH_SECRET: {os.getenv('MICROSOFT_GRAPH_SECRET')}", "WARNING"
-    )
-    pretty_print(
-        f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv('MICROSOFT_BACKEND_REDIRECT_URL')}",
-        "WARNING",
-    )
-    pretty_print(
-        f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv('MICROSOFT_FRONTEND_REDIRECT_URL')}",
-        "WARNING",
-    )
+pretty_print("Got .env THIS FILE SHOULD NOT BE EMPTY", "WARNING")
+pretty_print(f"DB_NAME: {os.getenv('DB_NAME')}", "WARNING")
+pretty_print(f"DB_USER: {os.getenv('DB_USER')}", "WARNING")
+pretty_print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}", "WARNING")
+pretty_print(f"DB_HOST: {os.getenv('DB_HOST')}", "WARNING")
+pretty_print(f"DB_PORT: {os.getenv('DB_PORT')}", "WARNING")
+pretty_print(f"MICROSOFT_GRAPH_KEY: {os.getenv('MICROSOFT_GRAPH_KEY')}", "WARNING")
+pretty_print(
+    f"MICROSOFT_GRAPH_SECRET: {os.getenv('MICROSOFT_GRAPH_SECRET')}", "WARNING"
+)
+pretty_print(
+    f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv('MICROSOFT_BACKEND_REDIRECT_URL')}",
+    "WARNING",
+)
+pretty_print(
+    f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv('MICROSOFT_FRONTEND_REDIRECT_URL')}",
+    "WARNING",
+)
 
 
 DATABASES = {
