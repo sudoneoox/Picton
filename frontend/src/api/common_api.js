@@ -1,72 +1,52 @@
-import { pretty_log, API_BASE_URL, MICROSOFT_FRONTEND_REDIRECT_URL, DEBUG } from "@/api/common_util"
+/**
+ * Common API Service
+ * Handles shared application functionality including:
+ * - Signature verification
+ * - Signature uploads
+ */
+import { API_BASE_URL } from "@/api/common_util";
+import { securedFetch } from "./http";
+import { pretty_log } from "./common_util";
 
 export const commonAPI = {
+  /**
+   * Check if user has a valid signature
+   * @returns {Promise<Object>} Signature status
+   */
   async checkIfSignature() {
     try {
-      // Get CSRF token
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrftoken='))
-        ?.split('=')[1] || '';
-
-      pretty_log(`Using CSRF token: ${csrfToken}`, "DEBUG");
-
-      const response = await fetch(`${API_BASE_URL}/signature/check/`, {
+      const data = await securedFetch(`${API_BASE_URL}/signature/check/`, {
         method: "POST",
-        credentials: "include",
-        headers: {
-          'Content-Type': "application/json",
-          'X-CSRFToken': csrfToken
-        },
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        pretty_log(`Signature check failed: ${JSON.stringify(errorData)}`, "ERROR");
-        throw new Error(errorData.error || "Failed to check signature status");
-      }
-
-      const data = await response.json();
-      pretty_log(`Signature check response: ${JSON.stringify(data)}`, "DEBUG");
+      pretty_log("Signature check successful", "DEBUG");
       return data;
     } catch (error) {
-      pretty_log(`Error in checkIfSignature: ${error.message}`, "ERROR");
+      pretty_log(`Signature check failed: ${error.message}`, "ERROR");
       throw error;
     }
   },
 
+  /**
+   * Submit a new signature (handles multipart/form-data)
+   * @param {FormData} formData - File upload data
+   * @returns {Promise<Object>} Upload result
+   */
   async submitSignature(formData) {
     try {
-      // Get CSRF token
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrftoken='))
-        ?.split('=')[1] || '';
-
-      pretty_log(`Using CSRF token for upload: ${csrfToken}`, "DEBUG");
-
-      const response = await fetch(`${API_BASE_URL}/signature/upload/`, {
+      const data = await securedFetch(`${API_BASE_URL}/signature/upload/`, {
         method: "POST",
-        credentials: "include",
+        body: formData,
         headers: {
-          "X-CSRFToken": csrfToken
-        },
-        body: formData
+          // Explicitly unset Content-Type for FormData boundary
+          'Content-Type': undefined
+        }
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        pretty_log(`Signature upload failed: ${JSON.stringify(errorData)}`, "ERROR");
-        throw new Error(errorData.error || "Failed to upload signature");
-      }
-
-      const data = await response.json();
-      pretty_log(`Signature upload response: ${JSON.stringify(data)}`, "DEBUG");
+      pretty_log("Signature upload successful", "DEBUG");
       return data;
     } catch (error) {
-      pretty_log(`Error in submitSignature: ${error.message}`, "ERROR");
+      pretty_log(`Signature upload failed: ${error.message}`, "ERROR");
       throw error;
     }
   }
-}
+};

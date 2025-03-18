@@ -1,126 +1,98 @@
-import { pretty_log, API_BASE_URL, MICROSOFT_FRONTEND_REDIRECT_URL, DEBUG } from "@/api/common_util"
+/**
+ * Authentication Service
+ * Handles user authentication flows including:
+ * - Local username/password login
+ * - Azure AD login/registration
+ * - User session management
+ */
+import { API_BASE_URL } from "@/api/common_util";
+import { securedFetch } from "./http";
+import { pretty_log } from "./common_util";
 
 export const auth = {
-
-  // NOTE: User Authentication API
+  /**
+   * Authenticate user with username/password
+   * @param {string} username 
+   * @param {string} password 
+   * @returns {Promise<Object>} User data
+   */
   async loginUser(username, password) {
-    pretty_log("Entering loginUser API", "INFO");
-    const response = await fetch(`${API_BASE_URL}/login/`, {
-      method: "POST",
-      credentials: "include", // for sessions cookies,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    });
-    pretty_log("Received Request inside login_user", "DEBUG");
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Login failed");
-    }
-
-    const data = await response.json();
-    return data;
-  },
-
-  // NOTE: Authentication middleware to passthrough dashboard
-  // makes sure that a non admin cannot access an admin dashboard
-  async getCurrentUser() {
-    const response = await fetch(`${API_BASE_URL}/users/me/`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to fetch user profile");
-    }
-
-    return response.json();
-  },
-
-  // NOTE: User Registration API
-  async registerUser(userData) {
-    const response = await fetch(`${API_BASE_URL}/register/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(userData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Registration failed");
-    }
-
-    return response.json();
-  },
-
-
-  // NOTE: Microsoft Authentication API
-  async azureLogin(token) {
-    const response = await fetch(`${API_BASE_URL}/azure/login/`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ token }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Azure login failed");
-    }
-
-    return response.json();
-  },
-
-  // NOTE: Microsoft Registration API
-  async azureRegister(token) {
     try {
-      console.log("Sending token to backend:", token.substring(0, 20) + "...");
-
-      const response = await fetch(`${API_BASE_URL}/azure/register/`, {
+      return await securedFetch(`${API_BASE_URL}/login/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        body: JSON.stringify({ username, password }),
+      });
+    } catch (error) {
+      pretty_log(`Login failed: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Authentication failed");
+    }
+  },
+
+  /**
+   * Get current authenticated user profile
+   * @returns {Promise<Object>} User data
+   */
+  async getCurrentUser() {
+    try {
+      return await securedFetch(`${API_BASE_URL}/users/me/`, {
+        method: "GET",
+      });
+    } catch (error) {
+      pretty_log("Session check failed", "WARNING");
+      throw new Error(error.message || "Session validation failed");
+    }
+  },
+
+  /**
+   * Register new user account
+   * @param {Object} userData - Registration data
+   * @returns {Promise<Object>} Created user data
+   */
+  async registerUser(userData) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/register/`, {
+        method: "POST",
+        body: JSON.stringify(userData),
+      });
+    } catch (error) {
+      pretty_log(`Registration failed: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Account creation failed");
+    }
+  },
+
+  /**
+   * Authenticate using Azure AD token
+   * @param {string} token - Microsoft identity token
+   * @returns {Promise<Object>} User data
+   */
+  async azureLogin(token) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/azure/login/`, {
+        method: "POST",
         body: JSON.stringify({ token }),
       });
-
-      // Log response status
-      console.log("Backend registration response status:", response.status);
-
-      const responseText = await response.text();
-      console.log("Raw response body:", responseText);
-
-      if (!response.ok) {
-        try {
-          const errorData = JSON.parse(responseText);
-          throw new Error(errorData.error || "Azure registration failed");
-        } catch (parseError) {
-          throw new Error(`Server error: ${responseText}`);
-        }
-      }
-
-      // Try to parse as JSON
-      try {
-        const data = JSON.parse(responseText);
-        return data;
-      } catch (parseError) {
-        console.error("JSON parse error:", parseError);
-        throw new Error(`Failed to parse response: ${responseText}`);
-      }
     } catch (error) {
-      console.error("Azure registration error:", error);
-      throw error;
+      pretty_log(`Azure login failed: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Microsoft authentication failed");
     }
   },
 
-}
+  /**
+   * Register new user using Azure AD token
+   * @param {string} token - Microsoft identity token
+   * @returns {Promise<Object>} Registered user data
+   */
+  async azureRegister(token) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/azure/register/`, {
+        method: "POST",
+        body: JSON.stringify({ token }),
+      });
+      pretty_log("Azure registration successful", "DEBUG");
+      return data;
+    } catch (error) {
+      pretty_log(`Azure registration failed: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Microsoft registration failed");
+    }
+  },
+};

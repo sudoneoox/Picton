@@ -1,10 +1,10 @@
 import { PublicClientApplication, LogLevel } from "@azure/msal-browser";
 import { MICROSOFT_FRONTEND_REDIRECT_URL } from "@/api/common_util.js";
 
-const msalConfig = {
+export const msalConfig = {
   auth: {
-    clientId: `${import.meta.env.VITE_AZURE_CLIENT_ID}`,
-    authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AZURE_TENANT_ID}`,
+    clientId: import.meta.env.VITE_AZURE_CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AZURE_TENANT_ID || 'common'}`,
     redirectUri: window.location.origin + MICROSOFT_FRONTEND_REDIRECT_URL,
     navigateToLoginRequestUrl: false,
     postLogoutRedirectUri: window.location.origin,
@@ -16,7 +16,10 @@ const msalConfig = {
   system: {
     allowRedirectInFrame: false,
     loggerOptions: {
-      logLevel: LogLevel.Error,
+      loggerCallback: (level, message, containsPii) => {
+        if (containsPii) return;
+        console.log(`MSAL: ${message}`);
+      }
     },
   },
 };

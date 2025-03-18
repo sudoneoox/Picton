@@ -24,6 +24,7 @@ msalInstance.addEventCallback((event) => {
   ) {
     if (!window.location.pathname.includes("/logout")) {
       // If not on logout page, prevent automatic redirects
+      sessionStorage.clear();
       event.preventDefault();
     }
   }
@@ -37,6 +38,7 @@ msalInstance
     if (shouldHandleRedirect) {
       return msalInstance.handleRedirectPromise().catch((error) => {
         console.warn("Redirect handling error:", error);
+        sessionStorage.removeItem("msal.interaction.status");
         // Don't throw, just log
       });
     }

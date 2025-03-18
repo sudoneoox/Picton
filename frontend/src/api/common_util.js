@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+  import.meta.env.VITE_API_BASE_URL || "/api";
 
 export const MICROSOFT_FRONTEND_REDIRECT_URL =
   import.meta.env.MICROSOFT_REDIRECT_URL || "/auth/microsoft/callback";
@@ -7,6 +7,13 @@ export const MICROSOFT_FRONTEND_REDIRECT_URL =
 // turn on debug if in development environment
 export const DEBUG = import.meta.env.DEV === true
 
+// CSRF token extraction logic
+export function getCSRFToken() {
+  return document.cookie
+    .split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1] || '';
+}
 
 // This function allows to to make colored outputs in web developer tools consoles
 // Different colors for different message types to better distinguish them

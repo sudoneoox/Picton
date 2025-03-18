@@ -12,6 +12,9 @@ export const MicrosoftCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Clear MSAL interaction state
+        sessionStorage.removeItem("msal.interaction.status");
+
         // Only try to handle redirect on this specific page
         const response = await instance.handleRedirectPromise();
 
@@ -23,10 +26,23 @@ export const MicrosoftCallback = () => {
           );
           navigate("/dashboard");
         } else {
-          // No response - redirect user to login
-          navigate("/login");
+          // Check if user is already logged in
+          if (instance.getAllAccounts().length > 0) {
+            navigate("/dashboard");
+          } else {
+            navigate("/login");
+          }
         }
       } catch (error) {
+        // Add specific error handling
+        if (error.errorMessage.includes("AADSTS900023")) {
+          showToast(
+            { error: "Invalid tenant configuration. Contact support." },
+            "error",
+            "Azure Configuration Error"
+          );
+        }
+
         console.error("MSAL redirect handling error:", error);
 
         // Clear problematic state
