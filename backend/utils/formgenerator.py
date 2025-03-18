@@ -43,11 +43,15 @@ class FormPDFGenerator:
             f"received params in generate_template_form {template_name}, {user}, {list(form_data)}",
             "DEBUG",
         )
-        if template_name == "withdrawal":
-            return self.generate_withdrawal_form
-        elif template_name == "graduate":
+        if template_name == "withdrawal" or template_name == "Term Withdrawal Form":
+            return self.generate_withdrawal_form(user, form_data)
+        elif template_name == "graduate" or template_name == "Graduate Petition Form":
             pretty_print("GRADUATE TEMPLATE NOT YET IMPLEMENTED", "WARNING")
-            return None
+            pretty_print("USING WITHDRAWAL AS PLACEHOLDER", "WARNING")
+            # Create a simple placeholder PDF for now
+            return self.generate_withdrawal_form(
+                user, form_data
+            )  # Using withdrawal as placeholder
         else:
             pretty_print(f"NOT A VALID TEMPLATE_NAME: {template_name}", "ERROR")
             raise ValueError(f"Invalid Template Name: {template_name}")
@@ -72,21 +76,21 @@ class FormPDFGenerator:
         student_name = f"{user.last_name}, {user.first_name} {user.middle_name if hasattr(user, 'middle_name') else ''}"
 
         # NOTE: Format checkboxes for semester selection
-        fall_selected = "\\square" if form_data.get("season") == "Fall" else "\\square"
+        fall_selected = (
+            "\\checkbox{\\square}"
+            if form_data.get("season") != "Fall"
+            else "\\checkbox{\\checked}"
+        )
         spring_selected = (
-            "\\square" if form_data.get("season") == "Spring" else "\\square"
+            "\\checkbox{\\square}"
+            if form_data.get("season") != "Spring"
+            else "\\checkbox{\\checked}"
         )
         summer_selected = (
-            "\\square" if form_data.get("season") == "Summer" else "\\square"
+            "\\checkbox{\\square}"
+            if form_data.get("season") != "Summer"
+            else "\\checkbox{\\checked}"
         )
-
-        # NOTE: Check which one is selected and mark it with ✓
-        if form_data.get("season") == "Fall":
-            fall_selected = "\\checked"
-        elif form_data.get("season") == "Spring":
-            spring_selected = "\\checked"
-        elif form_data.get("season") == "Summer":
-            summer_selected = "\\checked"
 
         # NOTE: Current date in MM/DD/YYYY format
         current_date = datetime.now().strftime("%m/%d/%Y")
@@ -108,11 +112,9 @@ class FormPDFGenerator:
             "$UNIVERSITY_LOGO$": self.logo_path,
         }
 
-        # TODO: make signatures a required field before users are able to access form requests
-        # IMPORTANT: Handle signature - if user has a signature in their profile, use it
-        # Otherwise leave it blank
+        # Handle signature
         if user.signature:
-            # Create a temporary signature file from the signature in the user model
+            # Create a proper LaTeX image inclusion command
             signature_content = self._process_signature(user)
             replacements["$STUDENT_SIGNATURE$"] = signature_content
         else:
@@ -122,8 +124,15 @@ class FormPDFGenerator:
         for placeholder, value in replacements.items():
             template_content = template_content.replace(placeholder, str(value))
 
-        # Create PDF using pdflatex in a temporary directory
-        return self._compile_latex(template_content)
+        # Create PDF using pdflatex
+        pdf_file = self._compile_latex(template_content)
+
+        # Set a custom name for the PDF based on user ID and timestamp
+        user_id = getattr(user, "id", "0")
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        pdf_file.name = f"term_withdrawal_user{user_id}_{timestamp}.pdf"
+
+        return pdf_file
 
     def _process_signature(self, user):
         """Process user signature for inclusion in the PDF"""
@@ -132,17 +141,19 @@ class FormPDFGenerator:
             pretty_print(f"User {user} does not have a signature on file", "WARNING")
             return ""
 
-        # Return the path to the signature file
-        # WARNING:
-        # TODO: store user signatures as img byte code
+        # Create a temporary signature file that LaTeX can use
         try:
-            sig_path = user.signature.path  # For local file storage
-            return sig_path
+            # For local file storage
+            sig_path = user.signature.path
+            # Add LaTeX command to include the image properly
+            return f"\\includegraphics[width=2in]{{{sig_path}}}"
         except ValueError:
+            # For remote storage
             content = user.signature.read()
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
                 tmp.write(content)
-                return tmp.name
+                # Add LaTeX command to include the image properly
+                return f"\\includegraphics[width=2in]{{{tmp.name}}}"
 
     # TODO: only handles withdrawal form for right now make it so that it switches file path name with form type
     def _compile_latex(self, latex_content):
@@ -162,13 +173,19 @@ class FormPDFGenerator:
             with open(tex_file, "w") as file:
                 file.write(latex_content)
 
-            # Compile LaTeX to PDF
-            subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", tex_file],
-                cwd=temp_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
+            # Compile LaTeX to PDF (run twice for better formatting)
+            for _ in range(2):
+                process = subprocess.run(
+                    ["pdflatex", "-interaction=nonstopmode", tex_file],
+                    cwd=temp_dir,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+
+                # Log any errors
+                if process.returncode != 0:
+                    error_output = process.stderr.decode("utf-8", errors="replace")
+                    pretty_print(f"LaTeX compilation error: {error_output}", "ERROR")
 
             # Check if PDF was created
             pdf_file = os.path.join(temp_dir, "document.pdf")
@@ -179,5 +196,6 @@ class FormPDFGenerator:
             with open(pdf_file, "rb") as file:
                 pdf_content = file.read()
 
-            # Return the PDF content as a ContentFile
-            return ContentFile(pdf_content, name="term_withdrawal.pdf")
+            # Return the PDF content as a ContentFile with a unique name
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            return ContentFile(pdf_content, name=f"form_{timestamp}.pdf")

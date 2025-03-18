@@ -10,6 +10,8 @@ from ...core import IsActiveUser
 from utils import MethodNameMixin, pretty_print, FormPDFGenerator
 from django.conf import settings
 from django.db.models import OuterRef
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 
 class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
@@ -23,6 +25,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         # Set the submitter as the current user
         serializer.save(submitter=self.request.user)
 
+    @method_decorator(csrf_exempt)
     @action(detail=False, methods=["POST"])
     def preview(self, request):
         """
@@ -30,25 +33,35 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         So user can preview pdf inside their dashboard
         """
         pretty_print(f"Generating form preview from {self._get_method_name()}", "INFO")
+        pretty_print(f"User authenticated: {request.user.is_authenticated}", "DEBUG")
+        pretty_print(f"User: {request.user.username}", "DEBUG")
+        pretty_print(f"Request session: {request.session.items()}", "DEBUG")
+        pretty_print(f"Got Full Request {request.data}", "INFO")
 
         # NOTE: The Form Type (Graduate Petition | Term Withdrawal)
         # More should be added in the future
         # Graduate Petition should have Form ID 1
         # Term Withdrawal should have Form ID 2
-        form_template_id = request.data.get("form_template")
+
+        form_template = request.data.get("form_template")
 
         # NOTE: this form_data is what were going to use to generate our pdf from the template
         # we should add error handling for this in its own class
         # different forms require different optional and required fields
-        form_data = request.data.get("form_data")
+        if form_template:
+            form_template_id = form_template.get("form_template")
+            form_data = form_template.get("form_data")
+        else:
+            form_template_id = None
+            form_data = None
 
-        pretty_print(
-            f"GOT DATA FROM FORM PREVIEW form_template_id: {form_template_id} form_data: {form_data}",
-            "DEBUG",
-        )
+        pretty_print("Full Form Preview Request Data:", "DEBUG")
+        pretty_print(f"FORM_TEMPLATE_ID: {form_template_id}", "INFO")
+        pretty_print(f"FORM_DATA: {form_data}", "INFO")
 
         # Validate required fields
         if not form_template_id or not form_data:
+            pretty_print("MISSING FORM_TEMPLATE OR FORM_DATA", "ERROR")
             return Response(
                 {"error": "Missing form_template or form_data"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -66,7 +79,30 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 form_template.name, request.user, form_data
             )
 
-            # Read PDF Content and encode as base64
+            draft_submission, created = FormSubmission.objects.get_or_create(
+                form_template=form_template,
+                submitter=request.user,
+                status="draft",
+                defaults={"form_data": form_data},
+            )
+
+            if not created:
+                draft_submission.form_data = form_data
+                draft_submission.save()
+
+            template_code = (
+                "withdrawal"
+                if form_template.name == "Term Withdrawal Form"
+                else "petition"
+            )
+            pdf_filename = (
+                f"forms/{request.user.id}_{template_code}_{draft_submission.id}.pdf"
+            )
+            draft_submission.current_pdf.save(pdf_filename, pdf_file, save=False)
+            draft_submission.pdf_url = pdf_filename
+            draft_submission.save()
+
+            # read pdf content and encode
             import base64
 
             pdf_content = pdf_file.read()
@@ -77,6 +113,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 {
                     "pdf_content": pdf_base_64,
                     "filename": f"{form_template.name}_preview.pdf",
+                    "draft_id": draft_submission.id,
                 }
             )
 

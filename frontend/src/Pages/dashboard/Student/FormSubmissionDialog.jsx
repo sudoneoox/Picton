@@ -215,6 +215,12 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
 
       if (response && response.pdf_content) {
         setPreviewPdf(response.pdf_content);
+
+        // store draft id for submission
+        setFormData(prev => ({
+          ...prev,
+          draft_id: response.draft_id
+        }))
       } else {
         throw new Error("Failed to generate PDF preview");
       }
@@ -235,8 +241,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
 
       // Submit form for approval
       const response = await api.student.submitForm({
-        form_template: templateId,
-        form_data: formData
+        draft_id: formData.draft_id
       });
 
       showToast({ message: "Form submitted successfully" }, "success");
