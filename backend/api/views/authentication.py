@@ -104,10 +104,9 @@ class RegisterView(views.APIView, MethodNameMixin):
     def post(self, request):
         data = request.data
 
-        if DEBUG:
-            pretty_print(
-                f"Received Request from {self._get_method_name()}: {data}", "DEBUG"
-            )
+        pretty_print(
+            f"Received Request from {self._get_method_name()}: {data}", "DEBUG"
+        )
         # Validate required fields
         required_fields = ["email", "username", "password", "firstName", "lastName"]
         for field in required_fields:
@@ -207,10 +206,9 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
             token, options={"verify_signature": False}, algorithms=["RS256"]
         )
 
-        if DEBUG:
-            pretty_print(
-                f"Token payload from {self._get_method_name()}: {payload}", "DEBUG"
-            )
+        pretty_print(
+            f"Token payload from {self._get_method_name()}: {payload}", "DEBUG"
+        )
 
         if not payload["iss"].startswith("https://sts.windows.net"):
             raise AuthenticationFailed("Invalid token issuer")

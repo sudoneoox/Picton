@@ -11,8 +11,6 @@ from utils import MethodNameMixin, pretty_print
 from django.conf import settings
 from django.db.models import Q
 
-DEBUG = settings.DEBUG
-
 
 class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
     """ViewSet for viewing form approvals"""

@@ -10,7 +10,6 @@ ROLE_CHOICES = (
     ("student", "Student"),
     ("admin", "Admin"),
     ("staff", "Staff"),
-    # add additional roles as needed
 )
 
 FORM_STATUS_CHOICES = (

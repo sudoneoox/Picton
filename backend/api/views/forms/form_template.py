@@ -4,9 +4,6 @@ from ...models import FormTemplate
 from ...serializers import FormTemplateSerializer
 
 from utils import MethodNameMixin
-from django.conf import settings
-
-DEBUG = settings.DEBUG
 
 
 class FormTemplateViewSet(viewsets.ModelViewSet, MethodNameMixin):

@@ -13,9 +13,6 @@ from ..core import IsAdminOrSelf, IsActiveUser
 from typing import List
 
 
-DEBUG = settings.DEBUG
-
-
 class UserManagementViewSet(viewsets.ModelViewSet, MethodNameMixin):
     """
     ViewSet for basic user CRUD operations
@@ -35,10 +32,9 @@ class UserManagementViewSet(viewsets.ModelViewSet, MethodNameMixin):
         """Get current user's profile"""
         # NOTE: /users/me/ endpoint authentication middleware
 
-        if DEBUG:
-            pretty_print(
-                f"Received Request from {self._get_method_name()}: {request}", "DEBUG"
-            )
+        pretty_print(
+            f"Received Request from {self._get_method_name()}: {request}", "DEBUG"
+        )
 
         serializer = UserDetailSerializer(request.user)
         return Response(serializer.data)
