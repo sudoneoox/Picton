@@ -45,12 +45,20 @@ export const student = {
       if (!draft_id) {
         throw new Error("Missing draft ID");
       }
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1] || '';
+
+      pretty_log("Submitting Form", "DEBUG");
 
       const response = await fetch(`${API_BASE_URL}/forms/submission/${draft_id}/submit/`, {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken
+
         },
         body: JSON.stringify({})
       });
