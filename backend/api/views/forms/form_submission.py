@@ -98,6 +98,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             pdf_filename = (
                 f"forms/{request.user.id}_{template_code}_{draft_submission.id}.pdf"
             )
+
             draft_submission.current_pdf.save(pdf_filename, pdf_file, save=False)
             draft_submission.pdf_url = pdf_filename
             draft_submission.save()
@@ -105,6 +106,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             # read pdf content and encode
             import base64
 
+            pdf_file.seek(0)  # make sure we read from beginning
             pdf_content = pdf_file.read()
             pdf_base_64 = base64.b64encode(pdf_content).decode("utf-8")
 
@@ -121,6 +123,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             return Response(
                 {"error": "Form template not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         except Exception as e:
             pretty_print(f"Error generating preview: {str(e)}", "ERROR")
             return Response(
@@ -128,6 +131,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @method_decorator(csrf_exempt)
     @action(detail=True, methods=["POST"])
     def submit(self, request, pk=None):
         """Submit a draft form for approval"""
