@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronRight, type LucideIcon } from "lucide-react";
-
 import {
   Collapsible,
   CollapsibleContent,
@@ -36,9 +35,14 @@ export function NavMain({
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Admin Controls</SidebarGroupLabel>
+      
       <SidebarMenu>
         {items.map((item) => (
-          <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
+          <Collapsible 
+            key={item.title} 
+            asChild 
+            defaultOpen={item.isActive}
+          >
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={item.title}>
                 <div className="cursor-pointer">
@@ -46,7 +50,8 @@ export function NavMain({
                   <span>{item.title}</span>
                 </div>
               </SidebarMenuButton>
-              {item.items?.length ? (
+
+              {item.items?.length && (
                 <>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuAction className="data-[state=open]:rotate-90">
@@ -54,9 +59,10 @@ export function NavMain({
                       <span className="sr-only">Toggle</span>
                     </SidebarMenuAction>
                   </CollapsibleTrigger>
+
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {item.items?.map((subItem) => (
+                      {item.items.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton
                             asChild
@@ -74,7 +80,7 @@ export function NavMain({
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </>
-              ) : null}
+              )}
             </SidebarMenuItem>
           </Collapsible>
         ))}
