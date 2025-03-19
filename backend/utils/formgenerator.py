@@ -43,15 +43,13 @@ class FormPDFGenerator:
             f"received params in generate_template_form {template_name}, {user}, {list(form_data)}",
             "DEBUG",
         )
-        if template_name == "withdrawal" or template_name == "Term Withdrawal Form":
+        if template_name in ["withdrawal", "Term Withdrawal Form"]:
             return self.generate_withdrawal_form(user, form_data)
-        elif template_name == "graduate" or template_name == "Graduate Petition Form":
+        elif template_name in ["graduate", "Graduate Petition Form"]:
             pretty_print("GRADUATE TEMPLATE NOT YET IMPLEMENTED", "WARNING")
             pretty_print("USING WITHDRAWAL AS PLACEHOLDER", "WARNING")
             # Create a simple placeholder PDF for now
-            return self.generate_withdrawal_form(
-                user, form_data
-            )  # Using withdrawal as placeholder
+            return self.generate_graduate_petition(user, form_data)  # Using withdrawal as placeholder
         else:
             pretty_print(f"NOT A VALID TEMPLATE_NAME: {template_name}", "ERROR")
             raise ValueError(f"Invalid Template Name: {template_name}")
@@ -133,6 +131,62 @@ class FormPDFGenerator:
         pdf_file.name = f"term_withdrawal_user{user_id}_{timestamp}.pdf"
 
         return pdf_file
+    
+    def _format_purpose_items(self, form_data):
+        purposes = []
+        for i in range(1, 13):
+            key = f"purpose_{i}"
+            if form_data.get(key, False):
+                purposes.append(f"\\item {self._purpose_descriptions[i]}")
+        return "\n".join(purposes)
+    
+    _purpose_descriptions = {
+            1: "Update program status/action (term activate, discontinue, etc)",
+            2: "Admissions status change (conditional to unconditional)",
+            3: "Add new concurrent degree or certificate objective",
+            4: "Change current degree objective (program/plan)",
+            5: "Degree requirement exception or approved course substitution",
+            6: "Leave of Absence (include specific term)",
+            7: "Reinstatement to discontinued career",
+            8: "Request to apply to graduate after late filing deadline",
+            9: "Transfer Credit",
+            10: "Change Admit Term",
+            11: "Early Submission of Thesis/Dissertation",
+            12: "Other (explained in request)"
+        }
+
+    def generate_graduate_petition(self, user, form_data):
+        template_path = os.path.join(self.template_dir, "graduate_petition.tex")
+        with open(template_path, "r") as file:
+            template = file.read()
+
+        replacements = {
+            "$LAST_NAME$": form_data.get("last_name", user.last_name),
+            "$FIRST_NAME$": form_data.get("first_name", user.first_name),
+            "$MIDDLE_NAME$": form_data.get("middle_name", ""),
+            "$STUDENT_ID$": str(form_data.get("student_id", "")),
+            "$PHONE_NUMBER$": str(form_data.get("phone_number", user.phone_number)),
+            "$PROGRAM_PLAN$": form_data.get("program_plan", ""),
+            "$PLAN_CODE$": form_data.get("plan_code", ""),
+            "$SEASON$": form_data.get("season", ""),
+            "$YEAR$": str(form_data.get("year", datetime.now().year)),
+            "$EMAIL$": form_data.get("email", user.email),
+            "$PURPOSE_ITEMS$": self._format_purpose_items(form_data),
+            "$PETITION_EXPLANATION$": form_data.get("explanation", ""),
+            "$SUBMIT_DATE$": datetime.now().strftime("%m/%d/%Y"),
+            "$STUDENT_SIGNATURE$": self._process_signature(user),
+            "$UNIVERSITY_LOGO$": self.logo_path
+        }
+        
+        # Add approval signatures (to be implemented later)
+        for role in ["advisor", "director", "chair", "dean"]:
+            replacements[f"${role.upper()}_SIGNATURE$"] = ""
+            replacements[f"${role.upper()}_DATE$"] = ""
+
+        for placeholder, value in replacements.items():
+            template = template.replace(placeholder, str(value))
+
+        return self._compile_latex(template)
 
     def _process_signature(self, user):
         """Process user signature for inclusion in the PDF"""

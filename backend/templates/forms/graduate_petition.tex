@@ -1,0 +1,66 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\begin{document}
+
+% UNIVERSITY HEADER
+\begin{center}
+    \includegraphics[width=2.5in]{$UNIVERSITY_LOGO$} \\
+    \Large\textbf{UNIVERSITY of HOUSTON | GRADUATE SCHOOL} \\
+    \large\textbf{GRADUATE and PROFESSIONAL STUDENT PETITION} \\
+    \small gradservices@uh.edu
+\end{center}
+
+\vspace{0.5cm}
+
+% STUDENT INFORMATION
+\begin{tabular}{ll}
+    \textbf{Name:} & $LAST_NAME$, $FIRST_NAME$ $MIDDLE_NAME$ \\
+    \textbf{MyUH ID:} & $STUDENT_ID$ \\
+    \textbf{Contact Phone:} & $PHONE_NUMBER$ \\
+    \textbf{Program:} & $PROGRAM_PLAN$ \\
+    \textbf{Plan Code:} & $PLAN_CODE$ \\
+    \textbf{Effective Term:} & $SEASON$ $YEAR$ \\
+    \textbf{UH Email:} & $EMAIL$
+\end{tabular}
+
+\vspace{0.5cm}
+
+% PETITION DETAILS
+\section*{PURPOSE OF PETITION}
+\begin{itemize}
+    $PURPOSE_ITEMS$
+\end{itemize}
+
+\section*{EXPLANATION OF REQUEST}
+$PETITION_EXPLANATION$
+
+\vspace{1cm}
+
+% SIGNATURES
+\begin{tabular}{p{0.5\textwidth}p{0.5\textwidth}}
+    \textbf{Student Signature:} & \textbf{Date:} $SUBMIT_DATE$ \\
+    \includegraphics[width=2in]{$STUDENT_SIGNATURE$} & \\
+\end{tabular}
+
+% APPROVAL TABLE
+\vspace{1cm}
+\begin{tabular}{|l|l|l|}
+    \hline
+    \textbf{Required Approvals} & \textbf{Signature} & \textbf{Date} \\
+    \hline
+    Graduate Advisor & $ADVISOR_SIGNATURE$ & $ADVISOR_DATE$ \\
+    \hline
+    Graduate Studies Director & $DIRECTOR_SIGNATURE$ & $DIRECTOR_DATE$ \\
+    \hline
+    Department Chair & $CHAIR_SIGNATURE$ & $CHAIR_DATE$ \\
+    \hline
+    Graduate School Dean & $DEAN_SIGNATURE$ & $DEAN_DATE$ \\
+    \hline
+\end{tabular}
+
+\end{document}
