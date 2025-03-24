@@ -51,6 +51,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "backend.middleware.RedirectAuthenticatedMiddleware",  #added for redirecting authentication
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
