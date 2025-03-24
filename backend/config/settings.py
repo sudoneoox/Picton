@@ -126,14 +126,11 @@ if DEBUG:
     print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
     print(f"DB_HOST: {os.getenv('DB_HOST')}")
     print(f"DB_PORT: {os.getenv('DB_PORT')}")
-    print(f"MICROSOFT_GRAPH_KEY: {os.getenv("MICROSOFT_GRAPH_KEY")}")
-    print(f"MICROSOFT_GRAPH_SECRET: {os.getenv("MICROSOFT_GRAPH_SECRET")}")
-    print(
-        f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv("MICROSOFT_BACKEND_REDIRECT_URL")}"
-    )
-    print(
-        f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv("MICROSOFT_FRONTEND_REDIRECT_URL")}"
-    )
+    print(f"MICROSOFT_GRAPH_KEY: {os.getenv('MICROSOFT_GRAPH_KEY')}")
+    print(f"MICROSOFT_GRAPH_SECRET: {os.getenv('MICROSOFT_GRAPH_SECRET')}")
+    print(f"MICROSOFT_BACKEND_REDIRECT_URL: {os.getenv('MICROSOFT_BACKEND_REDIRECT_URL')}")
+    print(f"MICROSOFT_FRONTEND_REDIRECT_URL: {os.getenv('MICROSOFT_FRONTEND_REDIRECT_URL')}")
+
 
 
 DATABASES = {
