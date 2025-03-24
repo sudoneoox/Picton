@@ -34,7 +34,7 @@ CREATE USER your_user_name WITH PASSWORD 'your_password';
 GRANT ALL PRIVILEGES ON DATABASE picton TO your_user_name;
 ```
 4. Configure a .env file with this format in the root backend directory
-```bash
+```env
 # the .env file should have this structure
 DEBUG=True
 SECRET_KEY=your_django_secret_key
@@ -52,17 +52,22 @@ MICROSOFT_BACKEND_REDIRECT_URL =
 MICROSOFT_FRONTEND_REDIRECT_URL = 
 ```  
 5. Apply migrations:
-```bash
+```python
 python backend/manage.py makemigrations
 python backend/manage.py migrate
 ```
 6. Create superuser:
-```bash
+```python
 python backend/manage.py createsuperuser
 ```
 7. Run developmental server:
-```bash
+```python
 python backend/manage.py runserver
+```
+
+*. Or if your on a linux machine use the handy in the backend dir to get menu options
+```bash
+./startupLinux.sh
 ```
 
 ### Frontend 
@@ -72,7 +77,7 @@ cd frontend
 pnpm install
 ```
 2. Configure a .env file with this format in the root frontend directory
-```bash
+```env
 # the backend api server 
 VITE_API_BASE_URL=http://localhost:8000/api
 # azure redirect url
@@ -80,6 +85,8 @@ MICROSOFT_REDIRECT_URL=
 # azure registrations id's
 VITE_AZURE_CLIENT_ID=
 VITE_AZURE_TENANT_ID=
+
+DEBUG=true
 ```
 
 3. Start up developmental environment

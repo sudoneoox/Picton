@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
 .home-container {
   display: flex;
   flex-direction: column;
@@ -362,8 +361,10 @@
   margin: 1rem auto 0;
 }
 .registration-formCard__btn {
-  background-color: #fff; /* White background */
-  color: #333; /* Black text */
+  background-color: #fff;
+  /* White background */
+  color: #333;
+  /* Black text */
   border-radius: 5px;
   padding: 0.65rem 1.25rem;
   font-weight: 500;
@@ -383,7 +384,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 2rem 0;
+  margin: 0.5rem 0;
 }
 .registration-formCard__divider-line {
   width: 90%;
@@ -403,8 +404,10 @@
   font-weight: bold;
 }
 .registration-formCard__outlook {
-  background-color: #fff; /* White background */
-  color: #333; /* Black text */
+  background-color: #fff;
+  /* White background */
+  color: #333;
+  /* Black text */
   border-radius: 5px;
   padding: 0.65rem 1.25rem;
   font-weight: 500;
@@ -436,14 +439,35 @@
   margin: 0;
 }
 .registration-formCard__sign-in {
-  margin-left: 0.25rem;
+  margin-left: 0.5rem;
   padding: 0.1rem 0.4rem;
-  background-color: transparent;
-  color: #e5e5e5;
+  background-color: #fff;
   font-size: 0.9rem;
 }
 .registration-formCard__sign-in:hover {
-  text-decoration: underline;
+  background-color: #333333;
+  color: #ffffff;
+}
+.registration-formCard__sign-in:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+.registration-formCard__register {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  background-color: #fff;
+  color: black;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.registration-formCard__register:hover {
+  background-color: #333333;
+  color: #ffffff;
+}
+.registration-formCard__register:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Slide Down Animation */
@@ -541,34 +565,16 @@
   width: 1rem;
 }
 
-@config "../../tailwind.config";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.left-sidebar-container {
+  width: 100%;
+  background-color: red !important;
+}
+
 body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  background-color: #121212;
-  color: #ffffff;
-}
-
-:root {
-  --background-color: c.$DARK-MODE-PRIMARY;
-  --text-color: c.$text-color;
-}
-
-.light {
-  --background-color: c.$LIGHT-MODE-PRIMARY;
-  --text-color: black;
-  color-scheme: light;
-}
-
-.dark {
-  --background-color: c.$DARK-MODE-PRIMARY;
-  --text-color: white;
-  color-scheme: dark;
 }
 
 /*# sourceMappingURL=App.css.map */

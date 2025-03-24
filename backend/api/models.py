@@ -4,6 +4,21 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
+from utils import signature_upload_path
+
+ROLE_CHOICES = (
+    ("student", "Student"),
+    ("admin", "Admin"),
+    ("staff", "Staff"),
+)
+
+FORM_STATUS_CHOICES = (
+    ("draft", "Draft"),
+    ("pending", "Pending Approval"),
+    ("returned", "Returned for Changes"),
+    ("approved", "Approved"),
+    ("rejected", "Rejected"),
+)
 
 
 # IMPORTANT: override default django user table
@@ -14,6 +29,7 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError("Email is required")
 
+        extra_fields.setdefault("role", "student")
         user = self.model(
             username=username, email=self.normalize_email(email), **extra_fields
         )
@@ -22,6 +38,10 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, username, email, password=None, **extra_fields):
+        extra_fields.setdefault(
+            "role",
+            "admin",
+        )
         user = self.create_user(
             username=username, email=email, password=password, **extra_fields
         )
@@ -43,6 +63,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=15, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
 
+    # User role
+    # admin, staff, student
+    role = models.CharField(max_length=30, choices=ROLE_CHOICES, default="student")
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -51,6 +75,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)  # Replaces is_admin
     is_staff = models.BooleanField(default=False)  # needed for admin panel
+
+    # signature to automatically sign forms
+    signature = models.ImageField(
+        upload_to=signature_upload_path, null=True, blank=True
+    )
+    has_signature = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 
@@ -63,89 +93,115 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username
 
 
-# # Example model
-#
-# class ExampleModel(models.Model):
-#     # Text Fields
-#     char_field = models.CharField(max_length=255)  # String with max length
-#     text_field = models.TextField()  # Unlimited text
-#     email_field = models.EmailField()  # Email validation
-#     slug_field = models.SlugField()  # URL-friendly text
-#     url_field = models.URLField()  # URL validation
-#
-#     # Numeric Fields
-#     integer_field = models.IntegerField()  # Whole numbers
-#     float_field = models.FloatField()  # Decimal numbers
-#     decimal_field = models.DecimalField(max_digits=10, decimal_places=2)  # Precise decimals
-#     positive_integer = models.PositiveIntegerField()  # Positive numbers only
-#
-#     # Boolean Fields
-#     boolean_field = models.BooleanField(default=False)  # True/False
-#     null_boolean = models.BooleanField(null=True)  # True/False/None
-#
-#     # Date and Time Fields
-#     date_field = models.DateField()  # Date only
-#     time_field = models.TimeField()  # Time only
-#     datetime_field = models.DateTimeField()  # Date and time
-#     duration_field = models.DurationField()  # Time duration
-#
-#     # File Fields
-#     file_field = models.FileField(upload_to='files/')  # Any file
-#     image_field = models.ImageField(upload_to='images/')  # Image files only
-#
-#     # Relationship Fields
-#     foreign_key = models.ForeignKey('OtherModel', on_delete=models.CASCADE)  # Many-to-one
-#     many_to_many = models.ManyToManyField('OtherModel')  # Many-to-many
-#     one_to_one = models.OneToOneField('OtherModel', on_delete=models.CASCADE)  # One-to-one
-#
-#     # Auto Fields
-#     auto_field = models.AutoField(primary_key=True)  # Auto-incrementing ID
-#     uuid_field = models.UUIDField()  # Unique identifier
-#
-#     # Common Field Options
-#     nullable_field = models.CharField(
-#         max_length=100,
-#         null=True,  # Allow NULL in database
-#         blank=True,  # Allow blank in forms
-#         default='default value',  # Default value
-#         unique=True,  # Must be unique
-#         db_index=True,  # Create database index
-#         choices=[  # Predefined choices
-#             ('A', 'Choice A'),
-#             ('B', 'Choice B'),
-#         ],
-#         help_text="Help text for forms",  # Help text
-#         verbose_name="Human readable name",  # Display name
-#         editable=False,  # Not editable in admin
-#         error_messages={  # Custom error messages
-#             'null': 'This field cannot be null.',
-#             'blank': 'This field cannot be blank.',
-#         }
-#     )
-#
-#     class Meta:
-#         # Model metadata options
-#         db_table = 'custom_table_name'  # Custom table name
-#         ordering = ['-created_at']  # Default ordering
-#         verbose_name = 'Example'  # Human readable name
-#         verbose_name_plural = 'Examples'  # Plural name
-#         unique_together = ['field1', 'field2']  # Unique constraint
-#         indexes = [
-#             models.Index(fields=['field1', 'field2'])  # Custom index
-#         ]
-#         permissions = [
-#             ("can_do_something", "Can do something")  # Custom permissions
-#         ]
-#
-#     def __str__(self):
-#         return self.char_field  # String representation
-#
-#     def save(self, *args, **kwargs):
-#         # Override save method
-#         if not self.slug_field:
-#             self.slug_field = slugify(self.char_field)
-#         super().save(*args, **kwargs)
-#
-#     def get_absolute_url(self):
-#         # URL for object
-#         return f"/example/{self.id}/"
+class FormTemplate(models.Model):
+    """Stores template information for different form types"""
+
+    name = models.CharField(max_length=100)
+
+    description = models.TextField(blank=True)
+
+    # store field schema as JSON
+    field_schema = models.JSONField(help_text="JSON schema defining form fields")
+
+    # number of approvals required
+    required_approvals = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
+class FormApprovalWorkflow(models.Model):
+    """Define who needs to approve which form template"""
+
+    form_template = models.ForeignKey(
+        FormTemplate, on_delete=models.CASCADE, related_name="approvals_workflows"
+    )
+
+    approver_role = models.CharField(max_length=30, choices=ROLE_CHOICES)
+
+    order = models.PositiveIntegerField(help_text="Order in the approval sequence")
+
+    class Meta:
+        ordering = ["order"]
+        unique_together = ["form_template", "order"]
+
+    def __str__(self):
+        return f"{self.form_template.name} - {self.approver_role} (Step {self.order})"
+
+
+class FormSubmission(models.Model):
+    """Stores submitted form data"""
+
+    # Form Template Used specifically their id
+    form_template = models.ForeignKey(
+        FormTemplate, on_delete=models.CASCADE, related_name="submissions"
+    )
+
+    # Who submitted this form
+    submitter = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="form_submissions"
+    )
+
+    form_data = models.JSONField(help_text="JSON data containing form field values")
+
+    # The Updated PDF created from the users input
+    current_pdf = models.FileField(upload_to="forms/form_pdfs/", null=True, blank=True)
+
+    # To be able to retrieve back should be created from
+    # form_pdfs/{user_id}_{form_template_name}_{form_submission_id}
+    pdf_url = models.TextField(null=True)
+
+    # pending | approved | rejected | ...
+    status = models.CharField(
+        max_length=20, choices=FORM_STATUS_CHOICES, default="draft"
+    )
+
+    current_step = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.form_template.name} - {self.submitter.username} ({self.status})"
+
+
+class FormApproval(models.Model):
+    """Individual approval records for form submissions"""
+
+    form_submission = models.ForeignKey(
+        FormSubmission, on_delete=models.CASCADE, related_name="approvals"
+    )
+
+    # Who approved the form should have a staff or admin role
+    approver = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="form_approvals"
+    )
+
+    # Final Step Number
+    step_number = models.PositiveIntegerField()
+
+    decision = models.CharField(
+        max_length=20,
+        choices=(
+            ("approved", "Approved"),
+            ("returned", "Returned for Changes"),
+            ("rejected", "Rejected"),
+        ),
+    )
+    # In case it was Rejected
+    comments = models.TextField(blank=True)
+
+    # Should have staff signature
+    signed_pdf = models.FileField(upload_to="forms/signed_pdfs/", null=True, blank=True)
+
+    # to quickly locate should be similiar to
+    # {approver_id}_{form_type}_{approval_id}
+    signed_pdf_url = models.TextField(null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["form_submission", "approver", "step_number"]
+
+    def __str__(self):
+        return f"{self.form_submission} - {self.approver.username} ({self.decision})"

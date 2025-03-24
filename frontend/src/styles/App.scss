@@ -1,4 +1,4 @@
-
+//
 // MODULES
 @use 'modules/constants' as c;
 @use 'modules/home';
@@ -6,16 +6,7 @@
 @use 'modules/main-content-container';
 @use 'modules/registrations';
 @use 'modules/toast-notif';
-
-// Tailwind Config
-@config "../../tailwind.config";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-// FONTS
-@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
-
+@use 'modules/dashboard-sidebar';
 
 
 // ROOT Styles
@@ -24,24 +15,5 @@ body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background-color: c.$DARK-MODE-PRIMARY;
-  color: c.$LIGHT-MODE-PRIMARY;
-}
-
-:root {
-  --background-color: c.$DARK-MODE-PRIMARY;
-  --text-color: c.$text-color;
-}
-
-.light {
-  --background-color: c.$LIGHT-MODE-PRIMARY;
-  --text-color: black;
-  color-scheme: light;
-}
-
-.dark {
-  --background-color: c.$DARK-MODE-PRIMARY;
-  --text-color: white;
-  color-scheme: dark;
 }
 

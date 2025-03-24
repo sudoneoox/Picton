@@ -1,16 +1,34 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "./Components/Navbar.jsx";
-import Footer from "./Components/Footer.jsx";
-import "./styles/output.css";
+import Navbar from "@/components/Navbar";
+import { useLocation } from "react-router-dom";
+import Footer from "@/components/Footer";
+import { pretty_log } from "@/api/common_util";
 
 const Layout = () => {
+  const location = useLocation();
+  const { pathname } = location
+
+  // IMPORTANT: Dont Show Navbar or Footers on these Pages and dont apply main-content-container styles
+  // we include (pathname == 404) because unknown paths get redirected to this url
+  const hideLayout = ["/admin/dashboard", "/dashboard", "/unauthorized"].some((route) => pathname.includes(route)) || pathname == "/404"
+  pretty_log(`current pathname -> ${pathname}`, "DEBUG");
+
   return (
     <div className="app-container">
-      <Navbar />
-      <main className={`main-content-container`}>
-        <Outlet />
-      </main>
-      <Footer />
+      {/* IMPORTANT: DONT SHOW NAVBAR OR FOOTER ON THESE PAGES*/}
+      {hideLayout ? (
+        <>
+          <Outlet />
+        </>
+      ) : (
+        <>
+          <Navbar />
+          <main className={`main-content-container`}>
+            <Outlet />
+          </main>
+          <Footer />
+        </>
+      )}
     </div>
   );
 };
