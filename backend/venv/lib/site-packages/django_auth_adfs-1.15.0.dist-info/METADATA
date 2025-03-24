@@ -1,0 +1,180 @@
+Metadata-Version: 2.3
+Name: django-auth-adfs
+Version: 1.15.0
+Summary: A Django authentication backend for Microsoft ADFS and AzureAD
+License: BSD-1-Clause
+Keywords: django,authentication,adfs,azure,ad,oauth2
+Author: Joris Beckers
+Author-email: joris.beckers@gmail.com
+Maintainer: Jonas Krüger Svensson
+Maintainer-email: jonas-ks@hotmail.com
+Requires-Python: >=3.9,<4.0
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Web Environment
+Classifier: Framework :: Django :: 4.2
+Classifier: Framework :: Django :: 5.0
+Classifier: Framework :: Django :: 5.1
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: License :: OSI Approved
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Internet :: WWW/HTTP
+Classifier: Topic :: Internet :: WWW/HTTP :: Dynamic Content
+Classifier: Topic :: Internet :: WWW/HTTP :: WSGI
+Classifier: Topic :: Software Development :: Libraries :: Application Frameworks
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Dist: PyJWT
+Requires-Dist: cryptography
+Requires-Dist: django (>=4.2,<5.0) ; python_version >= "3.9" and python_version < "3.10"
+Requires-Dist: django (>=4.2,<6) ; python_version >= "3.10"
+Requires-Dist: requests
+Requires-Dist: urllib3
+Project-URL: Documentation, https://django-auth-adfs.readthedocs.io/en/latest
+Project-URL: Homepage, https://github.com/snok/django-auth-adfs
+Project-URL: Repository, https://github.com/snok/django-auth-adfs
+Description-Content-Type: text/x-rst
+
+ADFS Authentication for Django
+==============================
+
+.. image:: https://readthedocs.org/projects/django-auth-adfs/badge/?version=latest
+    :target: http://django-auth-adfs.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+.. image:: https://img.shields.io/pypi/v/django-auth-adfs.svg
+    :target: https://pypi.python.org/pypi/django-auth-adfs
+.. image:: https://img.shields.io/pypi/pyversions/django-auth-adfs.svg
+    :target: https://pypi.python.org/pypi/django-auth-adfs#downloads
+.. image:: https://img.shields.io/pypi/djversions/django-auth-adfs.svg
+    :target: https://pypi.python.org/pypi/django-auth-adfs
+.. image:: https://codecov.io/github/snok/django-auth-adfs/coverage.svg?branch=master
+    :target: https://codecov.io/github/snok/django-auth-adfs?branch=master
+
+A Django authentication backend for Microsoft ADFS and Azure AD
+
+* Free software: BSD License
+* Homepage: https://github.com/snok/django-auth-adfs
+* Documentation: http://django-auth-adfs.readthedocs.io/
+
+Features
+--------
+
+* Integrates Django with Active Directory on Windows 2012 R2, 2016 or Azure AD in the cloud.
+* Provides seamless single sign on (SSO) for your Django project on intranet environments.
+* Auto creates users and adds them to Django groups based on info received from ADFS.
+* Django Rest Framework (DRF) integration: Authenticate against your API with an ADFS access token.
+
+Installation
+------------
+
+Python package::
+
+    pip install django-auth-adfs
+
+In your project's ``settings.py`` add these settings.
+
+.. code-block:: python
+
+    AUTHENTICATION_BACKENDS = (
+        ...
+        'django_auth_adfs.backend.AdfsAuthCodeBackend',
+        ...
+    )
+
+    INSTALLED_APPS = (
+        ...
+        # Needed for the ADFS redirect URI to function
+        'django_auth_adfs',
+        ...
+
+    # checkout the documentation for more settings
+    AUTH_ADFS = {
+        "SERVER": "adfs.yourcompany.com",
+        "CLIENT_ID": "your-configured-client-id",
+        "RELYING_PARTY_ID": "your-adfs-RPT-name",
+        # Make sure to read the documentation about the AUDIENCE setting
+        # when you configured the identifier as a URL!
+        "AUDIENCE": "microsoft:identityserver:your-RelyingPartyTrust-identifier",
+        "CA_BUNDLE": "/path/to/ca-bundle.pem",
+        "CLAIM_MAPPING": {"first_name": "given_name",
+                          "last_name": "family_name",
+                          "email": "email"},
+    }
+
+    # Configure django to redirect users to the right URL for login
+    LOGIN_URL = "django_auth_adfs:login"
+    LOGIN_REDIRECT_URL = "/"
+
+    ########################
+    # OPTIONAL SETTINGS
+    ########################
+
+    MIDDLEWARE = (
+        ...
+        # With this you can force a user to login without using
+        # the LoginRequiredMixin on every view class
+        #
+        # You can specify URLs for which login is not enforced by
+        # specifying them in the LOGIN_EXEMPT_URLS setting.
+        'django_auth_adfs.middleware.LoginRequiredMiddleware',
+    )
+
+In your project's ``urls.py`` add these paths:
+
+.. code-block:: python
+
+    urlpatterns = [
+        ...
+        path('oauth2/', include('django_auth_adfs.urls')),
+    ]
+
+This will add these paths to Django:
+
+* ``/oauth2/login`` where users are redirected to, to initiate the login with ADFS.
+* ``/oauth2/login_no_sso`` where users are redirected to, to initiate the login with ADFS but forcing a login screen.
+* ``/oauth2/callback`` where ADFS redirects back to after login. So make sure you set the redirect URI on ADFS to this.
+* ``/oauth2/logout`` which logs out the user from both Django and ADFS.
+
+Below is sample Django template code to use these paths depending if
+you'd like to use GET or POST requests. Logging out was deprecated in
+`Django 4.1 <https://docs.djangoproject.com/en/5.1/releases/4.1/#features-deprecated-in-4-1>`_.
+
+- Using GET requests:
+
+    .. code-block:: html
+
+        <a href="{% url 'django_auth_adfs:logout' %}">Logout</a>
+        <a href="{% url 'django_auth_adfs:login' %}">Login</a>
+        <a href="{% url 'django_auth_adfs:login-no-sso' %}">Login (no SSO)</a>
+
+- Using POST requests:
+
+    .. code-block:: html+django
+
+        <form method="post" action="{% url 'django_auth_adfs:logout' %}">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+        <form method="post" action="{% url 'django_auth_adfs:login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit">Login</button>
+        </form>
+        <form method="post" action="{% url 'django_auth_adfs:login-no-sso' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit">Login (no SSO)</button>
+        </form>
+
+Contributing
+------------
+Contributions to the code are more then welcome.
+For more details have a look at the ``CONTRIBUTING.rst`` file.
+
