@@ -1,5 +1,3 @@
-# backend/middleware.py
-
 from django.shortcuts import redirect
 
 class RedirectAuthenticatedMiddleware:
@@ -10,14 +8,12 @@ class RedirectAuthenticatedMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # List the exact URL paths for login and registration pages.
-        # Adjust these paths if your URLs differ.
+        # List the URL paths to protect (update these if your login/register URLs differ)
         protected_paths = ['/login/', '/register/']
 
-        # If the user is already authenticated and is trying to access one of these pages, redirect them.
+        # If user is authenticated and accessing a protected path, redirect them
         if request.user.is_authenticated and request.path in protected_paths:
-            return redirect('dashboard')  # 'dashboard' should match your URL name for the dashboard view.
-
-        # Otherwise, continue processing the request.
-        response = self.get_response(request)
-        return response
+            return redirect('dashboard')
+        
+        # Otherwise, continue processing the request
+        return self.get_response(request)
