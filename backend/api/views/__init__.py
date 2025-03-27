@@ -15,9 +15,6 @@ from .signature import CheckSignatureView, SubmitSignatureView
 # Forms
 from .forms import FormApprovalViewSet, FormTemplateViewSet, FormSubmissionViewSet
 
-# Custom student views
-from .views import dashboard_view, login_view, register_view, logout_view # Use these for login and register
-
 __all__ = [
     "LoginView",
     "RegisterView",
@@ -29,9 +26,4 @@ __all__ = [
     "FormApprovalViewSet",
     "CheckSignatureView",
     "SubmitSignatureView",
-    "dashboard_view",
-    "login_view",
-    "register_view",
-    "logout_view",
-
 ]
