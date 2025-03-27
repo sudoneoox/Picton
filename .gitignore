@@ -6,7 +6,6 @@ frontend/node_modules
 backend/api/__pychache__
 backend/api/migrations/__pycache__
 backend/config/__pycache__
-backend/node_modules/
 
 # env files
 database/scripts/.env
@@ -16,9 +15,5 @@ frontend/.env
 # other
 start_frontend.bat
 start_backend.bat
-.DS_Store
 
-# Python venv
 backend/venv
-backend/**/*.pyc
-__pycache__/
