@@ -1,6 +1,6 @@
 from django.forms import ValidationError
 from django.conf import settings
-from django.contrib.auth import authenticate, login, get_user_model
+from django.contrib.auth import authenticate, login, get_user_model, logout
 from django.contrib.auth.hashers import make_password
 
 from jwt.algorithms import RSAAlgorithm
@@ -13,7 +13,7 @@ from rest_framework.exceptions import (
     PermissionDenied as DRFPermissionDenied,
 )
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 import jwt
 import json
@@ -37,13 +37,14 @@ class LoginView(views.APIView, MethodNameMixin):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        try: 
+        try:
             serializer = LoginSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
 
             if DEBUG:
                 pretty_print(
-                    f"Received Request from {self._get_method_name()}: {request}", "DEBUG"
+                    f"Received Request from {self._get_method_name()}: {request}",
+                    "DEBUG",
                 )
 
             username = request.data.get("username")
@@ -92,8 +93,7 @@ class LoginView(views.APIView, MethodNameMixin):
         except Exception as e:
             pretty_print(f"Login Error: {str(e)}", "ERROR")
             return Response(
-                {"error": "Authentication failed"}, 
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Authentication failed"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -178,9 +178,9 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
         jwks = self._get_azure_jwks()
         header = jwt.get_unverified_header(token)
         public_key = None
-        
-        for key in jwks['keys']:
-            if key['kid'] == header['kid']:
+
+        for key in jwks["keys"]:
+            if key["kid"] == header["kid"]:
                 public_key = RSAAlgorithm.from_jwk(json.dumps(key))
                 break
 
@@ -192,7 +192,7 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
             key=public_key,
             algorithms=["RS256"],
             audience=settings.AUTH_ADFS["CLIENT_ID"],
-            issuer=f"https://sts.windows.net/{settings.AUTH_ADFS['TENANT_ID']}/"
+            issuer=f"https://sts.windows.net/{settings.AUTH_ADFS['TENANT_ID']}/",
         )
 
     @action(detail=False, methods=["post"])
@@ -215,11 +215,12 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
             raise AuthenticationFailed("Invalid token issuer")
 
         # extract login information
-        email = (payload.get("preferred_username") or
-                 payload.get("upn") or 
-                 payload.get("email") or 
-                 ""
-                 ).lower()
+        email = (
+            payload.get("preferred_username")
+            or payload.get("upn")
+            or payload.get("email")
+            or ""
+        ).lower()
 
         if not email:
             pretty_print(f"Token payload: {payload}", "ERROR")  # Debug
@@ -256,7 +257,8 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
             if not token:
                 raise ValidationError("No Token Provided")
             pretty_print(
-                f"Received Token from {self._get_method_name()}: {token[:25]}...", "DEBUG"
+                f"Received Token from {self._get_method_name()}: {token[:25]}...",
+                "DEBUG",
             )
 
             # Decode Token without verification to extract claims
@@ -315,3 +317,28 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
         except jwt.PyJWTError as e:
             pretty_print(f"JWT decode error: {str(e)}", "ERROR")
             raise AuthenticationFailed("Invalid token format")
+
+
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
+
+class LogoutView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(csrf_exempt)
+    @action(detail=False, methods=["POST"])
+    def post(self, request):
+        try:
+            pretty_print("LOGGING OUT USER", "INFO")
+
+            logout(request)
+            return Response(
+                {"message": "Logged out successfully."}, status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            pretty_print(f"Logout Error: {str(e)}", "ERROR")
+            return Response(
+                {"error": "Logout failed"}, status=status.HTTP_400_BAD_REQUEST
+            )

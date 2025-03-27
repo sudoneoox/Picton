@@ -17,6 +17,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "react-router-dom";
+import { api } from "@/api/api.js";
+
 export function NavUser({
   user,
 }: {
@@ -84,7 +86,7 @@ export function NavUser({
             {/* with loggin back in */}
             {/* ERROR: for right now just go back to login */}
             <Link to={"/login"}>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={api.auth.logout}>
                 <LogOut />
                 Log out
               </DropdownMenuItem>

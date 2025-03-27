@@ -7,7 +7,7 @@
  */
 import { API_BASE_URL } from "@/api/common_util";
 import { securedFetch } from "./http";
-import { pretty_log } from "./common_util";
+import { pretty_log, getCSRFToken } from "./common_util";
 
 export const auth = {
   /**
@@ -148,4 +148,29 @@ export const auth = {
       throw error;
     }
   },
+
+  // LOGS OUT USER
+  async logout() {
+    pretty_log(`Attempting to logout user`, "DEBUG")
+    try {
+      const response = await fetch(`${API_BASE_URL}/logout/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCSRFToken(),
+        },
+      })
+
+      if (response.ok) {
+        pretty_log("Logout Successful", "DEBUG")
+      } else {
+        pretty_log(("Logout Failed"), "ERROR")
+      }
+
+    } catch (e) {
+      pretty_log(`Error during logout ${e}`, "ERROR")
+
+    }
+  }
 };

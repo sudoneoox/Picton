@@ -13,6 +13,7 @@ from .views import (
     FormTemplateViewSet,
     SubmitSignatureView,
     CheckSignatureView,
+    LogoutView,
 )
 
 
@@ -29,17 +30,17 @@ router.register(r"forms/approvals", FormApprovalViewSet, basename="form-approval
 urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("register/", RegisterView.as_view(), name="register"),
+    path("logout/", LogoutView.as_view(), name="logout"),
     # includes above router.register
     path("", include(router.urls)),
     path("signature/check/", CheckSignatureView.as_view(), name="check-signature"),
     path("signature/upload/", SubmitSignatureView.as_view(), name="upload-signature"),
 ]
 
+
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
-    
+
     if response is not None:
-        response.data = {
-            'error': str(exc)
-        }
+        response.data = {"error": str(exc)}
     return response
