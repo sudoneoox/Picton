@@ -19,6 +19,6 @@ start_backend.bat
 .DS_Store
 
 # Python venv
-venv/
-*.pyc
+backend/venv
+backend/**/*.pyc
 __pycache__/
