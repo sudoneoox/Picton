@@ -5,13 +5,6 @@ from .authentication import (
     AzureAuthViewSet,
 )
 
-# Auth Related Views
-from .authentication import (
-    LoginView,
-    RegisterView,
-    AzureAuthViewSet,
-)
-
 # Admin dashboard viewsets
 from .admin_dashboard import AdminDashboardViewSet
 
@@ -23,7 +16,7 @@ from .signature import CheckSignatureView, SubmitSignatureView
 from .forms import FormApprovalViewSet, FormTemplateViewSet, FormSubmissionViewSet
 
 # Custom student views
-from .views import dashboard_view, login_view, register_view  # Use these for login and register
+from .views import dashboard_view, login_view, register_view, logout_view # Use these for login and register
 
 __all__ = [
     "LoginView",
@@ -39,5 +32,6 @@ __all__ = [
     "dashboard_view",
     "login_view",
     "register_view",
+    "logout_view",
 
 ]
