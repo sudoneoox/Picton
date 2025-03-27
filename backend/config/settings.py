@@ -193,20 +193,24 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Update session/cookie settings
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = False     # Needs to be accessible by JS
-CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+CSRF_COOKIE_HTTPONLY = False  # Needs to be accessible by JS
+CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
 
 # Security Settings for Development (HTTP)
-CSRF_COOKIE_SAMESITE = 'Lax'  # Allow cross-origin cookies
-SESSION_COOKIE_SAMESITE = 'Lax' # Can be 'None' if using HTTPS
-CSRF_COOKIE_SECURE = False      # Only for development (False for HTTP, True in production (HTTPS))
-SESSION_COOKIE_SECURE = False   # Only for development (False for HTTP, True in production (HTTPS))
+CSRF_COOKIE_SAMESITE = "Lax"  # Allow cross-origin cookies
+SESSION_COOKIE_SAMESITE = "Lax"  # Can be 'None' if using HTTPS
+CSRF_COOKIE_SECURE = (
+    False  # Only for development (False for HTTP, True in production (HTTPS))
+)
+SESSION_COOKIE_SECURE = (
+    False  # Only for development (False for HTTP, True in production (HTTPS))
+)
 
 # Session Persistence
-SESSION_COOKIE_AGE = 1209600    # 2 weeks (default)
+SESSION_COOKIE_AGE = 1209600  # 2 weeks (default)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Persist across browser restarts
-SESSION_SAVE_EVERY_REQUEST = True       # Renew session on activity
+SESSION_SAVE_EVERY_REQUEST = True  # Renew session on activity
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -217,7 +221,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
-     "DEFAULT_RENDERER_CLASSES": [
+    "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",  # Force JSON even in DEBUG
     ],
     "EXCEPTION_HANDLER": "api.utils.custom_exception_handler",
