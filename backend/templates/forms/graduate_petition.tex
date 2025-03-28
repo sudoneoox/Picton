@@ -1,66 +1,171 @@
-\documentclass{article}
-\usepackage[utf8]{inputenc}
+\documentclass[12pt]{article}
+\usepackage[paperwidth=1000pt, paperheight=1100pt, margin=1in]{geometry}
 \usepackage{graphicx}
+\usepackage{multirow}
 \usepackage{array}
-\usepackage{geometry}
-\geometry{margin=1in}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amssymb}
+
+% -- placeholder variables 
+\newcommand{\lastName}{$LAST_NAME$}
+\newcommand{\firstName}{$FIRST_NAME$}
+\newcommand{\middleName}{$MIDDLE_NAME$}
+\newcommand{\studentID}{$STUDENT_ID$}
+\newcommand{\phoneNumber}{$PHONE_NUMBER$}
+\newcommand{\emailAddress}{$EMAIL_ADDRESS$}
+\newcommand{\programPlan}{$PROGRAM_PLAN$}
+\newcommand{\academicCareer}{$ACADEMIC_CAREER$}
+\newcommand{\yearValue}{$YEAR$}
+\newcommand{\seasonValue}{$SEASON$}
+\newcommand{\petitionExplanation}{$PETITION_EXPLANATION$}
+
+% -- petition purposes
+\newcommand{\purposeUpdateProgramStatus}{$PURPOSE_UPDATE_PROGRAM_STATUS$}
+\newcommand{\purposeAdmissionStatusChange}{$PURPOSE_ADMISSION_STATUS_CHANGE$}
+\newcommand{\purposeAddConcurrent}{$PURPOSE_ADD_CONCURRENT$}
+\newcommand{\purposeChangeDegreeObjective}{$PURPOSE_CHANGE_DEGREE_OBJECTIVE$}
+\newcommand{\purposeDegreeRequirementException}{$PURPOSE_DEGREE_REQUIREMENTS_EXCEPTION$}
+\newcommand{\purposeLeaveOfAbsence}{$PURPOSE_LEAVE_OF_ABSENCE$}
+\newcommand{\purposeReinstateDiscontinued}{$PURPOSE_REINSTATE_DISCONTINUED$}
+\newcommand{\purposeRequestToGraduate}{$PURPOSE_REQUEST_TO_GRADUATE$}
+\newcommand{\purposeChangeAdminTerm}{$PURPOSE_CHANGE_ADMIN_TERM$}
+\newcommand{\purposeEarlySubmission}{$PURPOSE_EARLY_SUBMISSION$}
+\newcommand{\purposeOther}{$PURPOSE_OTHER$}
+
+% signature placeholder
+\newcommand{\studentSignature}{$STUDENT_SIGNATURE$}
+\newcommand{\currentDate}{$CURRENT_DATE$}
+
+% -- for quick checkboxes in the form
+\newcommand{\checkbox}[1]{$#1$}
 
 \begin{document}
+\thispagestyle{empty}
 
-% UNIVERSITY HEADER
 \begin{center}
-    % \includegraphics[width=2.5in]{$UNIVERSITY_LOGO$} \\
-    \Large\textbf{UNIVERSITY of HOUSTON | GRADUATE SCHOOL} \\
-    \large\textbf{GRADUATE and PROFESSIONAL STUDENT PETITION} \\
-    \small gradservices@uh.edu
+  \textbf{\huge \color{gray} UNIVERSITY of \color{red} HOUSTON \color{darkgray} | GRADUATE SCHOOL}
 \end{center}
 
-\vspace{0.5cm}
+\textbf{\LARGE Graduate Professional Student Petition} 
+\vspace{1.5em}
 
-% STUDENT INFORMATION
-\begin{tabular}{ll}
-    \textbf{Name:} & $LAST_NAME$, $FIRST_NAME$ $MIDDLE_NAME$ \\
-    \textbf{MyUH ID:} & $STUDENT_ID$ \\
-    \textbf{Contact Phone:} & $PHONE_NUMBER$ \\
-    \textbf{Program:} & $PROGRAM_PLAN$ \\
-    \textbf{Plan Code:} & $PLAN_CODE$ \\
-    \textbf{Effective Term:} & $SEASON$ $YEAR$ \\
-    \textbf{UH Email:} & $EMAIL$
+% === NAME / ID / CONTACT TABLE ==
+\begin{tabular}{|p{0.30\textwidth}|p{0.30\textwidth}|p{0.321\textwidth}|}
+\hline
+\textbf{Name:} & \multicolumn{2}{l|}{\lastName, \firstName \middleName} \\
+\scriptsize (Last, First, Middle) & \multicolumn{2}{l|}{} \\
+\hline
+\textbf{myUH ID:} \studentID & \textbf{Contact Phone:} \phoneNumber & \textbf{UH Email:} \emailAddress \\
+\hline
+\textbf{Current Student Information} & \textbf{Career:} \academicCareer & \textbf{Program/Plan:} \programPlan \\
+\hline
+\textbf{Petition Effective Term:} \yearValue & \multicolumn{2}{l|}{\seasonValue} \\
+\hline
+\end{tabular}
+\vspace{0.5em}
+
+% === PURPOSE + EXPLANATION (side-by-side in one grid) ===
+\begin{tabular}{|p{0.60\textwidth}|p{0.335\textwidth}|}
+\hline
+\multicolumn{1}{|c|}{\textbf{\large PURPOSE OF PETITION (select one):}} 
+& \multicolumn{1}{c|}{\textbf{\large EXPLANATION OF REQUEST}} \\
+\hline
+% --- Left side: PURPOSE ---
+\begin{minipage}[t]{0.43\textwidth}
+    \vspace{0.5em}
+    1. \checkbox{\purposeUpdateProgramStatus} Update program status/action (term activate, discontinue, etc) \\
+    2. \checkbox{\purposeAdmissionStatusChange} Admissions status change (conditional to unconditional) \\
+    3. \checkbox{\purposeAddConcurrent} Add new concurrent degree or certificate objective \\
+    4. \checkbox{\purposeChangeDegreeObjective} Change current degree objective (program/plan) \\
+    5. \checkbox{\purposeDegreeRequirementException} Degree requirement exception or approved course substitution \\
+    6. \checkbox{\purposeLeaveOfAbsence} Leave of Absence (include specific term in explanation) \\
+    7. \checkbox{\purposeReinstateDiscontinued} Reinstatement to discontinued career \\
+    8. \checkbox{\purposeRequestToGraduate} Request to apply to graduate after the late filing deadline \\
+    9. \checkbox{\purposeChangeAdminTerm} Change Admit Term \\
+    10. \checkbox{\purposeEarlySubmission} Early Submission of Thesis/Dissertation \\
+    11. \checkbox{\purposeOther} Other (explain below) \\
+    \vspace{0.5em}
+\end{minipage}
+% --- Right side: EXPLANATION ---
+&
+\begin{minipage}[t]{0.30\textwidth}
+    \vspace{0.5em}
+    \raggedright
+    \petitionExplanation
+    \vspace{1em} % Extra space if needed
+\end{minipage}\\
+\hline
+\end{tabular}
+\vspace{0.5em}
+
+% === SIGNATURE / ADMINISTRATIVE REQUEST ROW ===
+\begin{tabular}{|p{0.32\textwidth}|p{0.20\textwidth}|p{0.401\textwidth}|}
+\hline
+\textbf{STUDENT SIGNATURE} & \textbf{DATE} & \textbf{Administrative Request}\\
+\hline
+\parbox[t]{0.32\textwidth}{
+    \studentSignature
+} 
+& \parbox[t]{0.20\textwidth}{
+    \currentDate
+}
+& 
+\parbox[t]{0.48\textwidth}{
+    % anything needed for admin request goes here
+}\\
+\hline
 \end{tabular}
 
-\vspace{0.5cm}
+\vspace{0.5em}
 
-% PETITION DETAILS
-\section*{PURPOSE OF PETITION}
-\begin{itemize}
-    $PURPOSE_ITEMS$
-\end{itemize}
+% === APPROVALS / ACADEMIC OFFICE USE ONLY ===
+\begin{tabular}{|p{0.695\textwidth}|p{0.20\textwidth}|}
+\hline
+\multicolumn{1}{|c|}{\textbf{REQUIRED APPROVALS}} & \multicolumn{1}{c|}{\textbf{ACADEMIC OFFICE USE ONLY}}\\
+\hline
+% -- Left Box (Approvals) --
+\begin{minipage}[t]{0.68\textwidth}
+    \textbf{Graduate Advisor/Committee Chair}\hfill 
+    \checkbox{} APPROVED \quad \checkbox{} DISAPPROVED \hfill 
+    Signature: \underline{\hspace{1.5in}} \hfill Date: \underline{\hspace{0.8in}} \\
+    Print Name: \underline{\hspace{1.5in}} 
+    \vspace{1em}
 
-\section*{EXPLANATION OF REQUEST}
-$PETITION_EXPLANATION$
+    \textbf{Graduate Studies/Program Director}\hfill 
+    \checkbox{} APPROVED \quad \checkbox{} DISAPPROVED \hfill 
+    Signature: \underline{\hspace{1.5in}} \hfill Date: \underline{\hspace{0.8in}} \\
+    Print Name: \underline{\hspace{1.5in}}
+    \vspace{1em}
 
-\vspace{1cm}
+    \textbf{Department Chair if required}\hfill 
+    \checkbox{} APPROVED \quad \checkbox{} DISAPPROVED \hfill 
+    Signature: \underline{\hspace{1.5in}} \hfill Date: \underline{\hspace{0.8in}} \\
+    Print Name: \underline{\hspace{1.5in}}
+    \vspace{1em}
 
-% SIGNATURES
-\begin{tabular}{p{0.5\textwidth}p{0.5\textwidth}}
-    \textbf{Student Signature:} & \textbf{Date:} $SUBMIT_DATE$ \\
-    \includegraphics[width=2in]{$STUDENT_SIGNATURE$} & \\
-\end{tabular}
+    \textbf{Assoc/Asst Dean for Graduate Studies}\hfill 
+    \checkbox{} APPROVED \quad \checkbox{} DISAPPROVED \hfill 
+    Signature: \underline{\hspace{1.5in}} \hfill Date: \underline{\hspace{0.8in}} \\
+    Print Name: \underline{\hspace{1.5in}}
+    \vspace{1em}
 
-% APPROVAL TABLE
-\vspace{1cm}
-\begin{tabular}{|l|l|l|}
-    \hline
-    \textbf{Required Approvals} & \textbf{Signature} & \textbf{Date} \\
-    \hline
-    Graduate Advisor & $ADVISOR_SIGNATURE$ & $ADVISOR_DATE$ \\
-    \hline
-    Graduate Studies Director & $DIRECTOR_SIGNATURE$ & $DIRECTOR_DATE$ \\
-    \hline
-    Department Chair & $CHAIR_SIGNATURE$ & $CHAIR_DATE$ \\
-    \hline
-    Graduate School Dean & $DEAN_SIGNATURE$ & $DEAN_DATE$ \\
-    \hline
+    \textbf{Vice Provost/Dean of the Graduate School}\hfill 
+    \checkbox{} APPROVED \quad \checkbox{} DISAPPROVED \hfill 
+    Signature: \underline{\hspace{1.5in}} \hfill Date: \underline{\hspace{0.8in}} \\
+    Print Name: \underline{\hspace{1.5in}}
+\end{minipage}
+% -- Right Box (Office Use) --
+&
+\begin{minipage}[t]{0.26\textwidth}
+\vspace{1em}
+\textbf{COMMENTS / NOTES:}
+
+\vspace{8em} % space for writing
+
+\end{minipage}\\
+\hline
 \end{tabular}
 
 \end{document}
+
