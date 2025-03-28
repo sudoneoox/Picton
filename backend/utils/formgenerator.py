@@ -51,12 +51,7 @@ class FormPDFGenerator:
         if template_name in ["withdrawal", "Term Withdrawal Form"]:
             return self.generate_withdrawal_form(user, form_data)
         elif template_name in ["graduate", "Graduate Petition Form"]:
-            pretty_print("GRADUATE TEMPLATE NOT YET IMPLEMENTED", "WARNING")
-            pretty_print("USING WITHDRAWAL AS PLACEHOLDER", "WARNING")
-            # Create a simple placeholder PDF for now
-            return self.generate_graduate_petition(
-                user, form_data
-            )  # Using withdrawal as placeholder
+            return self.generate_graduate_petition(user, form_data)
         else:
             pretty_print(f"NOT A VALID TEMPLATE_NAME: {template_name}", "ERROR")
             raise ValueError(f"Invalid Template Name: {template_name}")
@@ -156,61 +151,77 @@ class FormPDFGenerator:
 
         return pdf_file
 
-    def _format_purpose_items(self, form_data):
-        purposes = []
-        for i in range(1, 13):
-            key = f"purpose_{i}"
-            if form_data.get(key, False):
-                purposes.append(f"\\item {self._purpose_descriptions[i]}")
-        return "\n".join(purposes)
-
-    _purpose_descriptions = {
-        1: "Update program status/action (term activate, discontinue, etc)",
-        2: "Admissions status change (conditional to unconditional)",
-        3: "Add new concurrent degree or certificate objective",
-        4: "Change current degree objective (program/plan)",
-        5: "Degree requirement exception or approved course substitution",
-        6: "Leave of Absence (include specific term)",
-        7: "Reinstatement to discontinued career",
-        8: "Request to apply to graduate after late filing deadline",
-        9: "Transfer Credit",
-        10: "Change Admit Term",
-        11: "Early Submission of Thesis/Dissertation",
-        12: "Other (explained in request)",
-    }
-
     def generate_graduate_petition(self, user, form_data):
         template_path = os.path.join(self.template_dir, "graduate_petition.tex")
         with open(template_path, "r") as file:
-            template = file.read()
+            template_content = file.read()
 
+        # Determine which petition purpose was selected and set checkmark or square
+        all_purposes = {
+            "update_program_status": "$PURPOSE_UPDATE_PROGRAM_STATUS$",
+            "admission_status_change": "$PURPOSE_ADMISSION_STATUS_CHANGE$",
+            "add_concurrent_degree": "$PURPOSE_ADD_CONCURRENT$",
+            "change_degree_objective": "$PURPOSE_CHANGE_DEGREE_OBJECTIVE$",
+            "degree_requirements_exception": "$PURPOSE_DEGREE_REQUIREMENTS_EXCEPTION$",
+            "leave_of_absence": "$PURPOSE_LEAVE_OF_ABSENCE$",
+            "reinstate_discontinued": "$PURPOSE_REINSTATE_DISCONTINUED$",
+            "request_to_graduate": "$PURPOSE_REQUEST_TO_GRADUATE$",
+            "change_admin_term": "$PURPOSE_CHANGE_ADMIN_TERM$",
+            "early_submission": "$PURPOSE_EARLY_SUBMISSION$",
+            "other": "$PURPOSE_OTHER$",
+        }
+        selected_purpose = form_data.get("petition_purpose", "")
+        checkmark_dict = {}
+        for key, placeholder in all_purposes.items():
+            # if user-chosen purpose matches key, place a checkmark; otherwise empty square
+            checkmark_dict[placeholder] = (
+                "\\checkmark" if key == selected_purpose else "\\square"
+            )
+
+        # Format date as mm/dd/yyyy
+        current_date = datetime.now().strftime("%m/%d/%Y")
+
+        # Build replacements for placeholders:
         replacements = {
             "$LAST_NAME$": form_data.get("last_name", user.last_name),
             "$FIRST_NAME$": form_data.get("first_name", user.first_name),
             "$MIDDLE_NAME$": form_data.get("middle_name", ""),
             "$STUDENT_ID$": str(form_data.get("student_id", "")),
-            "$PHONE_NUMBER$": str(form_data.get("phone_number", user.phone_number)),
+            "$PHONE_NUMBER$": self._format_phone_number(
+                form_data.get("phone_number", user.phone_number)
+            ),
+            "$EMAIL_ADDRESS$": form_data.get("email", user.email),
             "$PROGRAM_PLAN$": form_data.get("program_plan", ""),
-            "$PLAN_CODE$": form_data.get("plan_code", ""),
-            "$SEASON$": form_data.get("season", ""),
-            "$YEAR$": str(form_data.get("year", datetime.now().year)),
-            "$EMAIL$": form_data.get("email", user.email),
-            "$PURPOSE_ITEMS$": self._format_purpose_items(form_data),
-            "$PETITION_EXPLANATION$": form_data.get("explanation", ""),
-            "$SUBMIT_DATE$": datetime.now().strftime("%m/%d/%Y"),
-            "$STUDENT_SIGNATURE$": self._process_signature(user),
-            "$UNIVERSITY_LOGO$": self.logo_path,
+            "$ACADEMIC_CAREER$": form_data.get("academic_career", ""),
+            "$YEAR_VALUE$": str(form_data.get("year", datetime.now().year)),
+            "$SEASON_VALUE$": form_data.get("season", ""),
+            "$PETITION_EXPLANATION$": form_data.get("petition_explanation", ""),
+            "$CURRENT_DATE$": current_date,
         }
 
-        # Add approval signatures (to be implemented later)
-        for role in ["advisor", "director", "chair", "dean"]:
-            replacements[f"${role.upper()}_SIGNATURE$"] = ""
-            replacements[f"${role.upper()}_DATE$"] = ""
+        # Handle the user's signature (if any)
+        if user.signature:
+            signature_content = self._process_signature(user)
+            replacements["$STUDENT_SIGNATURE$"] = signature_content
+        else:
+            replacements["$STUDENT_SIGNATURE$"] = ""
 
+        # Merge in checkmark replacements for the 11 petition purpose placeholders
+        replacements.update(checkmark_dict)
+
+        # Perform the actual replacements in the LaTeX template
         for placeholder, value in replacements.items():
-            template = template.replace(placeholder, str(value))
+            template_content = template_content.replace(placeholder, str(value))
 
-        return self._compile_latex(template)
+        # Compile to PDF
+        pdf_file = self._compile_latex(template_content)
+
+        # Optionally name the PDF
+        user_id = getattr(user, "id", "0")
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        pdf_file.name = f"graduate_petition_user{user_id}_{timestamp}.pdf"
+
+        return pdf_file
 
     def _process_signature(self, user):
         """Process user signature for inclusion in the PDF"""

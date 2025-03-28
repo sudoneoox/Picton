@@ -108,7 +108,7 @@ const ProtectedRoute = ({
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Shared.LoadingPage />
   }
 
   // failed auth return to /login
