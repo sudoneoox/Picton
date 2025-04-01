@@ -29,6 +29,8 @@ export function NavMain({
     items?: {
       title: string;
       url: string;
+      isActive?: boolean;
+      onClick?: () => void;
     }[];
   }[];
 }) {
