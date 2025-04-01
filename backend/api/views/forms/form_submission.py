@@ -33,8 +33,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         So user can preview pdf inside their dashboard
         """
         pretty_print(f"Generating form preview from {self._get_method_name()}", "INFO")
-        pretty_print(f"User authenticated: {request.user.is_authenticated}", "DEBUG")
-        pretty_print(f"User: {request.user.username}", "DEBUG")
         pretty_print(f"Request session: {request.session.items()}", "DEBUG")
         pretty_print(f"Got Full Request {request.data}", "INFO")
 
@@ -55,8 +53,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             form_template_id = None
             form_data = None
 
-        pretty_print("Full Form Preview Request Data:", "DEBUG")
-        pretty_print(f"FORM_TEMPLATE_ID: {form_template_id}", "INFO")
+        pretty_print("Form Preview Request Data:", "DEBUG")
         pretty_print(f"FORM_DATA: {form_data}", "INFO")
 
         # Validate required fields

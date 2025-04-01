@@ -6,37 +6,44 @@
 \usepackage{array}
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{amssymb}
 
 % Define placeholder variables that will be replaced by Python
-\newcommand{\studentName}{$STUDENT_NAME$}
+\newcommand{\lastName}{$LAST_NAME$}
+\newcommand{\firstName}{$FIRST_NAME$}
+\newcommand{\middleName}{$MIDDLE_NAME$}
 \newcommand{\studentID}{$STUDENT_ID$}
 \newcommand{\phoneNumber}{$PHONE_NUMBER$}
 \newcommand{\emailAddress}{$EMAIL_ADDRESS$}
 \newcommand{\programPlan}{$PROGRAM_PLAN$}
 \newcommand{\academicCareer}{$ACADEMIC_CAREER$}
 \newcommand{\withdrawalYear}{$WITHDRAWAL_YEAR$}
-\newcommand{\seasonFall}{$FALL_SELECTED$}
-\newcommand{\seasonSpring}{$SPRING_SELECTED$}
-\newcommand{\seasonSummer}{$SUMMER_SELECTED$}
 \newcommand{\studentSignature}{$STUDENT_SIGNATURE$}
 \newcommand{\currentDate}{$CURRENT_DATE$}
 
-% NOTE: For checkboxes in the form
-\newcommand{\checkbox}[1]{$#1$}
+% INITIALS
+\newcommand{\initFinancialAid}{$INIT_FINANCIAL_AID$}
+\newcommand{\initInternational}{$INIT_INTERNATIONAL_STUDENT$}
+\newcommand{\initStudentAthletes}{$INIT_STUDENT_ATHLETE$}
+\newcommand{\initVeterans}{$INIT_VETERANS$}
+\newcommand{\initGradProfessional}{$INIT_GRADUATE_PROFESSIONAL$}
+\newcommand{\initDoctoral}{$INIT_DOCTORAL_STUDENT$}
+\newcommand{\initHousing}{$INIT_STUDENT_HOUSING$}
+\newcommand{\initDining}{$INIT_DINING_SERVICES$}
+\newcommand{\initParking}{$INIT_PARKING_TRANSPORTATION$}
+
+\newcommand{\seasonFall}{$FALL_SELECTED$}
+\newcommand{\seasonSpring}{$SPRING_SELECTED$}
+\newcommand{\seasonSummer}{$SUMMER_SELECTED$}
 
 \begin{document}
 \thispagestyle{empty}
 
-% NOTE: University header
-\begin{minipage}{0.5\textwidth}
-  \includegraphics[width=3in]{./university_logo.png}
-\end{minipage}
-\begin{minipage}{0.5\textwidth}
-  \raggedleft
-  Submit in person to:\\
-  Office of the University Registrar at\\
-  the Welcome Center\\
-  or\\
+\begin{minipage}{1\textwidth}
+  Submit in person to:
+  Office of the University Registrar at
+  the Welcome Center
+  or
   Fax to: 713-743-8342
 \end{minipage}
 
@@ -44,56 +51,58 @@
   \textbf{\Large Student Request for Official Term Withdrawal}
 \end{center}
 
-\noindent\begin{tabular}{@{}p{1.8in}p{4.5in}@{}}
-Student Name: & \underline{\studentName} \\
- & \scriptsize{Last \hspace{1.5in} First \hspace{1.5in} Middle} \\
+\noindent\begin{tabular}{@{}p{1.2in}p{1in}p{1in}p{1in}@{}} 
+Student name: & \underline{\lastName}, & \underline{\firstName} & \underline{\middleName}\\
+ & \scriptsize{last} & \scriptsize{first} & \scriptsize{middle}\\
 \end{tabular}
-\hfill myUH ID: \underline{\studentID}
-
-\noindent\begin{tabular}{@{}p{1.8in}p{4.5in}@{}}
-Phone \#: & \underline{\phoneNumber} \\
+\\\\
+\hfill MyUH ID: \underline{\studentID}
+\\\\
+\noindent\begin{tabular}{@{}p{2in}p{2in}@{}}
+  Phone \#:   \underline{\phoneNumber} \\
 \end{tabular}
-\noindent\begin{tabular}{@{}p{1.8in}p{4.5in}@{}}
-Email: & \underline{\emailAddress} \\
+\\\\
+\noindent\begin{tabular}{@{}p{3in}p{4.5in}@{}}
+Email: \underline{\emailAddress} \\
 \end{tabular}
-
-\noindent\begin{tabular}{@{}p{1.8in}p{4.5in}@{}}
-Program/Plan: & \underline{\programPlan} \\
+\\\\
+\noindent\begin{tabular}{@{}p{3in}p{4.5in}@{}}
+Program/Plan:  \underline{\programPlan} \\
 \end{tabular}
+\\\\
 \hfill Academic Career: \underline{\academicCareer}
+\\
 
 \noindent\begin{tabular}{@{}p{1.8in}@{}}
 Withdrawal Term: \\
 \end{tabular}
-\underline{\withdrawalYear} \hspace{0.2in} Fall \seasonFall \hspace{0.2in} Spring \seasonSpring \hspace{0.2in} Summer \seasonSummer
-\begin{flushright}
-\scriptsize{Year}
-\end{flushright}
+\\
+\underline{\withdrawalYear} \hspace{0.2in} Fall $\seasonFall$ \hspace{0.2in} Spring $\seasonSpring$ \hspace{0.2in} Summer $\seasonSummer$
 
-\vspace{0.2cm}
-\textbf{Initial all that apply:}
-
+\vspace{0.5cm}
+\noindent\textbf{Initial all that apply:}
 \begin{itemize}
 \setlength\itemsep{0.5em}
-\item[] \textbf{STUDENTS RECEIVING FINANCIAL AID} — I understand that if I withdrawal from \textbf{ALL} classes I may owe financial aid back to the university based on federal regulations that require a refund calculation to determine the Federal Title IV Funds I earned. I understand that any future financial aid will be canceled. I understand that if I withdrawal prior to the Official Reporting Day of a term, all state and institutional aid will be canceled and I will owe this to the university. I understand that withdrawing from classes will impact my Satisfactory Academic Progress standing and may cause me to lose my future financial aid eligibility. I understand that if I am receiving a university scholarship I may lose scholarship eligibility.
+\item[\initFinancialAid] \textbf{STUDENTS RECEIVING FINANCIAL AID} — I understand that if I withdrawal from \textbf{ALL} classes I may owe financial aid back to the university based on federal regulations that require a refund calculation to determine the Federal Title IV Funds I earned. I understand that any future financial aid will be canceled. I understand that if I withdrawal prior to the Official Reporting Day of a term, all state and institutional aid will be canceled and I will owe this to the university. I understand that withdrawing from classes will impact my Satisfactory Academic Progress standing and may cause me to lose my future financial aid eligibility. I understand that if I am receiving a university scholarship I may lose scholarship eligibility.
 
-\item[] \textbf{INTERNATIONAL STUDENTS HOLDING F-1 OR J-1 STUDENT VISAS} — I understand that federal regulations require me to obtain authorization for a reduced course load from the International Student and Scholar Services Office (ISSSO) prior to withdrawing from the university and that I have obtained such authorization.
+\item[\initInternational] \textbf{INTERNATIONAL STUDENTS HOLDING F-1 OR J-1 STUDENT VISAS} — I understand that federal regulations require me to obtain authorization for a reduced course load from the International Student and Scholar Services Office (ISSSO) prior to withdrawing from the university and that I have obtained such authorization.
 
-\item[] \textbf{STUDENT-ATHLETES} — I understand that I must clear any financial holds related to student-athlete services and return all textbooks, uniforms, and equipment to avoid being charged for those items. I must also meet with Student-Athlete Development and the Office of Athletics' Compliance for information about current and future academic eligibility status and cancellation of remaining aid.
+\item[\initStudentAthletes] \textbf{STUDENT-ATHLETES} — I understand that I must clear any financial holds related to student-athlete services and return all textbooks, uniforms, and equipment to avoid being charged for those items. I must also meet with Student-Athlete Development and the Office of Athletics' Compliance for information about current and future academic eligibility status and cancellation of remaining aid.
 
-\item[] \textbf{VETERANS} — I understand that an official term withdrawal from the university will automatically initiate a recalculation of tuition, fees and the rate of pursuit (enrollment status) reported to the VA. I Understand that withdrawing from the university may impact my GI Bill benefits, holding me responsible for the repayment of a portion of my tuition, fees and housing as determined by the VA. For more information, I will consult with a Certifying Official for Veteran Educational Benefits at the Office of the University Registrar counter in the Welcome Center.
+\item[\initVeterans] \textbf{VETERANS} — I understand that an official term withdrawal from the university will automatically initiate a recalculation of tuition, fees and the rate of pursuit (enrollment status) reported to the VA. I Understand that withdrawing from the university may impact my GI Bill benefits, holding me responsible for the repayment of a portion of my tuition, fees and housing as determined by the VA. For more information, I will consult with a Certifying Official for Veteran Educational Benefits at the Office of the University Registrar counter in the Welcome Center.
 
-\item[] \textbf{GRADUATE/PROFESSIONAL STUDENTS} — I understand that any university support (i.e. graduate assignment, DSTF) will be cancelled. Withdrawals after the official reporting day require that I meet with my Academic Advisor and provide instructor-approved drop forms for each class (attached).
+\item[\initGradProfessional] \textbf{GRADUATE/PROFESSIONAL STUDENTS} — I understand that any university support (i.e. graduate assignment, DSTF) will be cancelled. Withdrawals after the official reporting day require that I meet with my Academic Advisor and provide instructor-approved drop forms for each class (attached).
 
-\item[] \textbf{DOCTORAL STUDENTS} — I understand that I must file a leave of absence with the Office of Graduate and Professional Studies.
+\item[\initDoctoral] \textbf{DOCTORAL STUDENTS} — I understand that I must file a leave of absence with the Office of Graduate and Professional Studies.
 
-\item[] \textbf{STUDENT HOUSING} — I understand that my housing agreement outlines important information regarding housing cancelation and refunds. I understand that I need to check out of my room, complete all check out processes, and return my keys to avoid additional fees.
+\item[\initHousing] \textbf{STUDENT HOUSING} — I understand that my housing agreement outlines important information regarding housing cancelation and refunds. I understand that I need to check out of my room, complete all check out processes, and return my keys to avoid additional fees.
 
-\item[] \textbf{DINING SERVICES} — I understand that withdrawing from the university does not automatically relieve me of my obligation to pay outstanding charges stemming from my purchase of a UH Dining Services meal plan. To receive any available credit for the unused portion of my meal plan I must submit a meal plan petition requesting approval for cancellation. Visit \url{http://www.uh.edu/auxiliaryservices/dining/mealpetition.htm} for instructions on filing meal plan petitions.
+\item[\initDining] \textbf{DINING SERVICES} — I understand that withdrawing from the university does not automatically relieve me of my obligation to pay outstanding charges stemming from my purchase of a UH Dining Services meal plan. To receive any available credit for the unused portion of my meal plan I must submit a meal plan petition requesting approval for cancellation. Visit \url{http://www.uh.edu/auxiliaryservices/dining/mealpetition.htm} for instructions on filing meal plan petitions.
 
-\item[] \textbf{PARKING AND TRANSPORTATION} — I understand that withdrawing from the university does not relieve me of my obligation to pay outstanding charges stemming from my purchase of a UH parking permit or parking citations received. To receive any available credit for my unused parking permit I understand that I must return the permit to Parking and Transportation Services.
+\item[\initParking] \textbf{PARKING AND TRANSPORTATION} — I understand that withdrawing from the university does not relieve me of my obligation to pay outstanding charges stemming from my purchase of a UH parking permit or parking citations received. To receive any available credit for my unused parking permit I understand that I must return the permit to Parking and Transportation Services.
 \end{itemize}
 
+\vspace{0.5in}
 \begin{center}
 \small\textbf{THE UNIVERSITY DOES NOT ASSUME RESPONSIBILITY FOR LOST OR REDUCED REFUNDS, LOSS OF FINANCIAL AID OR OTHER ENTITLEMENTS IF YOU FAIL TO SEEK ADVISMENT FROM THE APPROPRIATE OFFICES.}
 \end{center}

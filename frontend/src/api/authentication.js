@@ -7,7 +7,7 @@
  */
 import { API_BASE_URL } from "@/api/common_util";
 import { securedFetch } from "./http";
-import { pretty_log } from "./common_util";
+import { pretty_log, getCSRFToken } from "./common_util";
 
 export const auth = {
   /**
@@ -17,15 +17,24 @@ export const auth = {
    * @returns {Promise<Object>} User data
    */
   async loginUser(username, password) {
-    try {
-      return await securedFetch(`${API_BASE_URL}/login/`, {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
-    } catch (error) {
-      pretty_log(`Login failed: ${error.message}`, "ERROR");
-      throw new Error(error.message || "Authentication failed");
+    pretty_log("Entering loginUser API", "INFO");
+    const response = await fetch(`${API_BASE_URL}/login/`, {
+      method: "POST",
+      credentials: "include", // for sessions cookies,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
+    pretty_log("Received Request inside login_user", "DEBUG");
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Login failed");
     }
+
+    const data = await response.json();
+    return data;
   },
 
   /**
@@ -33,32 +42,43 @@ export const auth = {
    * @returns {Promise<Object>} User data
    */
   async getCurrentUser() {
-    try {
-      return await securedFetch(`${API_BASE_URL}/users/me/`, {
-        method: "GET",
-      });
-    } catch (error) {
-      pretty_log("Session check failed", "WARNING");
-      throw new Error(error.message || "Session validation failed");
-    }
-  },
+    const response = await fetch(`${API_BASE_URL}/users/me/`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to fetch user profile");
+    }
+
+    return response.json();
+  },
   /**
    * Register new user account
    * @param {Object} userData - Registration data
    * @returns {Promise<Object>} Created user data
    */
   async registerUser(userData) {
-    try {
-      return await securedFetch(`${API_BASE_URL}/register/`, {
-        method: "POST",
-        body: JSON.stringify(userData),
-      });
-    } catch (error) {
-      pretty_log(`Registration failed: ${error.message}`, "ERROR");
-      throw new Error(error.message || "Account creation failed");
+    const response = await fetch(`${API_BASE_URL}/register/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Registration failed");
     }
+
+    return response.json();
   },
+
 
   /**
    * Authenticate using Azure AD token
@@ -66,15 +86,21 @@ export const auth = {
    * @returns {Promise<Object>} User data
    */
   async azureLogin(token) {
-    try {
-      return await securedFetch(`${API_BASE_URL}/azure/login/`, {
-        method: "POST",
-        body: JSON.stringify({ token }),
-      });
-    } catch (error) {
-      pretty_log(`Azure login failed: ${error.message}`, "ERROR");
-      throw new Error(error.message || "Microsoft authentication failed");
+    const response = await fetch(`${API_BASE_URL}/azure/login/`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Azure login failed");
     }
+
+    return response.json();
   },
 
   /**
@@ -84,15 +110,67 @@ export const auth = {
    */
   async azureRegister(token) {
     try {
-      const data = await securedFetch(`${API_BASE_URL}/azure/register/`, {
+      console.log("Sending token to backend:", token.substring(0, 20) + "...");
+
+      const response = await fetch(`${API_BASE_URL}/azure/register/`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ token }),
       });
-      pretty_log("Azure registration successful", "DEBUG");
-      return data;
+
+      // Log response status
+      console.log("Backend registration response status:", response.status);
+
+      const responseText = await response.text();
+      console.log("Raw response body:", responseText);
+
+      if (!response.ok) {
+        try {
+          const errorData = JSON.parse(responseText);
+          throw new Error(errorData.error || "Azure registration failed");
+        } catch (parseError) {
+          throw new Error(`Server error: ${responseText}`);
+        }
+      }
+
+      // Try to parse as JSON
+      try {
+        const data = JSON.parse(responseText);
+        return data;
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        throw new Error(`Failed to parse response: ${responseText}`);
+      }
     } catch (error) {
-      pretty_log(`Azure registration failed: ${error.message}`, "ERROR");
-      throw new Error(error.message || "Microsoft registration failed");
+      console.error("Azure registration error:", error);
+      throw error;
     }
   },
+
+  // LOGS OUT USER
+  async logout() {
+    pretty_log(`Attempting to logout user`, "DEBUG")
+    try {
+      const response = await fetch(`${API_BASE_URL}/logout/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCSRFToken(),
+        },
+      })
+
+      if (response.ok) {
+        pretty_log("Logout Successful", "DEBUG")
+      } else {
+        pretty_log(("Logout Failed"), "ERROR")
+      }
+
+    } catch (e) {
+      pretty_log(`Error during logout ${e}`, "ERROR")
+
+    }
+  }
 };

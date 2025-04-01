@@ -6,6 +6,8 @@ frontend/node_modules
 backend/api/__pychache__
 backend/api/migrations/__pycache__
 backend/config/__pycache__
+backend/venv
+backend/debug_latex
 
 # env files
 database/scripts/.env
@@ -15,3 +17,4 @@ frontend/.env
 # other
 start_frontend.bat
 start_backend.bat
+
