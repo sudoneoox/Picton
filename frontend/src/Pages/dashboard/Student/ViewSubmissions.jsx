@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/api/api";
 import { pretty_log } from "@/api/common_util";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,14 +9,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {student} from "@/../api/student_dashboard";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
-
-    const data = await student.getSubmissions();
-    const ViewSubmissions = () => {
-    const [submissions, setSubmissions] = useState([]);
-    const [selectedPdf, setSelectedPdf] = useState(null);
-    const [dialogOpen, setDialogOpen] = useState(false);
+const ViewSubmissions = () => {
+  const [submissions, setSubmissions] = useState([]);
+  const [selectedPdf, setSelectedPdf] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -26,6 +27,8 @@ import {student} from "@/../api/student_dashboard";
         setSubmissions(data);
       } catch (error) {
         pretty_log("Error fetching submissions: " + error, "ERROR");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -37,33 +40,59 @@ import {student} from "@/../api/student_dashboard";
     setDialogOpen(true);
   };
 
+  const statusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "denied":
+        return "bg-red-100 text-red-800";
+      case "in progress":
+        return "bg-yellow-100 text-yellow-800";
+      case "draft":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">My Form Submissions</h2>
-      <table className="w-full table-auto border-collapse border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2 text-left">Title</th>
-            <th className="border p-2 text-left">Status</th>
-            <th className="border p-2 text-left">Submitted</th>
-            <th className="border p-2 text-left">Action</th>
-          </tr>
-        </thead>
-        <tbody>
+
+      {loading ? (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : submissions.length === 0 ? (
+        <div className="text-center text-muted-foreground mt-8">
+          You haven’t submitted any forms yet.
+        </div>
+      ) : (
+        <div className="grid gap-4">
           {submissions.map((submission) => (
-            <tr key={submission.id}>
-              <td className="border p-2">{submission.form_template_name || "Form"}</td>
-              <td className="border p-2 capitalize">{submission.status}</td>
-              <td className="border p-2">{new Date(submission.created_at).toLocaleDateString()}</td>
-              <td className="border p-2">
+            <Card key={submission.id}>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>{submission.form_template_name || "Form"}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Submitted: {new Date(submission.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <Badge className={statusColor(submission.status)}>
+                  {submission.status}
+                </Badge>
+              </CardHeader>
+              <CardContent>
                 <Button onClick={() => handleViewPDF(submission.pdf_url)}>
                   View PDF
                 </Button>
-              </td>
-            </tr>
+              </CardContent>
+            </Card>
           ))}
-        </tbody>
-      </table>
+        </div>
+      )}
 
       {/* PDF Preview Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
