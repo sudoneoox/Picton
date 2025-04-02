@@ -9,7 +9,7 @@ import { SidebarNav } from "@/Pages/dashboard/Common/SidebarNavbar";
 import DashboardContent from "@/Pages/dashboard/Common/DashboardContent";
 import { pretty_log } from "@/api/common_util.js"
 import dashboardConfig, { initializeConfig } from "@/Pages/dashboard/Common/dashboard_config"
-
+import StudentDashboard from "@/Pages/dashboard/Student/StudentDashboard.jsx";
 
 export default function SharedDashboard({ userData }: { userData: object }) {
 
