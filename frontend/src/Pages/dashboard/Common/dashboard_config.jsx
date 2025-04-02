@@ -74,8 +74,8 @@ const roleConfigs = {
           },
           // for drafts and status
           {
-            id: 'view-submissions',
-            title: "View Submissions",
+            id: 'view-forms',
+            title: "View Forms",
             permissions: ["student.view_forms"]
           }
         ],
