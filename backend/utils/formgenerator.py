@@ -193,8 +193,8 @@ class FormPDFGenerator:
             "$EMAIL_ADDRESS$": form_data.get("email", user.email),
             "$PROGRAM_PLAN$": form_data.get("program_plan", ""),
             "$ACADEMIC_CAREER$": form_data.get("academic_career", ""),
-            "$YEAR_VALUE$": str(form_data.get("year", datetime.now().year)),
-            "$SEASON_VALUE$": form_data.get("season", ""),
+            "$YEAR$": str(form_data.get("year", datetime.now().year)),
+            "$SEASON": form_data.get("season", ""),
             "$PETITION_EXPLANATION$": form_data.get("petition_explanation", ""),
             "$CURRENT_DATE$": current_date,
         }

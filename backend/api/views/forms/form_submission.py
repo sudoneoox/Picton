@@ -92,7 +92,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 identifier = draft_submission.generate_submission_identifier()
 
                 # Store the identifier in the database
-                from ..models import FormSubmissionIdentifier
+                from ...models import FormSubmissionIdentifier
 
                 FormSubmissionIdentifier.objects.create(
                     identifier=identifier,
@@ -172,7 +172,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             form_submission.save()
 
             # create identifer record even for auto-approved forms
-            from ..models import FormSubmissionIdentifier
+            from ...models import FormSubmissionIdentifier
 
             FormSubmissionIdentifier.objects.create(
                 identifier=identifier,
@@ -392,7 +392,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from ..models import FormSubmissionIdentifier
+        from ...models import FormSubmissionIdentifier
 
         try:
             submission_id = FormSubmissionIdentifier.objects.get(identifier=identifier)
