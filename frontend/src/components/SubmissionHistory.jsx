@@ -10,6 +10,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { useNavigate } from 'react-router-dom';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const SubmissionHistory = () => {
   const [submissions, setSubmissions] = useState([]);
@@ -69,8 +70,8 @@ const SubmissionHistory = () => {
             onClick={() => setCurrentPage(i + 1)}
             className={`px-3 py-1 rounded ${
               currentPage === i + 1 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-gray-200 hover:bg-gray-300'
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted hover:bg-muted/80'
             }`}
           >
             {i + 1}
@@ -81,13 +82,24 @@ const SubmissionHistory = () => {
   };
 
   if (isLoading) {
-    return <div>Loading submissions...</div>;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>My Submissions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div>Loading submissions...</div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-2xl font-bold mb-4">My Submissions</h2>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>My Submissions</CardTitle>
+      </CardHeader>
+      <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -99,31 +111,39 @@ const SubmissionHistory = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentSubmissions.map((submission) => (
-              <TableRow key={submission.id}>
-                <TableCell>{submission.id}</TableCell>
-                <TableCell>{submission.form_template.name}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded ${getStatusColor(submission.status)}`}>
-                    {submission.status}
-                  </span>
-                </TableCell>
-                <TableCell>{new Date(submission.created_at).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <button 
-                    className="text-blue-600 hover:text-blue-800"
-                    onClick={() => handleViewSubmission(submission.id)}
-                  >
-                    View Details
-                  </button>
+            {currentSubmissions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  No submissions found
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              currentSubmissions.map((submission) => (
+                <TableRow key={submission.id}>
+                  <TableCell>{submission.id}</TableCell>
+                  <TableCell>{submission.form_template.name}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded ${getStatusColor(submission.status)}`}>
+                      {submission.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>{new Date(submission.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <button 
+                      className="text-primary hover:text-primary/80"
+                      onClick={() => handleViewSubmission(submission.id)}
+                    >
+                      View Details
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
         <Pagination />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

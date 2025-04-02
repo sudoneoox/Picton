@@ -38,8 +38,8 @@ export const commonAPI = {
         method: "POST",
         body: formData,
         headers: {
-          // Explicitly unset Content-Type for FormData boundary
-          'Content-Type': undefined
+          // Remove Content-Type header to let browser set it with boundary
+          'Content-Type': null
         }
       });
       pretty_log("Signature upload successful", "DEBUG");

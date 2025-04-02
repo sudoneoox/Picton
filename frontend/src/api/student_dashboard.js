@@ -57,16 +57,16 @@ export const student = {
     }
   },
 
-  async previewForm(form_template, form_data) {
+  async previewForm(requestData) {
     try {
-      pretty_log(`Sending preview request: ${JSON.stringify({ form_template, form_data })}`, "DEBUG");
+      pretty_log(`Sending preview request: ${JSON.stringify(requestData)}`, "DEBUG");
       const csrfToken = document.cookie
         .split('; ')
         .find(row => row.startsWith('csrftoken='))
         ?.split('=')[1] || '';
 
       pretty_log(`Using CSRF token: ${csrfToken}`, "DEBUG");
-      pretty_log(`Sending preview request with template ID: ${form_template}`, "DEBUG");
+      pretty_log(`Sending preview request with template ID: ${requestData.form_template.form_template}`, "DEBUG");
 
       const response = await fetch(`${API_BASE_URL}/forms/submission/preview/`, {
         method: "POST",
@@ -75,10 +75,7 @@ export const student = {
           "Content-Type": "application/json",
           "X-CSRFToken": csrfToken
         },
-        body: JSON.stringify({
-          form_template,
-          form_data
-        })
+        body: JSON.stringify(requestData)
       });
       if (!response.ok) {
         const error = await response.json();

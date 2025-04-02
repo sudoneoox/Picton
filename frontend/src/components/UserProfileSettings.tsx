@@ -19,7 +19,15 @@ import { UserProfileSettingsProps } from "@/types/dashboard";
 export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsProps) {
   const { showToast } = useToast();
   const { theme, setTheme } = useTheme();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<{
+    email: boolean;
+    username: boolean;
+    password: boolean;
+  }>({
+    email: false,
+    username: false,
+    password: false,
+  });
   const [formData, setFormData] = useState({
     email: userData.email || "",
     username: userData.username || "",
@@ -43,15 +51,20 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
    */
   const handleEmailUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsLoading(prev => ({ ...prev, email: true }));
     try {
       await api.auth.updateEmail(formData.email);
       showToast({ message: "Email updated successfully" }, "success");
       onUpdate({ ...userData, email: formData.email });
     } catch (error: any) {
-      showToast({ error: error.message || "Failed to update email" }, "error");
+      showToast(
+        { error: error.message || "Failed to update email" },
+        "error",
+        "Email Update Failed"
+      );
+      console.error("Email update error:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoading(prev => ({ ...prev, email: false }));
     }
   };
 
@@ -61,15 +74,20 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
    */
   const handleUsernameUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsLoading(prev => ({ ...prev, username: true }));
     try {
       await api.auth.updateUsername(formData.username);
       showToast({ message: "Username updated successfully" }, "success");
       onUpdate({ ...userData, username: formData.username });
     } catch (error: any) {
-      showToast({ error: error.message || "Failed to update username" }, "error");
+      showToast(
+        { error: error.message || "Failed to update username" },
+        "error",
+        "Username Update Failed"
+      );
+      console.error("Username update error:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoading(prev => ({ ...prev, username: false }));
     }
   };
 
@@ -83,7 +101,7 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
       showToast({ error: "New passwords do not match" }, "error");
       return;
     }
-    setIsLoading(true);
+    setIsLoading(prev => ({ ...prev, password: true }));
     try {
       await api.auth.updatePassword({
         currentPassword: formData.currentPassword,
@@ -97,9 +115,14 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
         confirmPassword: "",
       }));
     } catch (error: any) {
-      showToast({ error: error.message || "Failed to update password" }, "error");
+      showToast(
+        { error: error.message || "Failed to update password" },
+        "error",
+        "Password Update Failed"
+      );
+      console.error("Password update error:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoading(prev => ({ ...prev, password: false }));
     }
   };
 
@@ -129,10 +152,11 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
               required
+              disabled={isLoading.email}
             />
           </div>
-          <Button type="submit" disabled={isLoading}>
-            Update Email
+          <Button type="submit" disabled={isLoading.email}>
+            {isLoading.email ? "Updating..." : "Update Email"}
           </Button>
         </form>
       </div>
@@ -148,10 +172,11 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
               value={formData.username}
               onChange={(e) => handleInputChange("username", e.target.value)}
               required
+              disabled={isLoading.username}
             />
           </div>
-          <Button type="submit" disabled={isLoading}>
-            Update Username
+          <Button type="submit" disabled={isLoading.username}>
+            {isLoading.username ? "Updating..." : "Update Username"}
           </Button>
         </form>
       </div>
@@ -168,6 +193,7 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
               value={formData.currentPassword}
               onChange={(e) => handleInputChange("currentPassword", e.target.value)}
               required
+              disabled={isLoading.password}
             />
           </div>
           <div className="space-y-2">
@@ -178,6 +204,7 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
               value={formData.newPassword}
               onChange={(e) => handleInputChange("newPassword", e.target.value)}
               required
+              disabled={isLoading.password}
             />
           </div>
           <div className="space-y-2">
@@ -188,10 +215,11 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
               value={formData.confirmPassword}
               onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
               required
+              disabled={isLoading.password}
             />
           </div>
-          <Button type="submit" disabled={isLoading}>
-            Update Password
+          <Button type="submit" disabled={isLoading.password}>
+            {isLoading.password ? "Updating..." : "Update Password"}
           </Button>
         </form>
       </div>

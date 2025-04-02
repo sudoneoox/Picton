@@ -28,8 +28,23 @@ class FormPDFGenerator:
 
         # Path to the university logo
         self.logo_path = os.path.join(
-            settings.STATIC_ROOT, "img", "university_logo.png"
+            settings.BASE_DIR, "static", "img", "uh.png"
         )
+        
+        # Ensure the logo exists
+        if not os.path.exists(self.logo_path):
+            pretty_print("Warning: University logo not found", "WARNING")
+            # Try alternative path
+            self.logo_path = os.path.join(
+                settings.STATIC_ROOT, "img", "uh.png"
+            )
+            if not os.path.exists(self.logo_path):
+                pretty_print("Error: University logo not found in any location", "ERROR")
+                self.logo_path = ""  # Set to empty string if logo is not found
+
+    def _get_logo_path(self, is_dark_mode=False):
+        """Get the appropriate logo path based on theme mode"""
+        return self.logo_path
 
     def generate_template_form(self, template_name: str, user, form_data):
         """
@@ -65,10 +80,13 @@ class FormPDFGenerator:
         with open(template_path, "r") as file:
             template_content = file.read()
 
-        # build individual name pieces
-        last_name = form_data.get("last_name", user.last_name)
+        # Format date as mm/dd/yyyy
+        current_date = datetime.now().strftime("%m/%d/%Y")
+
+        # Get user's name components
         first_name = form_data.get("first_name", user.first_name)
         middle_name = form_data.get("middle_name", "")
+        last_name = form_data.get("last_name", user.last_name)
 
         # Format checkboxes for semester selection
         fall_selected = (
@@ -107,11 +125,20 @@ class FormPDFGenerator:
             else:
                 initials_replacements[placeholder] = " "
 
-        # Main replacements for template macros
+        # Handle season selection
+        season = form_data.get("season", "").lower()
+        fall_selected = "\\checkmark" if season == "fall" else "\\square"
+        spring_selected = "\\checkmark" if season == "spring" else "\\square"
+        summer_selected = "\\checkmark" if season == "summer" else "\\square"
+
+        # Get the logo path
+        logo_path = self.logo_path
+
+        # Build replacements for placeholders:
         replacements = {
-            "$LAST_NAME$": last_name,
-            "$FIRST_NAME$": first_name,
-            "$MIDDLE_NAME$": middle_name,
+            "$LAST_NAME$": form_data.get("last_name", user.last_name),
+            "$FIRST_NAME$": form_data.get("first_name", user.first_name),
+            "$MIDDLE_NAME$": form_data.get("middle_name", ""),
             "$STUDENT_ID$": str(form_data.get("student_id", "")),
             "$PHONE_NUMBER$": self._format_phone_number(
                 form_data.get("phone_number", user.phone_number)
@@ -124,27 +151,27 @@ class FormPDFGenerator:
             "$SPRING_SELECTED$": spring_selected,
             "$SUMMER_SELECTED$": summer_selected,
             "$CURRENT_DATE$": current_date,
-            "$UNIVERSITY_LOGO$": self.logo_path,
+            "$UNIVERSITY_LOGO$": logo_path,
         }
 
-        # Handle signature
+        # Handle the user's signature (if any)
         if user.signature:
             signature_content = self._process_signature(user)
             replacements["$STUDENT_SIGNATURE$"] = signature_content
         else:
             replacements["$STUDENT_SIGNATURE$"] = ""
 
-        # merge in all initial replacements
+        # Merge in checkmark replacements for the 11 petition purpose placeholders
         replacements.update(initials_replacements)
 
-        # perform placeholder replacements
+        # Perform the actual replacements in the LaTeX template
         for placeholder, value in replacements.items():
             template_content = template_content.replace(placeholder, str(value))
 
-        # Create PDF using pdflatex
+        # Compile to PDF
         pdf_file = self._compile_latex(template_content)
 
-        # Set a custom name for the PDF
+        # Optionally name the PDF
         user_id = getattr(user, "id", "0")
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         pdf_file.name = f"term_withdrawal_user{user_id}_{timestamp}.pdf"
@@ -181,11 +208,19 @@ class FormPDFGenerator:
         # Format date as mm/dd/yyyy
         current_date = datetime.now().strftime("%m/%d/%Y")
 
-        # Build replacements for placeholders:
+        # Get user's name components
+        first_name = form_data.get("first_name", user.first_name)
+        middle_name = form_data.get("middle_name", "")
+        last_name = form_data.get("last_name", user.last_name)
+
+        # Get the logo path
+        logo_path = self.logo_path
+
+        # Main replacements for template macros
         replacements = {
-            "$LAST_NAME$": form_data.get("last_name", user.last_name),
-            "$FIRST_NAME$": form_data.get("first_name", user.first_name),
-            "$MIDDLE_NAME$": form_data.get("middle_name", ""),
+            "$LAST_NAME$": last_name,
+            "$FIRST_NAME$": first_name,
+            "$MIDDLE_NAME$": middle_name,
             "$STUDENT_ID$": str(form_data.get("student_id", "")),
             "$PHONE_NUMBER$": self._format_phone_number(
                 form_data.get("phone_number", user.phone_number)
@@ -197,26 +232,27 @@ class FormPDFGenerator:
             "$SEASON$": form_data.get("season", ""),
             "$PETITION_EXPLANATION$": form_data.get("petition_explanation", ""),
             "$CURRENT_DATE$": current_date,
+            "$UNIVERSITY_LOGO$": logo_path,
         }
 
-        # Handle the user's signature (if any)
+        # Handle signature
         if user.signature:
             signature_content = self._process_signature(user)
             replacements["$STUDENT_SIGNATURE$"] = signature_content
         else:
             replacements["$STUDENT_SIGNATURE$"] = ""
 
-        # Merge in checkmark replacements for the 11 petition purpose placeholders
+        # merge in all purpose checkmarks
         replacements.update(checkmark_dict)
 
-        # Perform the actual replacements in the LaTeX template
+        # perform placeholder replacements
         for placeholder, value in replacements.items():
             template_content = template_content.replace(placeholder, str(value))
 
-        # Compile to PDF
+        # Create PDF using pdflatex
         pdf_file = self._compile_latex(template_content)
 
-        # Optionally name the PDF
+        # Set a custom name for the PDF
         user_id = getattr(user, "id", "0")
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         pdf_file.name = f"graduate_petition_user{user_id}_{timestamp}.pdf"
@@ -244,120 +280,42 @@ class FormPDFGenerator:
                 # Add LaTeX command to include the image properly
                 return f"\\includegraphics[width=2in]{{{tmp.name}}}"
 
-    # TODO: only handles withdrawal form for right now make it so that it switches file path name with form type
-    def _compile_latex(self, latex_content):
-        """
-        Compile LaTeX content to PDF
-        """
+    def _compile_latex(self, content):
+        """Compile LaTeX content to PDF"""
         # Create a temporary directory for compilation
         with tempfile.TemporaryDirectory() as temp_dir:
-            # Create temporary LaTeX file
+            # Write the LaTeX content to a file
             tex_file = os.path.join(temp_dir, "document.tex")
-            with open(tex_file, "w") as file:
-                file.write(latex_content)
+            with open(tex_file, "w") as f:
+                f.write(content)
 
-            # Save the LaTeX file if DEBUG_PDF Is enabled
-            if self.DEBUG_PDF:
-                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                debug_dir = os.path.join(settings.BASE_DIR, "debug_latex")
-                os.makedirs(debug_dir, exist_ok=True)
-                debug_file = os.path.join(debug_dir, f"document_{timestamp}.tex")
-                with open(debug_file, "w") as f:
-                    f.write(latex_content)
-                pretty_print(f"Saved LaTeX Source to {debug_file}", "DEBUG")
-
-            # Compile LaTeX to PDF (run twice for better formatting)
-            success = True
-            for i in range(2):
-                try:
-                    process = subprocess.run(
-                        ["pdflatex", "-interaction=nonstopmode", tex_file],
-                        cwd=temp_dir,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        timeout=30,  # Add timeout to prevent hanging
-                    )
-
-                    # Check for errors but don't fail completely
-                    if process.returncode != 0:
-                        error_output = process.stderr.decode("utf-8", errors="replace")
-                        if not error_output:
-                            error_output = process.stdout.decode(
-                                "utf-8", errors="replace"
-                            )
-                        pretty_print(
-                            f"LaTeX compilation warning (run {i + 1}): {error_output}",
-                            "WARNING",
-                        )
-                        # Don't stop if this is just a warning
-                        success = process.returncode == 0
-                except subprocess.TimeoutExpired:
-                    pretty_print(f"LaTeX compilation timeout (run {i + 1})", "ERROR")
-                    success = False
-                    break
-                except Exception as e:
-                    pretty_print(
-                        f"LaTeX compilation error (run {i + 1}): {str(e)}", "ERROR"
-                    )
-                    success = False
-                    break
-
-            # Check if PDF was created
-            pdf_file = os.path.join(temp_dir, "document.pdf")
-            if not os.path.exists(pdf_file):
-                pretty_print("PDF file not generated, checking for log file", "ERROR")
-                # Try to get more diagnostic information
-                log_file = os.path.join(temp_dir, "document.log")
-                if os.path.exists(log_file):
-                    with open(log_file, "r", errors="replace") as f:
-                        log_content = f.read()
-                        pretty_print(
-                            f"LaTeX log: {log_content[-2000:]}", "ERROR"
-                        )  # Last 2000 chars
-
-                # Create a simple error PDF instead of failing completely
-                return self._create_error_pdf(
-                    "PDF generation failed - please try again"
+            # Run pdflatex
+            try:
+                subprocess.run(
+                    ["pdflatex", "-interaction=nonstopmode", tex_file],
+                    cwd=temp_dir,
+                    check=True,
+                    capture_output=True,
                 )
+            except subprocess.CalledProcessError as e:
+                pretty_print(f"Error compiling LaTeX: {e.stderr.decode()}", "ERROR")
+                raise
 
-            # Read the PDF file
-            with open(pdf_file, "rb") as file:
-                pdf_content = file.read()
+            # Read the generated PDF
+            pdf_file = os.path.join(temp_dir, "document.pdf")
+            with open(pdf_file, "rb") as f:
+                pdf_content = f.read()
 
-            # Return the PDF content as a ContentFile
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            return ContentFile(pdf_content, name=f"form_{timestamp}.pdf")
+            # Create a ContentFile from the PDF content
+            return ContentFile(pdf_content)
 
-    def _create_error_pdf(self, error_message):
-        """Create a simple error PDF using an alternative method when LaTeX fails"""
-        # Use a simpler approach that's guaranteed to work
-        from reportlab.pdfgen import canvas
-        from io import BytesIO
-
-        buffer = BytesIO()
-        c = canvas.Canvas(buffer)
-        c.setFont("Helvetica", 14)
-        c.drawString(100, 700, "Error Generating Form")
-        c.setFont("Helvetica", 10)
-        c.drawString(100, 650, error_message)
-        c.drawString(100, 630, "Please try again or contact support.")
-        c.save()
-
-        pdf_content = buffer.getvalue()
-        buffer.close()
-
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        return ContentFile(pdf_content, name=f"error_{timestamp}.pdf")
-
-    def _format_phone_number(self, phone):
-        """Format phone number consistently in PDF"""
-        # remove non numeric characters
-        if not phone:
+    def _format_phone_number(self, phone_number):
+        """Format phone number for display"""
+        if not phone_number:
             return ""
-        phone_digits = "".join(filter(str.isdigit, str(phone)))
-
-        # Format as (XXX)-XXX-XXXX if we have 10 digits
-        if len(phone_digits) == 10:
-            return f"({phone_digits[0:3]})-{phone_digits[3:6]}-{phone_digits[6:10]}"
-
-        return str(phone)
+        # Remove all non-numeric characters
+        cleaned = "".join(filter(str.isdigit, str(phone_number)))
+        # Format as (XXX) XXX-XXXX
+        if len(cleaned) == 10:
+            return f"({cleaned[:3]}) {cleaned[3:6]}-{cleaned[6:]}"
+        return phone_number
