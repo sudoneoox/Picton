@@ -16,19 +16,45 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
-import { api } from "@/api/api.js";
+import { useNavigate } from "react-router-dom";
+import { api } from "@/api/api";
 
 export function NavUser({
   user,
+  onViewChange,
 }: {
   user: {
     name: string;
     email: string;
     avatar: string;
   };
+  onViewChange?: (view: string) => void;
 }) {
   const { isMobile } = useSidebar();
+  const navigate = useNavigate();
+
+  const handleAccountSettings = () => {
+    if (onViewChange) {
+      onViewChange("profile");
+    }
+  };
+
+  const handleNotifications = () => {
+    if (onViewChange) {
+      onViewChange("notifications");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.auth.logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      // Still redirect to login page even if logout API fails
+      navigate("/login");
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -70,27 +96,20 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              {/* TODO: handle notification changes ie theme switches etc */}
-              <DropdownMenuItem>
-                <BadgeCheck />
+              <DropdownMenuItem onClick={handleAccountSettings}>
+                <BadgeCheck className="mr-2" />
                 Account Settings
               </DropdownMenuItem>
-              {/* TODO: do notifications in database */}
-              <DropdownMenuItem>
-                <Bell />
+              <DropdownMenuItem onClick={handleNotifications}>
+                <Bell className="mr-2" />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            {/* TODO: handle log out ie clear cookies etc so that theres no issues */}
-            {/* with loggin back in */}
-            {/* ERROR: for right now just go back to login */}
-            <Link to={"/login"}>
-              <DropdownMenuItem onClick={api.auth.logout}>
-                <LogOut />
-                Log out
-              </DropdownMenuItem>
-            </Link>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2" />
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

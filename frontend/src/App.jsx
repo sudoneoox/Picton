@@ -5,70 +5,73 @@ import { pretty_log } from "@/api/common_util";
 import { Shared, Dashboard } from "@/Pages/imports.jsx";
 import { MicrosoftCallback } from "@/components/MicrosoftCallback.jsx";
 import Layout from "@/Layout.jsx";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Shared.Home />} />
+    <ThemeProvider>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Shared.Home />} />
 
-        <Route path="login" element={<Shared.Login />} />
-        <Route path="registration" element={<Shared.Registrations />} />
-        <Route
-          path="/auth/microsoft/callback"
-          element={<MicrosoftCallback />}
-        />
+          <Route path="login" element={<Shared.Login />} />
+          <Route path="registration" element={<Shared.Registrations />} />
+          <Route
+            path="/auth/microsoft/callback"
+            element={<MicrosoftCallback />}
+          />
 
-        {/* Admin Routes */}
-        <Route
-          path="admin/dashboard"
-          element=
-          {
-            <ProtectedRoute allowedRoles={["admin"]}>
-              {(userData) => <Dashboard.SharedDashboard userData={userData} />}
-            </ProtectedRoute>
-          }
-        />
+          {/* Admin Routes */}
+          <Route
+            path="admin/dashboard"
+            element=
+            {
+              <ProtectedRoute allowedRoles={["admin"]}>
+                {(userData) => <Dashboard.SharedDashboard userData={userData} />}
+              </ProtectedRoute>
+            }
+          />
 
-        {/* User Routes */}
-        {/*WARNING: We dont know what were building for a default user so send an error code for now  */}
+          {/* User Routes */}
+          {/*WARNING: We dont know what were building for a default user so send an error code for now  */}
 
-        <Route
-          path="student/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["student", "admin"]}>
-              {(userData) => <Dashboard.SharedDashboard userData={userData} />}
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="student/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["student", "admin"]}>
+                {(userData) => <Dashboard.SharedDashboard userData={userData} />}
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="staff/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["staff", "admin"]}>
-              {(userData) => <Dashboard.SharedDashboard userData={userData} />}
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="staff/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                {(userData) => <Dashboard.SharedDashboard userData={userData} />}
+              </ProtectedRoute>
+            }
+          />
 
 
-        <Route
-          path="unauthorized"
-          element={<Shared.ErrorCodes statuscode={401} />}
-        />
+          <Route
+            path="unauthorized"
+            element={<Shared.ErrorCodes statuscode={401} />}
+          />
 
-        {/* REROUTE all non defined paths to 404 status page */}
-        <Route
-          path="*"
-          element={<Navigate to="/404" replace />}
-        />
+          {/* REROUTE all non defined paths to 404 status page */}
+          <Route
+            path="*"
+            element={<Navigate to="/404" replace />}
+          />
 
-        <Route
-          path="404"
-          element={<Shared.ErrorCodes statuscode={404} />} />
+          <Route
+            path="404"
+            element={<Shared.ErrorCodes statuscode={404} />} />
 
-      </Route>
-    </Routes>
+        </Route>
+      </Routes>
+    </ThemeProvider>
   );
 }
 

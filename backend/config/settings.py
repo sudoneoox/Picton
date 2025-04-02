@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "corsheaders",
-    "django_auth_adfs",
+    #"django_auth_adfs",
 ]
 
 MIDDLEWARE = [
@@ -75,7 +75,7 @@ AUTH_ADFS = {
 
 
 AUTHENTICATION_BACKENDS = (
-    "django_auth_adfs.backend.AdfsAuthCodeBackend",
+    #"django_auth_adfs.backend.AdfsAuthCodeBackend",
     "django.contrib.auth.backends.ModelBackend",
 )
 
