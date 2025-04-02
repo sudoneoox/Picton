@@ -1,7 +1,8 @@
 from django.forms import ValidationError
 from django.conf import settings
 from django.contrib.auth import authenticate, login, get_user_model, logout
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
+from django.db import IntegrityError
 
 from jwt.algorithms import RSAAlgorithm
 
@@ -11,6 +12,7 @@ from rest_framework.exceptions import (
     AuthenticationFailed,
     NotFound,
     PermissionDenied as DRFPermissionDenied,
+    ValidationError as DRFValidationError,
 )
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -341,4 +343,79 @@ class LogoutView(views.APIView):
             pretty_print(f"Logout Error: {str(e)}", "ERROR")
             return Response(
                 {"error": "Logout failed"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class AuthViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
+    def update_email(self, request):
+        """Update user's email address"""
+        try:
+            email = request.data.get("email")
+            if not email:
+                raise DRFValidationError("Email is required")
+
+            # Check if email is already taken
+            if User.objects.filter(email=email).exclude(id=request.user.id).exists():
+                raise DRFValidationError("Email is already taken")
+
+            request.user.email = email
+            request.user.save()
+            return Response({"message": "Email updated successfully"})
+
+        except IntegrityError:
+            raise DRFValidationError("Email is already taken")
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
+    def update_username(self, request):
+        """Update user's username"""
+        try:
+            username = request.data.get("username")
+            if not username:
+                raise DRFValidationError("Username is required")
+
+            # Check if username is already taken
+            if User.objects.filter(username=username).exclude(id=request.user.id).exists():
+                raise DRFValidationError("Username is already taken")
+
+            request.user.username = username
+            request.user.save()
+            return Response({"message": "Username updated successfully"})
+
+        except IntegrityError:
+            raise DRFValidationError("Username is already taken")
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
+    def update_password(self, request):
+        """Update user's password"""
+        try:
+            current_password = request.data.get("currentPassword")
+            new_password = request.data.get("newPassword")
+
+            if not current_password or not new_password:
+                raise DRFValidationError("Current password and new password are required")
+
+            # Verify current password
+            if not check_password(current_password, request.user.password):
+                raise DRFValidationError("Current password is incorrect")
+
+            # Update password
+            request.user.password = make_password(new_password)
+            request.user.save()
+            return Response({"message": "Password updated successfully"})
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
             )

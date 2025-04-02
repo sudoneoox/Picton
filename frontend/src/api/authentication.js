@@ -23,6 +23,7 @@ export const auth = {
       credentials: "include", // for sessions cookies,
       headers: {
         "Content-Type": "application/json",
+        "X-CSRFToken": getCSRFToken(),
       },
       body: JSON.stringify({ username, password }),
     });
@@ -172,5 +173,79 @@ export const auth = {
       pretty_log(`Error during logout ${e}`, "ERROR")
 
     }
-  }
+  },
+
+  /**
+   * Update user's email
+   * @param {string} email - New email address
+   * @returns {Promise<Object>} Response from server
+   */
+  async updateEmail(email) {
+    const response = await fetch(`${API_BASE_URL}/auth/update_email/`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to update email");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Update user's username
+   * @param {string} username - New username
+   * @returns {Promise<Object>} Response from server
+   */
+  async updateUsername(username) {
+    const response = await fetch(`${API_BASE_URL}/auth/update_username/`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to update username");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Update user's password
+   * @param {Object} data - Password update data
+   * @param {string} data.currentPassword - Current password
+   * @param {string} data.newPassword - New password
+   * @returns {Promise<Object>} Response from server
+   */
+  async updatePassword({ currentPassword, newPassword }) {
+    const response = await fetch(`${API_BASE_URL}/auth/update_password/`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to update password");
+    }
+
+    return response.json();
+  },
 };

@@ -79,6 +79,18 @@ const roleConfigs = {
             permissions: ["student.view_forms"]
           }
         ],
+      },
+      {
+        title: "Account",
+        icon: "User",
+        isActive: true,
+        items: [
+          {
+            id: "profile",
+            title: "Profile Settings",
+            permissions: ["student.edit_profile"]
+          }
+        ]
       }
     ],
     dashboard: {
@@ -88,7 +100,12 @@ const roleConfigs = {
     permissions: {
       canEditUsers: false,
       canCreateUsers: false,
-      canToggleUserStatus: false
+      canToggleUserStatus: false,
+      student: {
+        submit_forms: true,
+        view_forms: true,
+        edit_profile: true
+      }
     }
   }
 }
