@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from utils.prettyPrint import pretty_print
 from ..models import FormTemplate, FormSubmission, FormApproval, FormApprovalWorkflow
 
 
@@ -43,6 +45,7 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
             "current_step",
             "created_at",
             "updated_at",
+            "identifier",
         ]
         read_only_fields = [
             "id",
@@ -50,6 +53,7 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
             "updated_at",
             "submitter_name",
             "template_name",
+            "identifier",
         ]
 
     def get_submitter_name(self, obj):
@@ -57,6 +61,17 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
 
     def get_template_name(self, obj):
         return obj.form_template.name
+
+    def get_identifier(self, obj):
+        try:
+            if hasattr(obj, "submission_identifier"):
+                return obj.submission_identifier.identifier
+            return None
+        except Exception as e:
+            pretty_print(
+                f"ERROR in get_identifier serializer method: {str(e)}", "ERROR"
+            )
+            return None
 
 
 class FormApprovalSerializer(serializers.ModelSerializer):

@@ -164,6 +164,17 @@ class FormSubmission(models.Model):
     def __str__(self):
         return f"{self.form_template.name} - {self.submitter.username} ({self.status})"
 
+    def generate_submission_identifier(self):
+        """Generate a unique identifer for this submission"""
+        from datetime import datetime
+        import uuid
+
+        # NOTE: FORMAT -> FRM-{suer_id}-{template-id}-{timestamp}-{random_suffix}
+        timestamp = datetime.now().strftime("%Y%m%d")
+        random_suffix = str(uuid.uuid4())[:8]
+
+        return f"FRM-{self.submitter.id}-{self.form_template.id}-{timestamp}-{random_suffix}"
+
 
 class FormApproval(models.Model):
     """Individual approval records for form submissions"""
@@ -205,3 +216,29 @@ class FormApproval(models.Model):
 
     def __str__(self):
         return f"{self.form_submission} - {self.approver.username} ({self.decision})"
+
+
+class FormSubmissionIdentifier(models.Model):
+    """Lookup Table for student from submissions with unique identifiers"""
+
+    # unique identifier for form_submission
+    identifier = models.CharField(max_length=50, unique=True)
+
+    # Link to actual submission
+    form_submission = models.OneToOneField(
+        FormSubmission, on_delete=models.CASCADE, related_name="submission_identifier"
+    )
+
+    # metedata to quickly filter
+    form_type = models.CharField(max_length=100)
+    student_id = models.CharField(max_length=50, blank=True)
+    submission_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.identifier} - {self.form_type}"
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["identifier"]),
+            models.Index(fields=["student_id"]),
+        ]

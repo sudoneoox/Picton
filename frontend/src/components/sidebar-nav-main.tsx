@@ -35,12 +35,12 @@ export function NavMain({
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Admin Controls</SidebarGroupLabel>
-      
+
       <SidebarMenu>
         {items.map((item) => (
-          <Collapsible 
-            key={item.title} 
-            asChild 
+          <Collapsible
+            key={item.title}
+            asChild
             defaultOpen={item.isActive}
           >
             <SidebarMenuItem>
