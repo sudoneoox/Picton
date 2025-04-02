@@ -88,21 +88,18 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 draft_submission.save()
 
             # Generate identifier for the preview/draft if it doesnt have one
-            if not hasattr(draft_submission, "submission_identifier"):
-                identifier = draft_submission.generate_submission_identifier()
+            # Store the identifier in the database
+            from ...models import FormSubmissionIdentifier
 
-                # Store the identifier in the database
-                from ...models import FormSubmissionIdentifier
-
-                FormSubmissionIdentifier.objects.create(
-                    identifier=identifier,
-                    form_submission=draft_submission,
-                    form_type=form_template.name,
-                    student_id=form_data.get("student_id", ""),
-                )
-            else:
-                # Else get already stored identifier
-                identifier = draft_submission.submission_identifier.identifier
+            identifier_obj, created = FormSubmissionIdentifier.objects.get_or_create(
+                form_submission=draft_submission,
+                defaults={
+                    "identifier": draft_submission.generate_submission_identifier(),
+                    "form_type": form_template.name,
+                    "student_id": form_data.get("student_id", ""),
+                },
+            )
+            identifier = identifier_obj.identifier
 
             template_code = (
                 "withdrawal"
@@ -174,12 +171,16 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             # create identifer record even for auto-approved forms
             from ...models import FormSubmissionIdentifier
 
-            FormSubmissionIdentifier.objects.create(
-                identifier=identifier,
+            identifier_obj, created = FormSubmissionIdentifier.objects.get_or_create(
                 form_submission=form_submission,
-                form_type=form_submission.form_template.name,
-                student_id=form_submission.form_data.get("student_id", ""),
+                defaults={
+                    "identifier": form_submission.generate_submission_identifier(),
+                    "form_type": form_submission.form_template.name,
+                    "student_id": form_submission.form_data.get("student_id", ""),
+                },
             )
+
+            identifier = identifier_obj.identifier
 
             return Response(
                 {"status": "approved", "message": "Form approved automatically"}
@@ -374,12 +375,11 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         # For approvers, include submissions they need to approve
         role_submissions = FormSubmission.objects.filter(
             status="pending",
-            form_template__approval_workflows__approver_role=user.role,
+            form_template__approvals_workflows__approver_role=user.role,
             current_step=FormApprovalWorkflow.objects.filter(
                 form_template=OuterRef("form_template"), approver_role=user.role
-            ).values("order"),
+            ).values_list("order", flat=True)[:1],
         )
-
         return (queryset.filter(submitter=user) | role_submissions).distinct()
 
     @action(detail=False, methods=["GET"])
