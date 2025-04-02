@@ -8,6 +8,8 @@ backend/api/migrations/__pycache__
 backend/config/__pycache__
 backend/venv
 backend/debug_latex
+backend/media/forms/*
+backend/media/signatures/*
 
 # env files
 database/scripts/.env
@@ -17,4 +19,5 @@ frontend/.env
 # other
 start_frontend.bat
 start_backend.bat
+
 
