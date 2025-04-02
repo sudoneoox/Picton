@@ -1,4 +1,4 @@
-import { pretty_log, API_BASE_URL, MICROSOFT_FRONTEND_REDIRECT_URL, DEBUG } from "@/api/common_util"
+import { pretty_log, API_BASE_URL, MICROSOFT_FRONTEND_REDIRECT_URL, DEBUG, getCSRFToken } from "@/api/common_util"
 export const student = {
 
   async previewForm(form_template, form_data) {
@@ -74,29 +74,58 @@ export const student = {
       throw error;
     }
   },
-  async getSubmissions() {
+
+  // used in student view-forms sideber navigation to get the corresponding pdf once a 
+  // student clicks on the specific form
+  async getSubmissionByidentifier(identifier) {
     try {
-      const response = await fetch(`${API_BASE_URL}/forms/submission/`, {
+      const csrfToken = getCSRFToken()
+      const response = await fetch(`${API_BASE_URL}/forms/submission/by_identifier/?identifier=${identifier}`, {
         method: "GET",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken
         }
-      });
+      })
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch submissions");
+        const error = await response.json()
+        throw new Error(error.error || "Failed to fetch submission details");
       }
+      return response.json()
 
-      return response.json();
     } catch (error) {
-      pretty_log(`Error in getSubmissions: ${error.message}`, "ERROR");
-      throw error;
+      pretty_log(`Error in getSubmissionByidentifier: ${error.message}`, "ERROR")
+      throw error
+    }
+  },
+
+
+  // GETS all forms in view-forms sidebar navigation in order to populate it
+  async getAllFormIdentifiers() {
+    try {
+      const csrfToken = getCSRFToken()
+      const response = await fetch(`${API_BASE_URL}/forms/submission/all_identifiers/`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          'Content-Type': "application/json",
+          "X-CSRFToken": csrfToken
+        }
+      })
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch form identifiers")
+
+      }
+      return response.json()
+    } catch (error) {
+      pretty_log(`Error in getAllFormIdentifiers: ${error.message}`, "ERROR")
     }
   }
 
-  
+
 }
 
 
