@@ -4,7 +4,7 @@ import SubmissionHistory from "@/components/SubmissionHistory";
 import { SidebarNav } from "@/Pages/dashboard/Common/SidebarNavbar";
 import DashboardContent from "@/Pages/dashboard/Common/DashboardContent";
 import { pretty_log } from "@/api/common_util";
-import dashboardConfig, { initializeConfig } from "@/Pages/dashboard/Common/dashboard_config";
+import { initializeConfig } from "@/Pages/dashboard/Common/dashboard_config";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -29,7 +29,7 @@ export default function SharedDashboard({ userData }: { userData: UserData }) {
   pretty_log(`Received General Config in Dashboard ${JSON.stringify(config, null, 4)}`, "DEBUG");
   pretty_log(`Received Dashboard Config in Dashboard ${JSON.stringify(dashboardSettings, null, 4)}`, "DEBUG");
 
-  const [activeView, setActiveView] = useState<string>(dashboardSettings.defaultValue || "");
+  const [activeView, setActiveView] = useState<string>(dashboardSettings.defaultView || "");
 
   useEffect(() => {
     setActiveView(dashboardSettings.defaultView || "");

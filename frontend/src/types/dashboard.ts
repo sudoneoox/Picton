@@ -17,16 +17,36 @@ export interface DashboardPermissions {
   [key: string]: boolean;
 }
 
+export interface DashboardSettings {
+  defaultView: string;
+  title: string;
+}
+
+export interface SidebarItem {
+  id: string;
+  title: string;
+  permissions: string[];
+}
+
+export interface SidebarSection {
+  title: string;
+  icon: string;
+  isActive: boolean;
+  items: SidebarItem[];
+}
+
 export interface DashboardConfig {
-  config?: {
+  config: {
     permissions: DashboardPermissions;
+    user: UserData;
+    sidebar: SidebarSection[];
+    dashboard: DashboardSettings;
   };
-  userData?: UserData;
-  updateUserData?: (data: UserData) => void;
-  getDashboard?: () => {
-    title: string;
-    defaultView?: string;
-  };
+  getConfig: () => any;
+  getSidebar: () => SidebarSection[];
+  getDashboard: () => DashboardSettings;
+  hasPermission: (permission: string) => boolean;
+  update: (config: any) => void;
 }
 
 export interface DashboardContentProps {
