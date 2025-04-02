@@ -19,6 +19,8 @@ AUTH_USER_MODEL = "api.User"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
+if DEBUG:
+    X_FRAME_OPTIONS = "ALLOWALL"
 
 # WARNING: change in production
 ALLOWED_HOSTS = [
