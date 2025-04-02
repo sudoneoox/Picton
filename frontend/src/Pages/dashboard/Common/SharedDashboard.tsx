@@ -10,15 +10,8 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
-import { Separator } from "@/components/ui/separator";
-import { SidebarNav } from "@/Pages/dashboard/Common/SidebarNavbar";
-import DashboardContent from "@/Pages/dashboard/Common/DashboardContent";
-import { pretty_log } from "@/api/common_util.js"
-import dashboardConfig, { initializeConfig } from "@/Pages/dashboard/Common/dashboard_config"
 import { UserData, DashboardSettings, DashboardConfig } from "@/types/dashboard";
-import StudentDashboard from "@/Pages/dashboard/Student/StudentDashboard.jsx";
-
+// import StudentDashboard from "@/Pages/dashboard/Student/StudentDashboard.jsx";
 
 export default function SharedDashboard({ userData }: { userData: UserData }) {
   // initialize config with user data
@@ -49,7 +42,6 @@ export default function SharedDashboard({ userData }: { userData: UserData }) {
 
   return (
     <SidebarProvider>
-
       {/* NOTE: SIDEBAR NAV HERE */}
       <SidebarNav
         onViewChange={setActiveView}

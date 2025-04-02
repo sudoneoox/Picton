@@ -14,11 +14,13 @@ from .views import (
     SubmitSignatureView,
     CheckSignatureView,
     LogoutView,
+    AuthViewSet,
 )
 
 
 router = DefaultRouter()
 router.register(r"azure", AzureAuthViewSet, basename="azure")
+router.register(r"auth", AuthViewSet, basename="auth")
 # makes new url admin
 router.register(r"admin", AdminDashboardViewSet, basename="admin")
 router.register(r"users", UserManagementViewSet, basename="users")

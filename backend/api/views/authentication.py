@@ -322,7 +322,7 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
 
 
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 
 
 class LogoutView(views.APIView):
@@ -346,7 +346,13 @@ class LogoutView(views.APIView):
             )
 
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class AuthViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=["get"], permission_classes=[AllowAny])
+    def csrf(self, request):
+        """Get a new CSRF token"""
+        return Response({"message": "CSRF cookie set"})
+
     @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def update_email(self, request):
         """Update user's email address"""

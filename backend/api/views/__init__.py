@@ -1,5 +1,5 @@
 # Auth Related Views
-from .authentication import LoginView, RegisterView, AzureAuthViewSet, LogoutView
+from .authentication import LoginView, RegisterView, AzureAuthViewSet, LogoutView, AuthViewSet
 
 # Admin dashboard viewsets
 from .admin_dashboard import AdminDashboardViewSet
@@ -23,4 +23,5 @@ __all__ = [
     "CheckSignatureView",
     "SubmitSignatureView",
     "LogoutView",
+    "AuthViewSet",
 ]

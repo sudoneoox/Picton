@@ -181,21 +181,16 @@ export const auth = {
    * @returns {Promise<Object>} Response from server
    */
   async updateEmail(email) {
-    const response = await fetch(`${API_BASE_URL}/auth/update_email/`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to update email");
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/auth/update_email/`, {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Email update failed: ${error.message}`, "ERROR");
+      throw error;
     }
-
-    return response.json();
   },
 
   /**
@@ -204,21 +199,16 @@ export const auth = {
    * @returns {Promise<Object>} Response from server
    */
   async updateUsername(username) {
-    const response = await fetch(`${API_BASE_URL}/auth/update_username/`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to update username");
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/auth/update_username/`, {
+        method: "POST",
+        body: JSON.stringify({ username }),
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Username update failed: ${error.message}`, "ERROR");
+      throw error;
     }
-
-    return response.json();
   },
 
   /**
@@ -229,23 +219,18 @@ export const auth = {
    * @returns {Promise<Object>} Response from server
    */
   async updatePassword({ currentPassword, newPassword }) {
-    const response = await fetch(`${API_BASE_URL}/auth/update_password/`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        currentPassword,
-        newPassword,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to update password");
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/auth/update_password/`, {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Password update failed: ${error.message}`, "ERROR");
+      throw error;
     }
-
-    return response.json();
   },
 };

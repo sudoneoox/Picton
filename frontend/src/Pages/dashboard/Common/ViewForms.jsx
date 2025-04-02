@@ -69,92 +69,104 @@ const ViewForms = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    );
-  }
-
-  if (!formSubmissions || formSubmissions.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">No form submissions found.</p>
-      </div>
-    );
-  }
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   return (
-    <div className="space-y-4">
-      <Table>
-        <TableCaption>A list of your form submissions.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Form Type</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Submitted Date</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {formSubmissions.map((submission) => (
-            <TableRow key={submission.id}>
-              <TableCell>{submission.form_template.name}</TableCell>
-              <TableCell>
-                <Badge className={getStatusColor(submission.status)}>
-                  {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-                </Badge>
-              </TableCell>
-              <TableCell>{new Date(submission.created_at).toLocaleDateString()}</TableCell>
-              <TableCell>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleViewForm(submission.id)}
-                  disabled={loadingForm}
-                >
-                  {loadingForm && selectedIdentifier === submission.id ? "Loading..." : "View Form"}
-                </Button>
-              </TableCell>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-medium">Your Submitted Forms</h2>
+        <Button onClick={fetchUserForms} variant="outline" size="sm">
+          Refresh
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      ) : formSubmissions.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>You haven't submitted any forms yet.</p>
+        </div>
+      ) : (
+        <Table>
+          <TableCaption>Your submitted forms</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Form Type</TableHead>
+              <TableHead>Identifier</TableHead>
+              <TableHead>Submission Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {formSubmissions.map((submission) => (
+              <TableRow key={submission.identifier}>
+                <TableCell className="font-medium">{submission.form_type}</TableCell>
+                <TableCell>{submission.identifier}</TableCell>
+                <TableCell>{formatDate(submission.submission_date)}</TableCell>
+                <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewForm(submission.identifier)}
+                  >
+                    View Form
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-5xl max-h-[90vh] w-[90vw]">
           <DialogHeader>
-            <DialogTitle>Form Details</DialogTitle>
+            <DialogTitle>
+              {selectedForm?.template_name || "Form"} - {selectedIdentifier}
+            </DialogTitle>
           </DialogHeader>
-          {selectedForm && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          {loadingForm ? (
+            <div className="h-[70vh] flex items-center justify-center">
+              <p>Loading form details...</p>
+            </div>
+          ) : (
+            <div className="mt-2">
+              <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h3 className="font-semibold">Form Information</h3>
-                  <p>Type: {selectedForm.form_template.name}</p>
-                  <p>Status: {selectedForm.status}</p>
-                  <p>Submitted: {new Date(selectedForm.created_at).toLocaleDateString()}</p>
+                  <p className="text-sm">Status: {selectedForm && getStatusBadge(selectedForm.status)}</p>
+                  <p className="text-sm">Submitted: {selectedForm && formatDate(selectedForm.created_at)}</p>
                 </div>
                 <div>
-                  <h3 className="font-semibold">Submitter Information</h3>
-                  <p>Name: {selectedForm.submitter_name}</p>
-                  <p>ID: {selectedForm.submitter.id}</p>
+                  <p className="text-sm">Current Step: {selectedForm?.current_step || "N/A"}</p>
+                  <p className="text-sm">Form ID: {selectedIdentifier || "N/A"}</p>
                 </div>
               </div>
-              {selectedForm.current_pdf && (
-                <div className="mt-4">
-                  <h3 className="font-semibold mb-2">Form PDF</h3>
+              <div className="h-[70vh] border rounded">
+                {selectedForm?.pdf_content ? (
                   <iframe
-                    src={selectedForm.current_pdf}
-                    className="w-full h-[600px] border rounded"
+                    src={`data:application/pdf;base64,${selectedForm.pdf_content}`}
+                    className="w-full h-full"
                     title="Form PDF"
                   />
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-gray-50">
+                    <p className="text-gray-500">PDF not available</p>
+                  </div>
+                )}
+              </div>            </div>
           )}
         </DialogContent>
       </Dialog>

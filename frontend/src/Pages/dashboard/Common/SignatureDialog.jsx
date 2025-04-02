@@ -52,9 +52,22 @@ const SignatureDialog = ({ isOpen, onClose, onSignatureSubmit }) => {
     }
   };
 
+  const handleOpenChange = (open) => {
+    // Only allow closing if we're not submitting
+    if (!open && isSubmitting) {
+      return;
+    }
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[425px]" onPointerDownOutside={(e) => {
+        // Prevent closing when clicking outside if submitting
+        if (isSubmitting) {
+          e.preventDefault();
+        }
+      }}>
         <DialogHeader>
           <DialogTitle>Upload Signature</DialogTitle>
           <DialogDescription>
@@ -72,6 +85,7 @@ const SignatureDialog = ({ isOpen, onClose, onSignatureSubmit }) => {
                 accept="image/*"
                 onChange={handleSignatureChange}
                 className="border p-2 rounded"
+                disabled={isSubmitting}
               />
               <p className="text-xs text-gray-500">
                 Upload a clear image of your signature on a white background
