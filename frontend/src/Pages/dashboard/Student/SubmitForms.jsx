@@ -4,13 +4,14 @@ import { pretty_log } from "@/api/common_util";
 import SignatureDialog from "@/Pages/dashboard/Common/SignatureDialog";
 import { Button } from "@/components/ui/button"
 import FormSubmissionDialog from "@/Pages/dashboard/Student/FormSubmissionDialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-
-const SubmitForms = () => {
+const SubmitForms = ({ formTemplates }) => {
   const [hasSignature, setHasSignature] = useState(true); // Optimistic
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [showFormDialog, setShowFormDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   // NOTE: Check if user has a signature on component mount
   useEffect(() => {
@@ -41,13 +42,14 @@ const SubmitForms = () => {
     setShowSignatureDialog(false);
   };
 
-
-  const handleOpenFormDialog = () => {
+  const handleOpenFormDialog = (template) => {
+    setSelectedTemplate(template);
     setShowFormDialog(true);
   };
 
   const handleCloseFormDialog = () => {
     setShowFormDialog(false);
+    setSelectedTemplate(null);
   };
 
   if (isLoading) {
@@ -81,14 +83,30 @@ const SubmitForms = () => {
   return (
     <div className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 p-4 rounded">
-        <h3 className="text-blue-800 font-medium">Submit a Form</h3>
+        <h3 className="text-blue-800 font-medium">Available Forms</h3>
         <p className="text-blue-700 mt-1">
-          Click the button below to start a new form submission. You can choose between a Graduate Petition Form or a Term Withdrawal Form.
+          Select a form type below to start a new submission.
         </p>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Button onClick={handleOpenFormDialog}>Start New Form</Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {formTemplates?.map((template) => (
+          <Card
+            key={template.id}
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleOpenFormDialog(template)}
+          >
+            <CardHeader>
+              <CardTitle>{template.name}</CardTitle>
+              <CardDescription>{template.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-500">
+                Required Approvals: {template.required_approvals}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Form submission dialog */}
@@ -96,6 +114,7 @@ const SubmitForms = () => {
         className="w-full"
         isOpen={showFormDialog}
         onClose={handleCloseFormDialog}
+        template={selectedTemplate}
       />
 
       {/* Signature dialog */}
