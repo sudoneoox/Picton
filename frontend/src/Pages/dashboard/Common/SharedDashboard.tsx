@@ -11,9 +11,7 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar";
 import { UserData, DashboardSettings, DashboardConfig } from "@/types/dashboard";
-import StudentDashboard from "@/Pages/dashboard/Student/StudentDashboard.jsx";
-
-export default function SharedDashboard({ userData }: { userData: object }) {
+// import StudentDashboard from "@/Pages/dashboard/Student/StudentDashboard.jsx";
 
 export default function SharedDashboard({ userData }: { userData: UserData }) {
   // initialize config with user data
@@ -44,7 +42,6 @@ export default function SharedDashboard({ userData }: { userData: UserData }) {
 
   return (
     <SidebarProvider>
-
       {/* NOTE: SIDEBAR NAV HERE */}
       <SidebarNav
         onViewChange={setActiveView}
