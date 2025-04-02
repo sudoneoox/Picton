@@ -1,9 +1,16 @@
+from re import sub
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from ...models import FormSubmission, FormTemplate, FormApproval, FormApprovalWorkflow
+from ...models import (
+    FormSubmission,
+    FormSubmissionIdentifier,
+    FormTemplate,
+    FormApproval,
+    FormApprovalWorkflow,
+)
 from ...serializers import FormSubmissionSerializer
 from ...core import IsActiveUser
 
@@ -386,17 +393,18 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     def by_identifier(self, request):
         """Retrieve a form submission by its identifier"""
         identifier = request.query_params.get("identifier")
+
         if not identifier:
             return Response(
                 {"error": "Identifier parameter is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from ...models import FormSubmissionIdentifier
-
         try:
-            submission_id = FormSubmissionIdentifier.objects.get(identifier=identifier)
-            submission = submission_id.form_submission
+            from ...models import FormSubmissionIdentifier
+
+            identifier_obj = FormSubmissionIdentifier.objects.get(identifier=identifier)
+            submission = identifier_obj.form_submission
 
             # check permissions - only allow if user is submnitter or has appropriate role
             if submission.submitter != request.user and not request.user.is_superuser:
@@ -404,12 +412,27 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                     return Response(
                         {"error": "You dont have permission to access this submission"}
                     )
+
             serializer = self.get_serializer(submission)
 
             # include identifier in response
             response_data = serializer.data
             response_data["identifier"] = identifier
+
+            # include pdf as base64 if present
+            if submission.current_pdf:
+                import base64
+
+                try:
+                    submission.current_pdf.seek(0)
+                    pdf_content = submission.current_pdf.read()
+                    pdf_base_64 = base64.b64encode(pdf_content).decode("utf-8")
+                    response_data["pdf_content"] = pdf_base_64
+                except Exception as e:
+                    pretty_print(f"Error reading PDF: {str(e)}", "ERROR")
+
             return Response(response_data)
+
         except FormSubmissionIdentifier.DoesNotExist:
             return Response(
                 {"error": "Form Submission not found with this identifier"},
@@ -420,5 +443,37 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             pretty_print(f"ERROR in fetching form by identifier: {str(e)}", "ERROR")
             return Response(
                 {"error": f"ERROR in fetching form by identifier: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=False, methods=["GET"])
+    def all_identifiers(self, request):
+        """Retrieve all form submission identifiers for the current user"""
+        from ...models import FormSubmissionIdentifier
+
+        try:
+            # get all identifiers for forms submitted by current user
+            identifiers = FormSubmissionIdentifier.objects.filter(
+                form_submission__submitter=request.user
+            ).select_related("form_submission")
+
+            # prepare response data (cleanup)
+            response_data = []
+            for identifier in identifiers:
+                response_data.append(
+                    {
+                        "identifier": identifier.identifier,
+                        "form_type": identifier.form_type,
+                        "submission_date": identifier.submission_date,
+                        "status": identifier.form_submission.status,
+                        "student_id": identifier.student_id,
+                    }
+                )
+            return Response(response_data)
+
+        except Exception as e:
+            pretty_print(f"Error fetching identifiers: {str(e)}", "ERROR")
+            return Response(
+                {"error": f"Failed to fetch form identifiers: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
