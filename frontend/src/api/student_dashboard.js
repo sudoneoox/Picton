@@ -129,6 +129,30 @@ export const student = {
       pretty_log(`Error in submitForm: ${error.message}`, "ERROR");
       throw error;
     }
+  },
+  async getSubmissions() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/forms/submission/`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch submissions");
+      }
+
+      return response.json();
+    } catch (error) {
+      pretty_log(`Error in getSubmissions: ${error.message}`, "ERROR");
+      throw error;
+    }
   }
+
+  
 }
+
 
