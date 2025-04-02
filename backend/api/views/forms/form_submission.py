@@ -87,14 +87,30 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 draft_submission.form_data = form_data
                 draft_submission.save()
 
+            # Generate identifier for the preview/draft if it doesnt have one
+            if not hasattr(draft_submission, "submission_identifier"):
+                identifier = draft_submission.generate_submission_identifier()
+
+                # Store the identifier in the database
+                from ..models import FormSubmissionIdentifier
+
+                FormSubmissionIdentifier.objects.create(
+                    identifier=identifier,
+                    form_submission=draft_submission,
+                    form_type=form_template.name,
+                    student_id=form_data.get("student_id", ""),
+                )
+            else:
+                # Else get already stored identifier
+                identifier = draft_submission.submission_identifier.identifier
+
             template_code = (
                 "withdrawal"
                 if form_template.name == "Term Withdrawal Form"
                 else "petition"
             )
-            pdf_filename = (
-                f"forms/{request.user.id}_{template_code}_{draft_submission.id}.pdf"
-            )
+
+            pdf_filename = f"forms/{identifier}_{template_code}.pdf"
 
             draft_submission.current_pdf.save(pdf_filename, pdf_file, save=False)
             draft_submission.pdf_url = pdf_filename
@@ -113,6 +129,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                     "pdf_content": pdf_base_64,
                     "filename": f"{form_template.name}_preview.pdf",
                     "draft_id": draft_submission.id,
+                    "identifier": identifier,
                 }
             )
 
@@ -141,6 +158,9 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Create unique identifer for form submission
+        identifier = form_submission.generate_submission_identifier()
+
         # Get the form template's approval workflow
         approval_workflows = (
             form_submission.form_template.approvals_workflows.all().order_by("order")
@@ -150,6 +170,17 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             # If no approval workflow, mark as approved immediately
             form_submission.status = "approved"
             form_submission.save()
+
+            # create identifer record even for auto-approved forms
+            from ..models import FormSubmissionIdentifier
+
+            FormSubmissionIdentifier.objects.create(
+                identifier=identifier,
+                form_submission=form_submission,
+                form_type=form_submission.form_template.name,
+                student_id=form_submission.form_data.get("student_id", ""),
+            )
+
             return Response(
                 {"status": "approved", "message": "Form approved automatically"}
             )
@@ -165,13 +196,26 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         )
 
         # Generate final PDF with official timestamp
-        self._generate_pdf(form_submission.form_template.name, form_submission)
+        pdf_file = self._generate_pdf(
+            form_submission.form_template.name, form_submission
+        )
+
+        # SAVE pdf with unique identifier as the filename
+        if pdf_file:
+            template_code = (
+                "withdrawal"
+                if form_submission.form_template.name == "Term Withdrawal Form"
+                else "petition"
+            )
+            pdf_filename = f"forms/{identifier}_{template_code}.pdf"
+            form_submission.current_pdf.save(pdf_filename, pdf_file, save=True)
 
         return Response(
             {
                 "status": "pending",
                 "current_step": form_submission.current_step,
                 "approver_role": approval_workflows.first().approver_role,
+                "identifier": identifier,
             }
         )
 
@@ -337,3 +381,44 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         )
 
         return (queryset.filter(submitter=user) | role_submissions).distinct()
+
+    @action(detail=False, methods=["GET"])
+    def by_identifier(self, request):
+        """Retrieve a form submission by its identifier"""
+        identifier = request.query_params.get("identifier")
+        if not identifier:
+            return Response(
+                {"error": "Identifier parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from ..models import FormSubmissionIdentifier
+
+        try:
+            submission_id = FormSubmissionIdentifier.objects.get(identifier=identifier)
+            submission = submission_id.form_submission
+
+            # check permissions - only allow if user is submnitter or has appropriate role
+            if submission.submitter != request.user and not request.user.is_superuser:
+                if request.user.role != "staff" or submission.current_step == 0:
+                    return Response(
+                        {"error": "You dont have permission to access this submission"}
+                    )
+            serializer = self.get_serializer(submission)
+
+            # include identifier in response
+            response_data = serializer.data
+            response_data["identifier"] = identifier
+            return Response(response_data)
+        except FormSubmissionIdentifier.DoesNotExist:
+            return Response(
+                {"error": "Form Submission not found with this identifier"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except Exception as e:
+            pretty_print(f"ERROR in fetching form by identifier: {str(e)}", "ERROR")
+            return Response(
+                {"error": f"ERROR in fetching form by identifier: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
