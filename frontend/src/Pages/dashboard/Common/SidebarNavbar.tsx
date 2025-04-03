@@ -144,7 +144,7 @@ export function SidebarNav({
   return (
     <Sidebar variant="inset" {...props}>
       {/* NOTE: SIDEBAR LOGO */}
-      <SidebarLogo />
+      <SidebarLogo userData={userData} />
 
       {/* NOTE:: SIDEBAR NAV ITEMS */}
       <SidebarContent>

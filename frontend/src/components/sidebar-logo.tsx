@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Command } from "lucide-react";
 
-export const SidebarLogo = () => {
+export const SidebarLogo = ({ userData }) => {
   return (
     <SidebarHeader>
       <SidebarMenu>
@@ -18,7 +18,7 @@ export const SidebarLogo = () => {
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">Picton LLC</span>
-                <span className="truncate text-xs">Admin</span>
+                <span className="truncate text-xs">{userData.role.toUpperCase()}</span>
               </div>
             </a>
           </SidebarMenuButton>

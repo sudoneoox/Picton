@@ -44,7 +44,7 @@ const ViewForms = () => {
     try {
       setLoadingForm(true);
       setSelectedIdentifier(identifier);
-      const formData = await api.student.getFormByIdentifier(identifier);
+      const formData = await api.student.getSubmissionByidentifier(identifier);
       setSelectedForm(formData);
       setPdfDialogOpen(true);
     } catch (error) {
@@ -115,7 +115,7 @@ const ViewForms = () => {
                 <TableCell className="font-medium">{submission.form_type}</TableCell>
                 <TableCell>{submission.identifier}</TableCell>
                 <TableCell>{formatDate(submission.submission_date)}</TableCell>
-                <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                <TableCell><Badge className={`${getStatusColor(submission.status)}`}>{submission.status}</Badge></TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="outline"
@@ -146,7 +146,7 @@ const ViewForms = () => {
             <div className="mt-2">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <p className="text-sm">Status: {selectedForm && getStatusBadge(selectedForm.status)}</p>
+                  <p className="text-sm">{selectedForm && <Badge className={`${getStatusColor(selectedForm.status)}`}> Status: {selectedForm.status}</Badge>}</p>
                   <p className="text-sm">Submitted: {selectedForm && formatDate(selectedForm.created_at)}</p>
                 </div>
                 <div>

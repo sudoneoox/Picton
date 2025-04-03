@@ -40,13 +40,22 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
             break;
 
           case "manage-users":
+
             if (!permissions.canEditUsers) {
               pretty_log("User does not have permission to manage users", "WARNING");
               setData([]);
               break;
             }
+
             response = await api.admin.getUsers();
-            setData(response);
+            if (response && response.results) {
+              setData(response.results);
+            } else if (Array.isArray(response)) {
+              setData(response);
+            } else {
+              setData([]);
+              pretty_log(`Unexpected Data Type Received ${response} ${typeof response}`, "ERROR");
+            }
             break;
 
           case "create-users":
@@ -207,13 +216,13 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
               <CardTitle>Profile Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <UserProfileSettings 
-                userData={userData} 
+              <UserProfileSettings
+                userData={userData}
                 onUpdate={(updatedData) => {
                   if (dashboardConfig.updateUserData) {
                     dashboardConfig.updateUserData(updatedData);
                   }
-                }} 
+                }}
               />
             </CardContent>
           </Card>
