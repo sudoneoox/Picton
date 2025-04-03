@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ApprovalQueue } from './ApprovalQueue';
 import { DashboardStats } from "./staff/DashboardStats";
 import { RecentSubmissions } from "./staff/RecentSubmissions";
+import { Button } from '@/components/Button';
 import { api } from "@/api/api";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -14,27 +15,27 @@ export const StaffDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [approvals, submissions, stats] = await Promise.all([
-          api.staff.getPendingApprovals(),
-          api.staff.getRecentSubmissions(),
-          api.staff.getDashboardStats()
-        ]);
-        
-        setDashboardData({
-          pendingApprovals: approvals.data,
-          recentSubmissions: submissions.data,
-          stats: stats.data
-        });
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchDashboardData = async () => {
+    try {
+      const [approvals, submissions, stats] = await Promise.all([
+        api.admin.getPendingApprovals(),
+        api.admin.getRecentSubmissions(), // Ensure this endpoint is defined in your admin API service
+        api.admin.getDashboardStats()      // Ensure this endpoint is defined as well
+      ]);
 
+      setDashboardData({
+        pendingApprovals: approvals.data,
+        recentSubmissions: submissions.data,
+        stats: stats.data
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (user?.role === 'staff' || user?.role === 'admin') {
       fetchDashboardData();
     }
@@ -45,7 +46,7 @@ export const StaffDashboard = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Staff Dashboard</h1>
         <div className="flex gap-2">
-          <Button variant="outline">Refresh Data</Button>
+          <Button variant="outline" onClick={fetchDashboardData}>Refresh Data</Button>
           <Button>New Announcement</Button>
         </div>
       </div>
@@ -57,6 +58,7 @@ export const StaffDashboard = () => {
           <ApprovalQueue 
             approvals={dashboardData.pendingApprovals} 
             loading={loading}
+            refreshDashboard={fetchDashboardData}
           />
         </div>
         
