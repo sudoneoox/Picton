@@ -96,7 +96,7 @@ export const admin = {
 
   async getPendingApprovals() {
     try {
-      return await securedFetch(`${API_BASE_URL}/form-approvals/?status=pending`, {
+      return await securedFetch(`${API_BASE_URL}/forms/approvals/?status=pending`, {
         method: "GET",
       });
     } catch (error) {
@@ -112,7 +112,7 @@ export const admin = {
    */
   async approveApproval(approvalId) {
     try {
-      return await securedFetch(`${API_BASE_URL}/form-approvals/${approvalId}/approve/`, {
+      return await securedFetch(`${API_BASE_URL}/forms/approvals/${approvalId}/approve/`, {
         method: "POST",
       });
     } catch (error) {
@@ -129,7 +129,7 @@ export const admin = {
    */
   async returnForChanges(approvalId, comment) {
     try {
-      return await securedFetch(`${API_BASE_URL}/form-approvals/${approvalId}/return_for_changes/`, {
+      return await securedFetch(`${API_BASE_URL}/forms/approvals/${approvalId}/return_for_changes/`, {
         method: "POST",
         body: JSON.stringify({ comments: comment }),
       });
