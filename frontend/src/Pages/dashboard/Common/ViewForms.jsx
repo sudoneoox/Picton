@@ -44,8 +44,8 @@ const ViewForms = () => {
     try {
       setLoadingForm(true);
       setSelectedIdentifier(identifier);
-      const formDetails = await api.student.getSubmissionByidentifier(identifier);
-      setSelectedForm(formDetails);
+      const formData = await api.student.getSubmissionByidentifier(identifier);
+      setSelectedForm(formData);
       setPdfDialogOpen(true);
     } catch (error) {
       pretty_log(`Error fetching form details: ${error.message}`, "ERROR");
@@ -54,20 +54,18 @@ const ViewForms = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
       case "approved":
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "returned":
-        return <Badge className="bg-orange-100 text-orange-800">Returned</Badge>;
+        return "bg-green-100 text-green-800";
       case "rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
-      case "draft":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return "bg-red-100 text-red-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "returned":
+        return "bg-orange-100 text-orange-800";
       default:
-        return <Badge>{status}</Badge>;
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -117,7 +115,7 @@ const ViewForms = () => {
                 <TableCell className="font-medium">{submission.form_type}</TableCell>
                 <TableCell>{submission.identifier}</TableCell>
                 <TableCell>{formatDate(submission.submission_date)}</TableCell>
-                <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                <TableCell><Badge className={`${getStatusColor(submission.status)}`}>{submission.status}</Badge></TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="outline"
@@ -133,7 +131,6 @@ const ViewForms = () => {
         </Table>
       )}
 
-      {/* PDF View Dialog */}
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] w-[90vw]">
           <DialogHeader>
@@ -149,7 +146,7 @@ const ViewForms = () => {
             <div className="mt-2">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <p className="text-sm">Status: {selectedForm && getStatusBadge(selectedForm.status)}</p>
+                  <p className="text-sm">{selectedForm && <Badge className={`${getStatusColor(selectedForm.status)}`}> Status: {selectedForm.status}</Badge>}</p>
                   <p className="text-sm">Submitted: {selectedForm && formatDate(selectedForm.created_at)}</p>
                 </div>
                 <div>

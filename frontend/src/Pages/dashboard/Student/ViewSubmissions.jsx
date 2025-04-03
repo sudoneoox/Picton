@@ -23,7 +23,7 @@ const ViewSubmissions = () => {
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const data = await api.student.getSubmissions();
+        const data = await api.student.getFormSubmissions();
         setSubmissions(data);
       } catch (error) {
         pretty_log("Error fetching submissions: " + error, "ERROR");
@@ -67,7 +67,7 @@ const ViewSubmissions = () => {
         </div>
       ) : submissions.length === 0 ? (
         <div className="text-center text-muted-foreground mt-8">
-          You haven’t submitted any forms yet.
+          You haven't submitted any forms yet.
         </div>
       ) : (
         <div className="grid gap-4">

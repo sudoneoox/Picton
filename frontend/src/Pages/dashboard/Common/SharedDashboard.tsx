@@ -1,38 +1,47 @@
+import { useEffect, useState } from "react";
+import { Separator } from "@/components/ui/separator";
+import SubmissionHistory from "@/components/SubmissionHistory";
+import { SidebarNav } from "@/Pages/dashboard/Common/SidebarNavbar";
+import DashboardContent from "@/Pages/dashboard/Common/DashboardContent";
+import { pretty_log } from "@/api/common_util";
+import { initializeConfig } from "@/Pages/dashboard/Common/dashboard_config";
 import {
   SidebarProvider,
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
-import { Separator } from "@/components/ui/separator";
-import { SidebarNav } from "@/Pages/dashboard/Common/SidebarNavbar";
-import DashboardContent from "@/Pages/dashboard/Common/DashboardContent";
-import { pretty_log } from "@/api/common_util.js"
-import dashboardConfig, { initializeConfig } from "@/Pages/dashboard/Common/dashboard_config"
-import StudentDashboard from "@/Pages/dashboard/Student/StudentDashboard.jsx";
+import { UserData, DashboardSettings, DashboardConfig } from "@/types/dashboard";
+// import StudentDashboard from "@/Pages/dashboard/Student/StudentDashboard.jsx";
 
-export default function SharedDashboard({ userData }: { userData: object }) {
-
+export default function SharedDashboard({ userData }: { userData: UserData }) {
   // initialize config with user data
-  const config = initializeConfig(userData)
+  const config: DashboardConfig = initializeConfig(userData);
 
-  const dashboardSettings = config.getDashboard();
-  pretty_log(`Getting Config in Dashboard`, "INFO")
-  pretty_log(`Received General Config in Dashboard ${JSON.stringify(config, null, 4)}`, "DEBUG")
-  pretty_log(`Received Dashboard Config in Dashboard ${JSON.stringify(dashboardSettings, null, 4)}`, "DEBUG")
+  const dashboardSettings: DashboardSettings = config.getDashboard();
+  pretty_log(`Getting Config in Dashboard`, "INFO");
+  pretty_log(`Received General Config in Dashboard ${JSON.stringify(config, null, 4)}`, "DEBUG");
+  pretty_log(`Received Dashboard Config in Dashboard ${JSON.stringify(dashboardSettings, null, 4)}`, "DEBUG");
 
-  const [activeView, setActiveView] = useState(dashboardSettings.defaultValue);
+  const [activeView, setActiveView] = useState<string>(dashboardSettings.defaultView || "");
 
   useEffect(() => {
     setActiveView(dashboardSettings.defaultView || "");
-  }, [dashboardSettings])
+  }, [dashboardSettings]);
 
-  pretty_log(`Received Data in Dashboard ${JSON.stringify(userData, null, 4)}`, "DEBUG")
-  pretty_log(`Current Active View ${activeView}`, "DEBUG")
+  pretty_log(`Received Data in Dashboard ${JSON.stringify(userData, null, 4)}`, "DEBUG");
+  pretty_log(`Current Active View ${activeView}`, "DEBUG");
+
+  const renderDashboardContent = () => {
+    // If activeView is 'submissions' or user role is student and activeView is default/empty
+    if (activeView === 'submissions' || (userData?.role === 'student' && !activeView)) {
+      return <SubmissionHistory />;
+    }
+    // Otherwise render the default dashboard content
+    return <DashboardContent activeView={activeView} dashboardConfig={config} />;
+  };
 
   return (
     <SidebarProvider>
-
       {/* NOTE: SIDEBAR NAV HERE */}
       <SidebarNav
         onViewChange={setActiveView}
@@ -48,11 +57,13 @@ export default function SharedDashboard({ userData }: { userData: object }) {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <h1 className="text-xl font-semibold">{dashboardSettings.title}</h1>
+            <h1 className="text-xl font-semibold">
+              {activeView === 'submissions' ? 'Submission History' : dashboardSettings.title}
+            </h1>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <DashboardContent activeView={activeView} dashboardConfig={config} />
+          {renderDashboardContent()}
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -17,12 +17,11 @@ import { pretty_log } from "@/api/common_util";
 import { api } from "@/api/api.js";
 import { useToast } from "@/components/ToastNotification";
 
-const FormSubmissionDialog = ({ isOpen, onClose }) => {
+const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
   const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedForm, setSelectedForm] = useState(null);
   const [formData, setFormData] = useState({
-    // NOTE: common fields
     first_name: "",
     middle_name: "",
     last_name: "",
@@ -33,7 +32,6 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
     academic_career: "",
     year: new Date().getFullYear().toString(),
     season: "",
-    // NOTE: term withdrawal
     initials: {
       financial_aid: false,
       international_student: false,
@@ -56,14 +54,13 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
       dining_services: "",
       parking_transportation: "",
     },
-    // NOTE: Graduate Petition 
     petition_purpose: "",
     petition_explanation: "",
     supporting_document: null,
-
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewPdf, setPreviewPdf] = useState(null);
+  const [error, setError] = useState(null);
 
   // Reset form when dialog opens/closes
   React.useEffect(() => {
@@ -102,11 +99,21 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
           student_housing: "",
           dining_services: "",
           parking_transportation: "",
-        }
+        },
+        petition_purpose: "",
+        petition_explanation: "",
+        supporting_document: null,
       });
       setPreviewPdf(null);
     }
   }, [isOpen]);
+
+  // If no template is provided, close the dialog
+  React.useEffect(() => {
+    if (!template) {
+      onClose();
+    }
+  }, [template, onClose]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -129,8 +136,8 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
     if (e.target.files && e.target.files[0]) {
       setFormData(prev => ({
         ...prev,
-        supporting_document: e.target_files[0]
-      }))
+        supporting_document: e.target.files[0]
+      }));
     }
   };
 
@@ -156,16 +163,16 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
   };
 
   const handleNextStep = () => {
-    if (currentStep < 3) {
+    if (currentStep < 2) {
       // Validate current step
-      if (currentStep === 1 && !selectedForm) {
-        showToast({ error: "Please select a form type" }, "error");
+      if (!template?.type) {
+        showToast({ error: "Form type not specified" }, "error");
         return;
       }
 
-      if (currentStep === 2) {
-        // Validate step 2 required fields for term withdrawal
-        if (selectedForm === "withdrawal") {
+      if (currentStep === 1) {
+        // Validate step 1 required fields for term withdrawal
+        if (template.type === "withdrawal") {
           const requiredFields = ['first_name', 'last_name', "student_id", "phone_number", "email", "program_plan", "academic_career", "season"];
           const missingFields = requiredFields.filter(field => !formData[field]);
 
@@ -175,13 +182,13 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
           }
         }
 
-        // Validate required fields for gradudate petition
-        if (selectedForm === "graduate") {
-          const requiredFields = ['first_name', 'last_name', 'student_id', 'phone_number', 'email', 'program_plan', 'academic_career', 'season', 'petition_purpose']
-          const missingFields = requiredFields.filter(field => !formData[field])
+        // Validate required fields for graduate petition
+        if (template.type === "graduate") {
+          const requiredFields = ['first_name', 'last_name', 'student_id', 'phone_number', 'email', 'program_plan', 'academic_career', 'season', 'petition_purpose'];
+          const missingFields = requiredFields.filter(field => !formData[field]);
 
           if (missingFields.length > 0) {
-            showToast({ error: "Please fill in all required fields" }, 'error')
+            showToast({ error: "Please fill in all required fields" }, "error");
             return;
           }
           //NOTE:  if other is selected as purpose, explanation is required
@@ -190,8 +197,6 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
             return;
           }
         }
-
-
 
         // Generate PDF preview
         handleGeneratePreview();
@@ -205,13 +210,15 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
     try {
       setIsSubmitting(true);
 
-      // Determine form template ID based on selection 
-      const templateId = selectedForm === "withdrawal" ? 2 : 1; // Assuming IDs from backend
+      // Structure the data as expected by the backend
+      const requestData = {
+        form_template: {
+          form_template: template.id,
+          form_data: formData
+        }
+      };
 
-      const response = await api.student.previewForm({
-        form_template: templateId,
-        form_data: formData
-      });
+      const response = await api.student.previewForm(requestData);
 
       if (response && response.pdf_content) {
         setPreviewPdf(response.pdf_content);
@@ -232,12 +239,10 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSubmitForm = async () => {
+  const handleSubmitForm = async (e) => {
+    e.preventDefault(); // Prevent default form submission
     try {
       setIsSubmitting(true);
-
-      // Determine form template ID based on selection
-      const templateId = selectedForm === "withdrawal" ? 2 : 1;
 
       // Submit form for approval
       const response = await api.student.submitForm({
@@ -258,112 +263,52 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return (
-          <div className="flex flex-col space-y-4">
-            <DialogHeader>
-              <DialogTitle>Select Form Type</DialogTitle>
-              <DialogDescription>
-                Choose the type of form you want to submit
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid grid-cols-1 gap-4 py-4">
-              <Card
-                className={`cursor-pointer border-2 ${selectedForm === "graduate" ? "border-blue-500" : "border-gray-200"}`}
-                onClick={() => handleFormSelection("graduate")}
-              >
-                <CardHeader>
-                  <CardTitle>Graduate Petition Form</CardTitle>
-                  <CardDescription>
-                    For graduate students requesting exceptions to university policies
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">
-                    Use this form to request course exceptions, deadline extensions, or other graduate program adjustments
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card
-                className={`cursor-pointer border-2 ${selectedForm === "withdrawal" ? "border-blue-500" : "border-gray-200"}`}
-                onClick={() => handleFormSelection("withdrawal")}
-              >
-                <CardHeader>
-                  <CardTitle>Term Withdrawal Form</CardTitle>
-                  <CardDescription>
-                    For students withdrawing from all courses in the current term
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">
-                    <strong>Please note:</strong> Term withdrawal means the student is dropping all courses in all sessions of the term and withdrawing from the university for the <strong>current term only</strong>.
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    The general processing time for all Term Withdrawal Requests is 3-5 business days, however, the official term withdrawal date for the student will be the date that the request has been received by the Office of the University Registrar.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleNextStep} disabled={!selectedForm}>Next</Button>
-            </DialogFooter>
-          </div>
-        );
-
-      case 2:
-        return selectedForm === "withdrawal" ? (
-          // IMPORTANT: term withdrawal form 
+        // Start directly with form filling based on template type
+        return template?.type === "withdrawal" ? (
+          // Term withdrawal form
           <div className="flex flex-col space-y-4">
             <DialogHeader>
               <DialogTitle>Term Withdrawal Form</DialogTitle>
               <DialogDescription>
-                Please fill out all required fields
+                For students withdrawing from all courses in the current term
               </DialogDescription>
             </DialogHeader>
 
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-
-              {/* FIRST NAME */}
-              <div className="md:col-span-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
+              {/* Name Fields */}
+              <div>
                 <Label htmlFor="first_name">First Name<span className="text-red-500">*</span></Label>
                 <Input
                   id="first_name"
                   value={formData.first_name}
                   onChange={(e) => handleInputChange("first_name", e.target.value)}
-                  placeholder="Enter your First Name"
+                  placeholder="Enter your first name"
                   required
                 />
               </div>
 
-              {/* LAST NAME */}
-              <div className="md:col-span-1">
+              <div>
                 <Label htmlFor="last_name">Last Name<span className="text-red-500">*</span></Label>
                 <Input
                   id="last_name"
                   value={formData.last_name}
                   onChange={(e) => handleInputChange("last_name", e.target.value)}
-                  placeholder="Enter your Last Name"
+                  placeholder="Enter your last name"
                   required
                 />
               </div>
 
-              {/* MIDDLE NAME */}
-              <div className="md:col-span-1">
-                <Label htmlFor="middle_name">Middle Name<span className="text-red-500">*</span></Label>
+              <div>
+                <Label htmlFor="middle_name">Middle Name</Label>
                 <Input
                   id="middle_name"
                   value={formData.middle_name}
                   onChange={(e) => handleInputChange("middle_name", e.target.value)}
-                  placeholder="Middle Name (Optional)"
+                  placeholder="Enter your middle name (optional)"
                 />
               </div>
 
-              {/* STUDENT ID */}
-              <div className="md:col-span-1">
+              <div>
                 <Label htmlFor="student_id">MyUH ID<span className="text-red-500">*</span></Label>
                 <Input
                   id="student_id"
@@ -374,7 +319,6 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
-              {/* PHONE NUMBER */}
               <div>
                 <Label htmlFor="phone_number">Phone Number<span className="text-red-500">*</span></Label>
                 <Input
@@ -386,9 +330,8 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
-              {/* SCHOOL EMAIL  */}
               <div>
-                <Label htmlFor="email">Student Email<span className="text-red-500">*</span></Label>
+                <Label htmlFor="email">School Email<span className="text-red-500">*</span></Label>
                 <Input
                   id="email"
                   type="email"
@@ -399,7 +342,6 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
-              {/* PROGRAM PLAN */}
               <div className="md:col-span-2">
                 <Label htmlFor="program_plan">Program Plan<span className="text-red-500">*</span></Label>
                 <Input
@@ -411,26 +353,40 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
-              {/* ACADEMIC CAREER  */}
               <div className="md:col-span-2">
                 <Label>Academic Career<span className="text-red-500">*</span></Label>
                 <RadioGroup
                   value={formData.academic_career}
                   onValueChange={(value) => handleInputChange("academic_career", value)}
-                  className="flex space-x-4 mt-2"
+                  className="flex gap-2 mt-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="undergraduate" id="undergraduate" />
-                    <Label htmlFor="undergraduate">Undergraduate</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="graduate" id="graduate" />
-                    <Label htmlFor="graduate">Graduate</Label>
-                  </div>
+                  <Button
+                    type="button"
+                    variant={formData.academic_career === "undergraduate" ? "default" : "outline"}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("academic_career", "undergraduate")}
+                  >
+                    Undergraduate
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.academic_career === "graduate" ? "default" : "outline"}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("academic_career", "graduate")}
+                  >
+                    Graduate
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.academic_career === "law" ? "default" : "outline"}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("academic_career", "law")}
+                  >
+                    Law
+                  </Button>
                 </RadioGroup>
               </div>
 
-              {/* WITHDRAWAL YEAR */}
               <div>
                 <Label htmlFor="year">Withdrawal Year<span className="text-red-500">*</span></Label>
                 <Input
@@ -441,13 +397,12 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 />
               </div>
 
-              {/* WITHDRAWAL TERM */}
               <div>
                 <Label>Withdrawal Term<span className="text-red-500">*</span></Label>
                 <RadioGroup
                   value={formData.season}
                   onValueChange={(value) => handleInputChange("season", value)}
-                  className="flex space-x-1 mt-2"
+                  className="flex space-x-4 mt-2"
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Fall" id="fall" />
@@ -587,7 +542,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                         <Input
                           placeholder="Enter your initials"
                           className="w-40 mt-1"
-                          value={formData.initialsText.veterans}
+                          value={formData.initialsText.graduate_professional}
                           onChange={(e) => handleInitialsChange("graduate_professional", e.target.value)}
                         />
                       )}
@@ -613,13 +568,12 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                         <Input
                           placeholder="Enter your initials"
                           className="w-40 mt-1"
-                          value={formData.initialsText.veterans}
+                          value={formData.initialsText.doctoral_student}
                           onChange={(e) => handleInitialsChange("doctoral_student", e.target.value)}
                         />
                       )}
                     </div>
                   </div>
-
 
                   {/* Student Housing */}
                   <div className="flex space-x-2">
@@ -640,7 +594,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                         <Input
                           placeholder="Enter your initials"
                           className="w-40 mt-1"
-                          value={formData.initialsText.veterans}
+                          value={formData.initialsText.student_housing}
                           onChange={(e) => handleInitialsChange("student_housing", e.target.value)}
                         />
                       )}
@@ -660,12 +614,13 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                       </Label>
                       <p className="text-sm text-muted-foreground">
                         I understand that withdrawing from the university does not automatically relieve me of my obligation to
-                        pay outstanding charges stemming from my purchase of a UH Dining Services meal plan                      </p>
+                        pay outstanding charges stemming from my purchase of a UH Dining Services meal plan
+                      </p>
                       {formData.initials.dining_services && (
                         <Input
                           placeholder="Enter your initials"
                           className="w-40 mt-1"
-                          value={formData.initialsText.veterans}
+                          value={formData.initialsText.dining_services}
                           onChange={(e) => handleInitialsChange("dining_services", e.target.value)}
                         />
                       )}
@@ -686,41 +641,39 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                       <p className="text-sm text-muted-foreground">
                         I understand that withdrawing from the university does not relieve me of my
                         obligation to pay outstanding charges stemming from my purchase of a UH parking permit or parking citations received
-
                       </p>
                       {formData.initials.parking_transportation && (
                         <Input
                           placeholder="Enter your initials"
                           className="w-40 mt-1"
-                          value={formData.initialsText.veterans}
+                          value={formData.initialsText.parking_transportation}
                           onChange={(e) => handleInitialsChange("parking_transportation", e.target.value)}
                         />
                       )}
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={handlePrevStep}>Back</Button>
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={handleNextStep} disabled={isSubmitting}>
                 {isSubmitting ? "Generating Preview..." : "Preview Form"}
               </Button>
             </DialogFooter>
           </div>
         ) : (
-          // IMPORTANT: Graduate/Profesional Petition Form 
+          // Graduate petition form
           <div className="flex flex-col space-y-4">
             <DialogHeader>
-              <DialogTitle>Graduate/Professional Petition Form</DialogTitle>
+              <DialogTitle>Graduate Petition Form</DialogTitle>
               <DialogDescription>
-                Please fill out all required fields
+                For graduate students requesting exceptions to university policies
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
               {/* Name Fields */}
               <div>
                 <Label htmlFor="first_name">First Name<span className="text-red-500">*</span></Label>
@@ -805,20 +758,32 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 <RadioGroup
                   value={formData.academic_career}
                   onValueChange={(value) => handleInputChange("academic_career", value)}
-                  className="flex space-x-4 mt-2"
+                  className="flex gap-2 mt-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="undergraduate" id="grad_undergraduate" />
-                    <Label htmlFor="grad_undergraduate">Undergraduate</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="graduate" id="grad_graduate" />
-                    <Label htmlFor="grad_graduate">Graduate</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="law" id="grad_law" />
-                    <Label htmlFor="grad_law">Law</Label>
-                  </div>
+                  <Button
+                    type="button"
+                    variant={formData.academic_career === "undergraduate" ? "default" : "outline"}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("academic_career", "undergraduate")}
+                  >
+                    Undergraduate
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.academic_career === "graduate" ? "default" : "outline"}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("academic_career", "graduate")}
+                  >
+                    Graduate
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.academic_career === "law" ? "default" : "outline"}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("academic_career", "law")}
+                  >
+                    Law
+                  </Button>
                 </RadioGroup>
               </div>
 
@@ -840,20 +805,32 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                   <RadioGroup
                     value={formData.season}
                     onValueChange={(value) => handleInputChange("season", value)}
-                    className="flex space-x-4 items-end"
+                    className="flex gap-2 items-end"
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Fall" id="grad_fall" />
-                      <Label htmlFor="grad_fall">Fall</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Spring" id="grad_spring" />
-                      <Label htmlFor="grad_spring">Spring</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Summer" id="grad_summer" />
-                      <Label htmlFor="grad_summer">Summer</Label>
-                    </div>
+                    <Button
+                      type="button"
+                      variant={formData.season === "Fall" ? "default" : "outline"}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                      onClick={() => handleInputChange("season", "Fall")}
+                    >
+                      Fall
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.season === "Spring" ? "default" : "outline"}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                      onClick={() => handleInputChange("season", "Spring")}
+                    >
+                      Spring
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.season === "Summer" ? "default" : "outline"}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                      onClick={() => handleInputChange("season", "Summer")}
+                    >
+                      Summer
+                    </Button>
                   </RadioGroup>
                 </div>
               </div>
@@ -864,62 +841,96 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
                 <RadioGroup
                   value={formData.petition_purpose}
                   onValueChange={(value) => handleInputChange("petition_purpose", value)}
-                  className="space-y-2 mt-2"
+                  className="grid gap-2 mt-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="update_program_status" id="purpose_1" />
-                    <Label htmlFor="purpose_1">Update program status/action (term activate, discontinue, etc)</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="admission_status_change" id="purpose_2" />
-                    <Label htmlFor="purpose_2">Admission status change (conditional, unconditional)</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="add_concurrent_degree" id="purpose_3" />
-                    <Label htmlFor="purpose_3">Add new concurrent degree or certificate (career/program/plan)</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="change_degree_objective" id="purpose_4" />
-                    <Label htmlFor="purpose_4">Change current degree objective (program/plan)</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="degree_requirements_exception" id="purpose_5" />
-                    <Label htmlFor="purpose_5">Degree requirements exception or approved course substitution</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="leave_of_absence" id="purpose_6" />
-                    <Label htmlFor="purpose_6">Leave of absence (include specific term)</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="reinstate_discontinued" id="purpose_7" />
-                    <Label htmlFor="purpose_7">Reinstate to discontinued career (provide explanation)</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="request_to_graduate" id="purpose_8" />
-                    <Label htmlFor="purpose_8">Request to apply to graduate after the late filing period deadline</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="change_admin_term" id="purpose_9" />
-                    <Label htmlFor="purpose_9">Change admin term</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="early_submission" id="purpose_10" />
-                    <Label htmlFor="purpose_10">Early submission of thesis/dissertation</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="other" id="purpose_11" />
-                    <Label htmlFor="purpose_11">Other (explain below)</Label>
-                  </div>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "update_program_status" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "update_program_status")}
+                  >
+                    Update program status/action (term activate, discontinue, etc)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "admission_status_change" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "admission_status_change")}
+                  >
+                    Admission status change (conditional, unconditional)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "add_concurrent_degree" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "add_concurrent_degree")}
+                  >
+                    Add new concurrent degree or certificate (career/program/plan)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "change_degree_objective" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "change_degree_objective")}
+                  >
+                    Change current degree objective (program/plan)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "degree_requirements_exception" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "degree_requirements_exception")}
+                  >
+                    Degree requirements exception or approved course substitution
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "leave_of_absence" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "leave_of_absence")}
+                  >
+                    Leave of absence (include specific term)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "reinstate_discontinued" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "reinstate_discontinued")}
+                  >
+                    Reinstate to discontinued career (provide explanation)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "request_to_graduate" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "request_to_graduate")}
+                  >
+                    Request to apply to graduate after the late filing period deadline
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "change_admin_term" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "change_admin_term")}
+                  >
+                    Change admin term
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "early_submission" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "early_submission")}
+                  >
+                    Early submission of thesis/dissertation
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.petition_purpose === "other" ? "default" : "outline"}
+                    className="justify-start data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    onClick={() => handleInputChange("petition_purpose", "other")}
+                  >
+                    Other (explain below)
+                  </Button>
                 </RadioGroup>
               </div>
 
@@ -964,14 +975,15 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={handlePrevStep}>Back</Button>
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={handleNextStep} disabled={isSubmitting}>
                 {isSubmitting ? "Generating Preview..." : "Preview Form"}
               </Button>
             </DialogFooter>
-          </div>);
+          </div>
+        );
 
-      case 3:
+      case 2:
         return (
           <div className="flex flex-col space-y-4">
             <DialogHeader>
@@ -981,7 +993,7 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-4 h-[60vh] overflow-hidden">
+            <div className="py-4 h-[60vh] overflow-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
               {previewPdf ? (
                 <iframe
                   src={`data:application/pdf;base64,${previewPdf}`}
@@ -1010,7 +1022,15 @@ const FormSubmissionDialog = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open && isSubmitting) {
+          return;
+        }
+        onClose();
+      }}
+    >
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         {renderStepContent()}
       </DialogContent>
