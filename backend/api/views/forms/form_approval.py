@@ -58,18 +58,37 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
             submission.status = 'approved'
             submission.save()
         
-        return Response({'status': submission.status})
+        return Response({'status': submission.status}, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'])
-    def reject(self, request, pk=None):
+    def return_for_changes(self, request, pk=None):
+        """
+        Return a form for changes.
+        Staff can include a comment so that the student knows what to fix.
+        """
         approval = self.get_object()
         submission = approval.form_submission
-        
-        approval.decision = 'returned'
-        approval.comments = request.data.get('comments', '')
-        approval.save()
-        
+
+         # Optional: Verify that the submission is pending.
+        if submission.status != 'pending':
+            return Response(
+                {"error": "Only pending forms can be returned for changes"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Record the return decision.
+        FormApproval.objects.create(
+            form_submission=submission,
+            approver=request.user,
+            step_number=submission.current_step,
+            decision="returned",
+            comments=request.data.get("comments", ""),
+        )
+
         submission.status = 'returned'
         submission.save()
-        
-        return Response({'status': 'returned'})
+
+        return Response(
+            {'status': 'returned', 'message': 'Form returned for changes'},
+            status=status.HTTP_200_OK
+        )
