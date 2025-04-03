@@ -92,5 +92,50 @@ export const admin = {
       pretty_log(`Update error (${userId}): ${error.message}`, "ERROR");
       throw errorObj;
     }
+  },
+
+  async getPendingApprovals() {
+    try {
+      return await securedFetch(`${API_BASE_URL}/form-approvals/?status=pending`, {
+        method: "GET",
+      });
+    } catch (error) {
+      pretty_log(`Error fetching pending approvals: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to fetch pending approvals");
+    }
+  },
+
+  /**
+   * Approve a submission via its approval endpoint.
+   * @param {number|string} approvalId - The ID of the approval record.
+   * @returns {Promise<Object>} The updated submission status.
+   */
+  async approveApproval(approvalId) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/form-approvals/${approvalId}/approve/`, {
+        method: "POST",
+      });
+    } catch (error) {
+      pretty_log(`Error approving submission ${approvalId}: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to approve submission");
+    }
+  },
+
+  /**
+   * Return a submission for changes.
+   * @param {number|string} approvalId - The ID of the approval record.
+   * @param {string} comment - A comment explaining what needs to be fixed.
+   * @returns {Promise<Object>} The updated submission status.
+   */
+  async returnForChanges(approvalId, comment) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/form-approvals/${approvalId}/return_for_changes/`, {
+        method: "POST",
+        body: JSON.stringify({ comments: comment }),
+      });
+    } catch (error) {
+      pretty_log(`Error returning submission ${approvalId}: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to return submission");
+    }
   }
 };
