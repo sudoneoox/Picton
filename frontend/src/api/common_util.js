@@ -9,10 +9,24 @@ export const DEBUG = import.meta.env.DEV === true
 
 // CSRF token extraction logic
 export function getCSRFToken() {
-  return document.cookie
+  const token = document.cookie
     .split('; ')
     .find(row => row.startsWith('csrftoken='))
-    ?.split('=')[1] || '';
+    ?.split('=')[1];
+
+  if (!token) {
+    pretty_log("No CSRF token found in cookies", "ERROR");
+    // Try to get a new CSRF token by making a GET request to the API
+    fetch('/api/auth/csrf/', { credentials: 'include' })
+      .then(() => {
+        pretty_log("Successfully refreshed CSRF token", "DEBUG");
+      })
+      .catch(error => {
+        pretty_log(`Failed to refresh CSRF token: ${error}`, "ERROR");
+      });
+  }
+
+  return token || '';
 }
 
 // This function allows to to make colored outputs in web developer tools consoles

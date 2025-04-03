@@ -23,6 +23,7 @@ export const auth = {
       credentials: "include", // for sessions cookies,
       headers: {
         "Content-Type": "application/json",
+        "X-CSRFToken": getCSRFToken(),
       },
       body: JSON.stringify({ username, password }),
     });
@@ -172,5 +173,64 @@ export const auth = {
       pretty_log(`Error during logout ${e}`, "ERROR")
 
     }
-  }
+  },
+
+  /**
+   * Update user's email
+   * @param {string} email - New email address
+   * @returns {Promise<Object>} Response from server
+   */
+  async updateEmail(email) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/auth/update_email/`, {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Email update failed: ${error.message}`, "ERROR");
+      throw error;
+    }
+  },
+
+  /**
+   * Update user's username
+   * @param {string} username - New username
+   * @returns {Promise<Object>} Response from server
+   */
+  async updateUsername(username) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/auth/update_username/`, {
+        method: "POST",
+        body: JSON.stringify({ username }),
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Username update failed: ${error.message}`, "ERROR");
+      throw error;
+    }
+  },
+
+  /**
+   * Update user's password
+   * @param {Object} data - Password update data
+   * @param {string} data.currentPassword - Current password
+   * @param {string} data.newPassword - New password
+   * @returns {Promise<Object>} Response from server
+   */
+  async updatePassword({ currentPassword, newPassword }) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/auth/update_password/`, {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Password update failed: ${error.message}`, "ERROR");
+      throw error;
+    }
+  },
 };

@@ -21,7 +21,10 @@ export const ToastProvider = ({ children }) => {
   };
 
   const removeToast = (id) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    setToasts((prev) => {
+      const newToasts = prev.filter((toast) => toast.id !== id);
+      return newToasts;
+    });
   };
 
   return (
@@ -66,8 +69,13 @@ export const ToastProvider = ({ children }) => {
                 </pre>
               </div>
               <button
-                onClick={() => removeToast(toast.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  removeToast(toast.id);
+                }}
                 className="toast-container__close"
+                type="button"
               >
                 <X className="toast-container__close-icon" />
               </button>

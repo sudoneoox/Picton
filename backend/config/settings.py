@@ -19,6 +19,8 @@ AUTH_USER_MODEL = "api.User"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
+if DEBUG:
+    X_FRAME_OPTIONS = "ALLOWALL"
 
 # WARNING: change in production
 ALLOWED_HOSTS = [
@@ -41,7 +43,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "corsheaders",
-    "django_auth_adfs",
+    #"django_auth_adfs",
 ]
 
 MIDDLEWARE = [
@@ -75,7 +77,7 @@ AUTH_ADFS = {
 
 
 AUTHENTICATION_BACKENDS = (
-    "django_auth_adfs.backend.AdfsAuthCodeBackend",
+    #"django_auth_adfs.backend.AdfsAuthCodeBackend",
     "django.contrib.auth.backends.ModelBackend",
 )
 

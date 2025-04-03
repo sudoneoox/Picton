@@ -1,9 +1,16 @@
+from re import sub
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from ...models import FormSubmission, FormTemplate, FormApproval, FormApprovalWorkflow
+from ...models import (
+    FormSubmission,
+    FormSubmissionIdentifier,
+    FormTemplate,
+    FormApproval,
+    FormApprovalWorkflow,
+)
 from ...serializers import FormSubmissionSerializer
 from ...core import IsActiveUser
 
@@ -87,14 +94,27 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 draft_submission.form_data = form_data
                 draft_submission.save()
 
+            # Generate identifier for the preview/draft if it doesnt have one
+            # Store the identifier in the database
+            from ...models import FormSubmissionIdentifier
+
+            identifier_obj, created = FormSubmissionIdentifier.objects.get_or_create(
+                form_submission=draft_submission,
+                defaults={
+                    "identifier": draft_submission.generate_submission_identifier(),
+                    "form_type": form_template.name,
+                    "student_id": form_data.get("student_id", ""),
+                },
+            )
+            identifier = identifier_obj.identifier
+
             template_code = (
                 "withdrawal"
                 if form_template.name == "Term Withdrawal Form"
                 else "petition"
             )
-            pdf_filename = (
-                f"forms/{request.user.id}_{template_code}_{draft_submission.id}.pdf"
-            )
+
+            pdf_filename = f"forms/{identifier}_{template_code}.pdf"
 
             draft_submission.current_pdf.save(pdf_filename, pdf_file, save=False)
             draft_submission.pdf_url = pdf_filename
@@ -113,6 +133,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                     "pdf_content": pdf_base_64,
                     "filename": f"{form_template.name}_preview.pdf",
                     "draft_id": draft_submission.id,
+                    "identifier": identifier,
                 }
             )
 
@@ -141,6 +162,9 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Create unique identifer for form submission
+        identifier = form_submission.generate_submission_identifier()
+
         # Get the form template's approval workflow
         approval_workflows = (
             form_submission.form_template.approvals_workflows.all().order_by("order")
@@ -150,6 +174,21 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             # If no approval workflow, mark as approved immediately
             form_submission.status = "approved"
             form_submission.save()
+
+            # create identifer record even for auto-approved forms
+            from ...models import FormSubmissionIdentifier
+
+            identifier_obj, created = FormSubmissionIdentifier.objects.get_or_create(
+                form_submission=form_submission,
+                defaults={
+                    "identifier": form_submission.generate_submission_identifier(),
+                    "form_type": form_submission.form_template.name,
+                    "student_id": form_submission.form_data.get("student_id", ""),
+                },
+            )
+
+            identifier = identifier_obj.identifier
+
             return Response(
                 {"status": "approved", "message": "Form approved automatically"}
             )
@@ -165,13 +204,26 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         )
 
         # Generate final PDF with official timestamp
-        self._generate_pdf(form_submission.form_template.name, form_submission)
+        pdf_file = self._generate_pdf(
+            form_submission.form_template.name, form_submission
+        )
+
+        # SAVE pdf with unique identifier as the filename
+        if pdf_file:
+            template_code = (
+                "withdrawal"
+                if form_submission.form_template.name == "Term Withdrawal Form"
+                else "petition"
+            )
+            pdf_filename = f"forms/{identifier}_{template_code}.pdf"
+            form_submission.current_pdf.save(pdf_filename, pdf_file, save=True)
 
         return Response(
             {
                 "status": "pending",
                 "current_step": form_submission.current_step,
                 "approver_role": approval_workflows.first().approver_role,
+                "identifier": identifier,
             }
         )
 
@@ -241,45 +293,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             form_submission.save()
             return Response({"status": "approved", "message": "Form fully approved"})
 
-    @action(detail=True, methods=["POST"])
-    def return_for_changes(self, request, pk=None):
-        """Return a form for changes"""
-        form_submission = self.get_object()
-
-        # Similar logic to approve but mark as returned
-        if form_submission.status != "pending":
-            return Response(
-                {"error": "Only pending forms can be returned for changes"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Check permissions similar to approve method
-        user_role = request.user.role
-        current_workflow = form_submission.form_template.approvals_workflows.filter(
-            order=form_submission.current_step
-        ).first()
-
-        if not current_workflow or current_workflow.approver_role != user_role:
-            return Response(
-                {"error": "You don't have permission to return this form at this step"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        # Record return decision
-        FormApproval.objects.create(
-            form_submission=form_submission,
-            approver=request.user,
-            step_number=form_submission.current_step,
-            decision="returned",
-            comments=request.data.get("comments", ""),
-        )
-
-        # Update form status
-        form_submission.status = "returned"
-        form_submission.save()
-
-        return Response({"status": "returned", "message": "Form returned for changes"})
-
     def _generate_pdf(self, template_name, form_submission):
         """Generate PDF for the form submission"""
         pretty_print(
@@ -330,10 +343,98 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         # For approvers, include submissions they need to approve
         role_submissions = FormSubmission.objects.filter(
             status="pending",
-            form_template__approval_workflows__approver_role=user.role,
+            form_template__approvals_workflows__approver_role=user.role,
             current_step=FormApprovalWorkflow.objects.filter(
                 form_template=OuterRef("form_template"), approver_role=user.role
-            ).values("order"),
+            ).values_list("order", flat=True)[:1],
         )
-
         return (queryset.filter(submitter=user) | role_submissions).distinct()
+
+    @action(detail=False, methods=["GET"])
+    def by_identifier(self, request):
+        """Retrieve a form submission by its identifier"""
+        identifier = request.query_params.get("identifier")
+
+        if not identifier:
+            return Response(
+                {"error": "Identifier parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            from ...models import FormSubmissionIdentifier
+
+            identifier_obj = FormSubmissionIdentifier.objects.get(identifier=identifier)
+            submission = identifier_obj.form_submission
+
+            # check permissions - only allow if user is submnitter or has appropriate role
+            if submission.submitter != request.user and not request.user.is_superuser:
+                if request.user.role != "staff" or submission.current_step == 0:
+                    return Response(
+                        {"error": "You dont have permission to access this submission"}
+                    )
+
+            serializer = self.get_serializer(submission)
+
+            # include identifier in response
+            response_data = serializer.data
+            response_data["identifier"] = identifier
+
+            # include pdf as base64 if present
+            if submission.current_pdf:
+                import base64
+
+                try:
+                    submission.current_pdf.seek(0)
+                    pdf_content = submission.current_pdf.read()
+                    pdf_base_64 = base64.b64encode(pdf_content).decode("utf-8")
+                    response_data["pdf_content"] = pdf_base_64
+                except Exception as e:
+                    pretty_print(f"Error reading PDF: {str(e)}", "ERROR")
+
+            return Response(response_data)
+
+        except FormSubmissionIdentifier.DoesNotExist:
+            return Response(
+                {"error": "Form Submission not found with this identifier"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except Exception as e:
+            pretty_print(f"ERROR in fetching form by identifier: {str(e)}", "ERROR")
+            return Response(
+                {"error": f"ERROR in fetching form by identifier: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=False, methods=["GET"])
+    def all_identifiers(self, request):
+        """Retrieve all form submission identifiers for the current user"""
+        from ...models import FormSubmissionIdentifier
+
+        try:
+            # get all identifiers for forms submitted by current user
+            identifiers = FormSubmissionIdentifier.objects.filter(
+                form_submission__submitter=request.user
+            ).select_related("form_submission")
+
+            # prepare response data (cleanup)
+            response_data = []
+            for identifier in identifiers:
+                response_data.append(
+                    {
+                        "identifier": identifier.identifier,
+                        "form_type": identifier.form_type,
+                        "submission_date": identifier.submission_date,
+                        "status": identifier.form_submission.status,
+                        "student_id": identifier.student_id,
+                    }
+                )
+            return Response(response_data)
+
+        except Exception as e:
+            pretty_print(f"Error fetching identifiers: {str(e)}", "ERROR")
+            return Response(
+                {"error": f"Failed to fetch form identifiers: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

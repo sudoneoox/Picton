@@ -23,10 +23,16 @@ export async function securedFetch(url, options = {}) {
 
   // Configure headers with CSRF protection
   const headers = {
-    "Content-Type": "application/json",
     "X-CSRFToken": csrfToken,
     ...options.headers,
   };
+
+  // Remove Content-Type header if body is FormData
+  if (options.body instanceof FormData) {
+    delete headers["Content-Type"];
+  } else if (!options.headers?.["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   try {
     pretty_log(`API Request: ${options.method || 'GET'} ${url}`, "DEBUG");
@@ -53,6 +59,13 @@ export async function securedFetch(url, options = {}) {
     // Enhance and log error details
     const errorMessage = error.message || `API Error: ${url}`;
     pretty_log(`${errorMessage} (Status: ${error.status || 'Unknown'})`, "ERROR");
+
+    // If CSRF token is invalid, try to refresh the page
+    if (error.status === 403 && error.message?.includes("CSRF")) {
+      pretty_log("CSRF token validation failed - refreshing page", "ERROR");
+      window.location.reload();
+      return;
+    }
 
     // Preserve error details for upstream handling
     throw {
