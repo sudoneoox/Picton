@@ -293,45 +293,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             form_submission.save()
             return Response({"status": "approved", "message": "Form fully approved"})
 
-    @action(detail=True, methods=["POST"])
-    def return_for_changes(self, request, pk=None):
-        """Return a form for changes"""
-        form_submission = self.get_object()
-
-        # Similar logic to approve but mark as returned
-        if form_submission.status != "pending":
-            return Response(
-                {"error": "Only pending forms can be returned for changes"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Check permissions similar to approve method
-        user_role = request.user.role
-        current_workflow = form_submission.form_template.approvals_workflows.filter(
-            order=form_submission.current_step
-        ).first()
-
-        if not current_workflow or current_workflow.approver_role != user_role:
-            return Response(
-                {"error": "You don't have permission to return this form at this step"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        # Record return decision
-        FormApproval.objects.create(
-            form_submission=form_submission,
-            approver=request.user,
-            step_number=form_submission.current_step,
-            decision="returned",
-            comments=request.data.get("comments", ""),
-        )
-
-        # Update form status
-        form_submission.status = "returned"
-        form_submission.save()
-
-        return Response({"status": "returned", "message": "Form returned for changes"})
-
     def _generate_pdf(self, template_name, form_submission):
         """Generate PDF for the form submission"""
         pretty_print(
