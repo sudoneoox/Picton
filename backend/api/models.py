@@ -97,7 +97,6 @@ class FormTemplate(models.Model):
     """Stores template information for different form types"""
 
     name = models.CharField(max_length=100)
-
     description = models.TextField(blank=True)
 
     # store field schema as JSON
@@ -107,6 +106,24 @@ class FormTemplate(models.Model):
     required_approvals = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # LaTeX template path relative to templates/forms directory
+    latex_template_path = models.CharField(max_length=255, blank=True)
+
+    def get_latex_template_path(self):
+        """Get the full path to the LaTeX template file"""
+        import os
+        from django.conf import settings
+
+        return os.path.join(
+            settings.BASE_DIR, "templates", "forms", self.latex_template_path
+        )
+
+    def initialize_latex_template_path(self):
+        if not self.latex_template_path:
+            template_name = self.name.lower().replace(" ", "_")
+            self.latex_template_path = f"{template_name}.tex"
+            self.save()
 
     def __str__(self):
         return self.name

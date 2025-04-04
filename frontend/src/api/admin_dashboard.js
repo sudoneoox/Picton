@@ -92,5 +92,141 @@ export const admin = {
       pretty_log(`Update error (${userId}): ${error.message}`, "ERROR");
       throw errorObj;
     }
-  }
+  },
+
+  /**
+   * Retrieve all form templates
+   * @returns {Promise<Array>} List of form template objects
+   * @throws {Error} If fetch fails
+   */
+  async getFormTemplates() {
+    try {
+      return await securedFetch(`${API_BASE_URL}/forms/templates/`, {
+        method: "GET",
+      });
+    } catch (error) {
+      pretty_log(`Form template fetch error: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to fetch form templates");
+    }
+  },
+
+  /**
+   * Create a new form template
+   * @param {Object} templateData - Template details
+   * @returns {Promise<Object>} Created template data
+   * @throws {Error} If creation fails
+   */
+  async createFormTemplate(templateData) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/forms/templates/`, {
+        method: "POST",
+        body: JSON.stringify(templateData),
+      });
+    } catch (error) {
+      pretty_log(`Form template creation error: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to create form template");
+    }
+  },
+
+  /**
+   * Update an existing form template
+   * @param {string} templateId - ID of template to update
+   * @param {Object} templateData - New template data
+   * @returns {Promise<Object>} Updated template data
+   * @throws {Error} If update fails
+   */
+  async updateFormTemplate(templateId, templateData) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/forms/templates/${templateId}/`, {
+        method: "PUT",
+        body: JSON.stringify(templateData),
+      });
+    } catch (error) {
+      pretty_log(`Form template update error: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to update form template");
+    }
+  },
+
+  /**
+   * Delete a form template
+   * @param {string} templateId - ID of template to delete
+   * @returns {Promise<void>}
+   * @throws {Error} If deletion fails
+   */
+  async deleteFormTemplate(templateId) {
+    try {
+      // Use fetch directly for DELETE requests to handle 204 responses
+      const response = await fetch(`${API_BASE_URL}/forms/templates/${templateId}/`, {
+        method: "DELETE",
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete template: ${response.status}`);
+      }
+
+      // For 204 No Content, return true without trying to parse JSON
+      if (response.status === 204) {
+        return true;
+      }
+
+      // For other successful responses, try to parse JSON
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      pretty_log(`Delete template error: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to delete form template");
+    }
+  },
+
+  /**
+   * Convert PDF to LaTeX template
+   * @param {FormData} formData - FormData containing the PDF file
+   * @returns {Promise<Object>} Converted LaTeX template
+   * @throws {Error} If conversion fails
+   */
+  async convertPDFToLaTeX(formData) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/forms/templates/convert-pdf/`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          // Don't set Content-Type, let browser set it with boundary for FormData
+        },
+      });
+    } catch (error) {
+      pretty_log(`PDF conversion error: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to convert PDF");
+    }
+  },
+
+  /**
+   * Preview LaTeX template as PDF
+   * @param {Object} data - Template data including LaTeX content and field schema
+   * @returns {Promise<Blob>} PDF file blob
+   * @throws {Error} If preview generation fails
+   */
+  async previewLaTeXTemplate(data) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/forms/templates/preview/`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate preview");
+      }
+
+      return await response.blob();
+    } catch (error) {
+      pretty_log(`Preview generation error: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to generate preview");
+    }
+  },
 };

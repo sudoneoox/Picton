@@ -19,6 +19,18 @@ const roleConfigs = {
             permissions: ["admin.create_users"]
           }
         ]
+      },
+      {
+        title: "Form Management",
+        icon: "FileText",
+        isActive: true,
+        items: [
+          {
+            id: "manage-form-schemas",
+            title: "Manage Form Templates",
+            permissions: ["admin.manage_form_schemas"]
+          }
+        ]
       }
     ],
     dashboard: {
@@ -28,7 +40,8 @@ const roleConfigs = {
     permissions: {
       canEditUsers: true,
       canCreateUsers: true,
-      canToggleUserStatus: true
+      canToggleUserStatus: true,
+      canManageFormSchemas: true
     }
   },
 
