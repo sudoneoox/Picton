@@ -1,24 +1,20 @@
-from re import sub
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-
-from ...models import (
-    FormSubmission,
-    FormSubmissionIdentifier,
-    FormTemplate,
-    FormApproval,
-    FormApprovalWorkflow,
-)
-from ...serializers import FormSubmissionSerializer
-from ...core import IsActiveUser
-
-from utils import MethodNameMixin, pretty_print, FormPDFGenerator
-from django.conf import settings
 from django.db.models import OuterRef
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from utils import FormPDFGenerator, MethodNameMixin, pretty_print
+
+from ...core import IsActiveUser
+from ...models import (
+    FormApproval,
+    FormApprovalWorkflow,
+    FormSubmission,
+    FormTemplate,
+)
+from ...serializers import FormSubmissionSerializer
 
 
 class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
@@ -28,7 +24,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     queryset = FormSubmission.objects.all()
     permission_classes = [IsAuthenticated, IsActiveUser]
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer) -> None:
         # Set the submitter as the current user
         serializer.save(submitter=self.request.user)
 
@@ -39,39 +35,35 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         Generate a preview PDF from form data without storing it to the database
         So user can preview pdf inside their dashboard
         """
-        pretty_print(f"Generating form preview from {self._get_method_name()}", "INFO")
-        pretty_print(f"Request session: {request.session.items()}", "DEBUG")
-        pretty_print(f"Got Full Request {request.data}", "INFO")
+        pretty_print(f"Generating form preview from {self._get_method_name()}", "DEBUG")
 
         # NOTE: The Form Type (Graduate Petition | Term Withdrawal)
         # More should be added in the future
         # Graduate Petition should have Form ID 1
         # Term Withdrawal should have Form ID 2
 
+        # BUG: The data comes weirdly this is done to depack the first level of the json request
         form_template = request.data.get("form_template")
 
-        # NOTE: this form_data is what were going to use to generate our pdf from the template
-        # we should add error handling for this in its own class
-        # different forms require different optional and required fields
-        if form_template:
+        try:
+            # NOTE: this form_data is what were going to use to generate our pdf from the template
+            # we should add error handling for this in its own class
+            # different forms require different optional and required fields
             form_template_id = form_template.get("form_template")
             form_data = form_template.get("form_data")
-        else:
-            form_template_id = None
-            form_data = None
 
-        pretty_print("Form Preview Request Data:", "DEBUG")
-        pretty_print(f"FORM_DATA: {form_data}", "INFO")
-
-        # Validate required fields
-        if not form_template_id or not form_data:
-            pretty_print("MISSING FORM_TEMPLATE OR FORM_DATA", "ERROR")
-            return Response(
-                {"error": "Missing form_template or form_data"},
-                status=status.HTTP_400_BAD_REQUEST,
+            pretty_print(
+                f"form_data received in FormSubmissionViewSet.preview: {form_data}",
+                "INFO",
             )
 
-        try:
+            # Validate required fields
+            if not form_template_id or not form_data:
+                return Response(
+                    {"error": "Missing form_template or form_data in request"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             # Get the form template
             form_template = FormTemplate.objects.get(id=form_template_id)
 
@@ -153,79 +145,110 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     @action(detail=True, methods=["POST"])
     def submit(self, request, pk=None):
         """Submit a draft form for approval"""
-        form_submission = self.get_object()
+        try:
+            form_submission = self.get_object()
 
-        # Ensure the form is in draft status
-        if form_submission.status != "draft":
-            return Response(
-                {"error": "Only draft forms can be submitted for approval"},
-                status=status.HTTP_400_BAD_REQUEST,
+            # Ensure the form is in draft status
+            if form_submission.status != "draft":
+                return Response(
+                    {"error": "Only draft forms can be submitted for approval"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Validate form data against template schema before submitting
+            if not self._validate_form_data(
+                form_submission.form_data, form_submission.form_template
+            ):
+                return Response(
+                    {"error": "Form data is incomplete or invalid"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Create unique identifer for form submission
+            identifier = form_submission.generate_submission_identifier()
+
+            # Get the form template's approval workflow
+            approval_workflows = (
+                form_submission.form_template.approvals_workflows.all().order_by(
+                    "order"
+                )
             )
 
-        # Create unique identifer for form submission
-        identifier = form_submission.generate_submission_identifier()
+            if not approval_workflows.exists():
+                # If no approval workflow, mark as approved immediately
+                form_submission.status = "approved"
+                form_submission.save()
 
-        # Get the form template's approval workflow
-        approval_workflows = (
-            form_submission.form_template.approvals_workflows.all().order_by("order")
-        )
+                # create identifer record even for auto-approved forms
+                from ...models import FormSubmissionIdentifier
 
-        if not approval_workflows.exists():
-            # If no approval workflow, mark as approved immediately
-            form_submission.status = "approved"
+                identifier_obj, created = (
+                    FormSubmissionIdentifier.objects.get_or_create(
+                        form_submission=form_submission,
+                        defaults={
+                            "identifier": form_submission.generate_submission_identifier(),
+                            "form_type": form_submission.form_template.name,
+                            "student_id": form_submission.form_data.get(
+                                "student_id", ""
+                            ),
+                        },
+                    )
+                )
+
+                identifier = identifier_obj.identifier
+
+                return Response(
+                    {"status": "approved", "message": "Form approved automatically"}
+                )
+
+            # Set form to pending approval and set current step to first approval step
+            form_submission.status = "pending"
+            form_submission.current_step = approval_workflows.first().order
             form_submission.save()
 
-            # create identifer record even for auto-approved forms
-            from ...models import FormSubmissionIdentifier
+            pretty_print(
+                f"Form {form_submission.id} submitted for approval, current step: {form_submission.current_step}",
+                "INFO",
+            )
 
+            # Generate final PDF with official timestamp
+            pdf_file = self._generate_pdf(
+                form_submission.form_template.name, form_submission
+            )
+
+            # SAVE pdf with unique identifier as the filename
+            if pdf_file:
+                template_code = (
+                    "withdrawal"
+                    if form_submission.form_template.name == "Term Withdrawal Form"
+                    else "petition"
+                )
+                pdf_filename = f"forms/{identifier}_{template_code}.pdf"
+                form_submission.current_pdf.save(pdf_filename, pdf_file, save=True)
+
+            # Create Identifier Record
             identifier_obj, created = FormSubmissionIdentifier.objects.get_or_create(
                 form_submission=form_submission,
                 defaults={
-                    "identifier": form_submission.generate_submission_identifier(),
+                    "identifier": identifier,
                     "form_type": form_submission.form_template.name,
                     "student_id": form_submission.form_data.get("student_id", ""),
                 },
             )
-
-            identifier = identifier_obj.identifier
-
             return Response(
-                {"status": "approved", "message": "Form approved automatically"}
+                {
+                    "status": "pending",
+                    "current_step": form_submission.current_step,
+                    "approver_role": approval_workflows.first().approver_role,
+                    "identifier": identifier,
+                }
             )
-
-        # Set form to pending approval and set current step to first approval step
-        form_submission.status = "pending"
-        form_submission.current_step = approval_workflows.first().order
-        form_submission.save()
-
-        pretty_print(
-            f"Form {form_submission.id} submitted for approval, current step: {form_submission.current_step}",
-            "INFO",
-        )
-
-        # Generate final PDF with official timestamp
-        pdf_file = self._generate_pdf(
-            form_submission.form_template.name, form_submission
-        )
-
-        # SAVE pdf with unique identifier as the filename
-        if pdf_file:
-            template_code = (
-                "withdrawal"
-                if form_submission.form_template.name == "Term Withdrawal Form"
-                else "petition"
+        except Exception as e:
+            pretty_print(f"Error submitting form: {str(e)}", "ERROR")
+            return Response(
+                {"error": f"Error submitting form: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-            pdf_filename = f"forms/{identifier}_{template_code}.pdf"
-            form_submission.current_pdf.save(pdf_filename, pdf_file, save=True)
-
-        return Response(
-            {
-                "status": "pending",
-                "current_step": form_submission.current_step,
-                "approver_role": approval_workflows.first().approver_role,
-                "identifier": identifier,
-            }
-        )
 
     @action(detail=True, methods=["POST"])
     def approve(self, request, pk=None):
@@ -438,3 +461,19 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 {"error": f"Failed to fetch form identifiers: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    def _validate_form_data(self, form_data, form_template) -> bool:
+        """Validate form data against template schema"""
+        # Get the schema from the template
+        schema = form_template.field_schema
+
+        # Basic validation - check that all required fields are present
+        if not schema or not isinstance(schema, dict):
+            return True  # Can't validate without schema
+
+        for field_name, field_def in schema.items():
+            if field_def.get("required", False) and field_name not in form_data:
+                pretty_print(f"Missing required field: {field_name}", "ERROR")
+                return False
+
+        return True
