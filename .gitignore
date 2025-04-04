@@ -10,6 +10,7 @@ backend/venv
 backend/debug_latex
 backend/media/forms/*
 backend/media/signatures/*
+backend/debug_latex
 
 # env files
 database/scripts/.env

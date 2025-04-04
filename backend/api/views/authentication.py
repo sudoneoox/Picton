@@ -1,35 +1,35 @@
-from django.forms import ValidationError
+import json
+import secrets
+
+import jwt
+import requests
 from django.conf import settings
-from django.contrib.auth import authenticate, login, get_user_model, logout
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError
-
+from django.forms import ValidationError
 from jwt.algorithms import RSAAlgorithm
-
-from rest_framework import viewsets, status, views
+from rest_framework import status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import (
     AuthenticationFailed,
     NotFound,
+)
+from rest_framework.exceptions import (
     PermissionDenied as DRFPermissionDenied,
+)
+from rest_framework.exceptions import (
     ValidationError as DRFValidationError,
 )
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from utils import MethodNameMixin, pretty_print
 
-import jwt
-import json
-import requests
-import secrets
-
-from utils import pretty_print, MethodNameMixin
 from ..core import AccountInactiveError, InvalidCredentialsError
-from ..serializers import LoginSerializer
 from ..models import User
-from django.conf import settings
+from ..serializers import LoginSerializer
 
 DEBUG = settings.DEBUG
-User = get_user_model()
 
 
 # TODO: expand to also interchangebly accept either username or email
@@ -42,13 +42,6 @@ class LoginView(views.APIView, MethodNameMixin):
         try:
             serializer = LoginSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-
-            if DEBUG:
-                pretty_print(
-                    f"Received Request from {self._get_method_name()}: {request}",
-                    "DEBUG",
-                )
-
             username = request.data.get("username")
             password = request.data.get("password")
 
@@ -346,7 +339,7 @@ class LogoutView(views.APIView):
             )
 
 
-@method_decorator(ensure_csrf_cookie, name='dispatch')
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def csrf(self, request):
@@ -372,10 +365,7 @@ class AuthViewSet(viewsets.ViewSet):
         except IntegrityError:
             raise DRFValidationError("Email is already taken")
         except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def update_username(self, request):
@@ -386,7 +376,11 @@ class AuthViewSet(viewsets.ViewSet):
                 raise DRFValidationError("Username is required")
 
             # Check if username is already taken
-            if User.objects.filter(username=username).exclude(id=request.user.id).exists():
+            if (
+                User.objects.filter(username=username)
+                .exclude(id=request.user.id)
+                .exists()
+            ):
                 raise DRFValidationError("Username is already taken")
 
             request.user.username = username
@@ -396,10 +390,7 @@ class AuthViewSet(viewsets.ViewSet):
         except IntegrityError:
             raise DRFValidationError("Username is already taken")
         except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def update_password(self, request):
@@ -409,7 +400,9 @@ class AuthViewSet(viewsets.ViewSet):
             new_password = request.data.get("newPassword")
 
             if not current_password or not new_password:
-                raise DRFValidationError("Current password and new password are required")
+                raise DRFValidationError(
+                    "Current password and new password are required"
+                )
 
             # Verify current password
             if not check_password(current_password, request.user.password):
@@ -421,7 +414,4 @@ class AuthViewSet(viewsets.ViewSet):
             return Response({"message": "Password updated successfully"})
 
         except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
