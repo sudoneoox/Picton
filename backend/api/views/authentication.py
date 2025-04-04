@@ -54,11 +54,26 @@ class LoginView(views.APIView, MethodNameMixin):
 
             user = authenticate(username=username, password=password)
             if not user:
+                # could not validate user with username, try with email
+
+                # check if @ in input
+                if "@" in username:
+                    try:
+                        user_obj = User.objects.get(email=username)
+                        user = authenticate(
+                            username=user_obj.username, password=password
+                        )
+
+                    except User.DoesNotExist:
+                        pass
+
+            if not user:
+                # Email and username lookup failed raise Credentials Error
                 pretty_print(
                     f"Error Encountered from {self._get_method_name()}: Invalid Credentials",
                     "ERROR",
                 )
-                raise InvalidCredentialsError()
+                raise InvalidCredentialsError
 
             # check if account is activated or not
             if not user.is_active:
