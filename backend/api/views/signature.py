@@ -49,7 +49,7 @@ class SubmitSignatureView(APIView):
             signature_file = request.FILES["signature"]
 
             # validate file type
-            allowed_types = ["jpeg", "png", "gif", "jpg"]
+            allowed_types = ["image/jpeg", "image/png", "image/gif"]
             if signature_file.content_type not in allowed_types:
                 return Response(
                     {
