@@ -120,21 +120,38 @@ class RegisterView(views.APIView, MethodNameMixin):
         )
         # Validate required fields
         required_fields = ["email", "username", "password", "firstName", "lastName"]
+        missing_fields = []
         for field in required_fields:
             if not data.get(field):
-                pretty_print(
-                    f"Encountered from {self._get_method_name()}: {field} is required",
-                    "ERROR",
-                )
-                raise ValidationError(f"{field} is required")
+                missing_fields.append(field)
+
+        if missing_fields:
+            pretty_print(
+                f"from {self._get_method_name()}: Missing required fields: {missing_fields}",
+                "ERROR",
+            )
+            return Response(
+                {
+                    "error": f"The following fields are required: {', '.join(missing_fields)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Password Strength Validation
+        password = data.get("password", "")
+        if len(password) < 8:
+            return Response(
+                {"error": "Password must be at least 8 characters long"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Check if user already exists
         if User.objects.filter(email=data["email"]).exists():
-            raise ValidationError("User with this email already exists")
             pretty_print(
                 f"from {self._get_method_name()}: User with this email already exists",
                 "ERROR",
             )
+            raise ValidationError("User with this email already exists")
         if User.objects.filter(username=data["username"]).exists():
             pretty_print(
                 f"from {self._get_method_name()}: User with this username already exists",
