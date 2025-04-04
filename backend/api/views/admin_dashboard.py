@@ -121,16 +121,24 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
 
         errors = {}
 
-        if user.role != role:
+        if role and user.role != role:
             pretty_print(
                 f"Changing {user.username}'s role from {user.role} -> {role}", "DEBUG"
             )
-            # if changing someone to an admin make sure they have this is_superuser set to True
+            # If changing to admin, set is_superuser=True
             if role == "admin":
-                user.is_superuser = True
+                request.data["is_superuser"] = True
+                request.data["is_staff"] = True
 
-            if role == "admin" or role == "staff":
-                user.is_staff = True
+            # If changing to staff, set is_staff=True
+            elif role == "staff":
+                request.data["is_superuser"] = False
+                request.data["is_staff"] = True
+
+            # If changing to student, clear admin privileges
+            elif role == "student":
+                request.data["is_superuser"] = False
+                request.data["is_staff"] = False
 
             if user.role == "admin" and role != "admin":
                 pretty_print(
