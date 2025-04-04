@@ -114,11 +114,16 @@ class FormTemplate(models.Model):
         """Get the full path to the LaTeX template file"""
         import os
         from django.conf import settings
+
+        return os.path.join(
+            settings.BASE_DIR, "templates", "forms", self.latex_template_path
+        )
+
+    def initialize_latex_template_path(self):
         if not self.latex_template_path:
-            template_name = self.name.lower().replace(' ', '_')
+            template_name = self.name.lower().replace(" ", "_")
             self.latex_template_path = f"{template_name}.tex"
             self.save()
-        return os.path.join(settings.BASE_DIR, 'templates', 'forms', self.latex_template_path)
 
     def __str__(self):
         return self.name

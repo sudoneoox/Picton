@@ -81,45 +81,6 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
             break;
 
           case "notifications":
-            // return (
-            //   <Card>
-            //     <CardHeader>
-            //       <CardTitle>Notifications</CardTitle>
-            //     </CardHeader>
-            //     <CardContent>
-            //       <div className="space-y-4">
-            //         <div className="flex items-center justify-between">
-            //           <div>
-            //             <h3 className="text-lg font-semibold">Email Notifications</h3>
-            //             <p className="text-sm text-muted-foreground">
-            //               Receive email notifications for important updates
-            //             </p>
-            //           </div>
-            //           <Switch />
-            //         </div>
-            //         <div className="flex items-center justify-between">
-            //           <div>
-            //             <h3 className="text-lg font-semibold">Form Updates</h3>
-            //             <p className="text-sm text-muted-foreground">
-            //               Get notified when your forms are approved or need changes
-            //             </p>
-            //           </div>
-            //           <Switch />
-            //         </div>
-            //         <div className="flex items-center justify-between">
-            //           <div>
-            //             <h3 className="text-lg font-semibold">System Notifications</h3>
-            //             <p className="text-sm text-muted-foreground">
-            //               Receive notifications about system maintenance and updates
-            //             </p>
-            //           </div>
-            //           <Switch />
-            //         </div>
-            //       </div>
-            //     </CardContent>
-            //   </Card>
-            // );
-            // No data fetching needed for notifications view
             setData([]);
             break;
 
@@ -364,6 +325,18 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
         );
 
       case "manage-form-schemas":
+        if (!permissions.canManageFormSchemas) {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Permission Denied</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>You do not have permission to access this page.</p>
+              </CardContent>
+            </Card>
+          )
+        }
         return <FormSchemaManager />;
 
       default:
