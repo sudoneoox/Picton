@@ -55,7 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Required fields
     username = models.CharField(max_length=40, unique=True)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)  # Django handles this
+    password = models.CharField(max_length=128)
     first_name = models.CharField(max_length=128, default="")
     last_name = models.CharField(max_length=128, default="")
 
@@ -75,6 +75,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)  # Replaces is_admin
     is_staff = models.BooleanField(default=False)  # needed for admin panel
+
+    # For future implementation notification preferences
+    notification_preferences = models.JSONField(default=dict, blank=True)
 
     # signature to automatically sign forms
     signature = models.ImageField(
@@ -98,6 +101,9 @@ class FormTemplate(models.Model):
 
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
+
+    # For Future to allow admins to activate or deactivate a form template
+    is_active = models.BooleanField(default=True)
 
     # store field schema as JSON
     field_schema = models.JSONField(help_text="JSON schema defining form fields")
@@ -178,6 +184,16 @@ class FormSubmission(models.Model):
     current_step = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # In order to track revision stage in case the form gets returned for changes
+    version = models.PositiveIntegerField(default=1)
+    previous_version = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="revisions",
+    )
+
     def __str__(self):
         return f"{self.form_template.name} - {self.submitter.username} ({self.status})"
 
@@ -216,8 +232,16 @@ class FormApproval(models.Model):
             ("rejected", "Rejected"),
         ),
     )
+
     # In case it was Rejected
     comments = models.TextField(blank=True)
+
+    # Track approval timing metrics
+    received_at = models.DateTimeField(auto_now_add=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    # To track which fields were flagged for correction
+    fields_to_correct = models.JSONField(null=True, blank=True)
 
     # Should have staff signature
     signed_pdf = models.FileField(upload_to="forms/signed_pdfs/", null=True, blank=True)
