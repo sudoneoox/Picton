@@ -14,6 +14,13 @@ RUN pnpm install --frozen-lockfile
 # Copy the rest of the application
 COPY . .
 
+ENV 
+  VITE_API_BASE_URL=http://localhost:8000/api \
+  MICROSOFT_REDIRECT_URL="/auth/microsoft/callback" \
+  VITE_AZURE_CLIENT_ID="" \
+  VITE_AZURE_TENANT_ID="" \
+  DEBUG=true
+
 
 RUN echo '{ "compilerOptions": { "noEmit": true, "allowJs": true, "skipLibCheck": true, "noImplicitAny": false, "suppressImplicitAnyIndexErrors": true, "ignoreDeprecations": "5.0" } }' > tsconfig.json
 
