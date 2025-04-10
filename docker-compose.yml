@@ -13,6 +13,8 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_ENV=development
+      - DEBUG=true
+
 
   backend:
     build:
@@ -22,8 +24,8 @@ services:
       - "8000:8000"  # Django runs on port 8000
     volumes:
       - ./backend:/app
-    environment:
-      - DEBUG=True
+    env_file:
+      - ./backend/.env
     restart: always
     networks:
       - app-network
