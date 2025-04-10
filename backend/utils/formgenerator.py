@@ -27,24 +27,218 @@ class FormPDFGenerator:
         os.makedirs(self.template_dir, exist_ok=True)
 
         # Path to the university logo
-        self.logo_path = os.path.join(
-            settings.BASE_DIR, "static", "img", "uh.png"
-        )
-        
+        self.logo_path = os.path.join(settings.BASE_DIR, "static", "img", "uh.png")
+
         # Ensure the logo exists
         if not os.path.exists(self.logo_path):
             pretty_print("Warning: University logo not found", "WARNING")
             # Try alternative path
-            self.logo_path = os.path.join(
-                settings.STATIC_ROOT, "img", "uh.png"
-            )
+            self.logo_path = os.path.join(settings.STATIC_ROOT, "img", "uh.png")
             if not os.path.exists(self.logo_path):
-                pretty_print("Error: University logo not found in any location", "ERROR")
+                pretty_print(
+                    "Error: University logo not found in any location", "ERROR"
+                )
                 self.logo_path = ""  # Set to empty string if logo is not found
 
     def _get_logo_path(self, is_dark_mode=False):
         """Get the appropriate logo path based on theme mode"""
         return self.logo_path
+
+    def generate_signed_form(self, form_submission, approver, decision, comments):
+        """
+        Generate a signed version of the form with approver's signature
+
+        Args:
+            form_submission: The FormSubmission object
+            approver: The User (staff) who is approving/rejecting
+            decision: "approved" or "rejected"
+            comments: Comments from the approver
+
+        Returns:
+            ContentFile with the signed PDF
+        """
+        try:
+            # Determine which template to use based on form type
+            template_name = form_submission.form_template.name
+            form_data = form_submission.form_data
+
+            # Get the base template content
+            if "Graduate Petition" in template_name:
+                template_path = os.path.join(self.template_dir, "graduate_petition.tex")
+            elif "Term Withdrawal" in template_name:
+                template_path = os.path.join(self.template_dir, "term_withdrawal.tex")
+            else:
+                pretty_print(f"Unknown form template: {template_name}", "ERROR")
+                return None
+
+            with open(template_path, "r") as file:
+                template_content = file.read()
+
+            # Get the user's data from the form submission
+            user = form_submission.submitter
+
+            # Current date in MM/DD/YYYY format
+            current_date = datetime.now().strftime("%m/%d/%Y")
+
+            # Common replacements for both forms
+            replacements = {
+                "$LAST_NAME$": form_data.get("last_name", user.last_name),
+                "$FIRST_NAME$": form_data.get("first_name", user.first_name),
+                "$MIDDLE_NAME$": form_data.get("middle_name", ""),
+                "$STUDENT_ID$": str(form_data.get("student_id", "")),
+                "$PHONE_NUMBER$": self._format_phone_number(
+                    form_data.get("phone_number", user.phone_number)
+                ),
+                "$EMAIL_ADDRESS$": form_data.get("email", user.email),
+                "$PROGRAM_PLAN$": form_data.get("program_plan", ""),
+                "$ACADEMIC_CAREER$": form_data.get("academic_career", ""),
+                "$CURRENT_DATE$": current_date,
+                "$UNIVERSITY_LOGO$": self.logo_path,
+            }
+
+            # Form-specific replacements
+            if "Graduate Petition" in template_name:
+                # Determine which petition purpose was selected and set checkmark or square
+                all_purposes = {
+                    "update_program_status": "$PURPOSE_UPDATE_PROGRAM_STATUS$",
+                    "admission_status_change": "$PURPOSE_ADMISSION_STATUS_CHANGE$",
+                    "add_concurrent_degree": "$PURPOSE_ADD_CONCURRENT$",
+                    "change_degree_objective": "$PURPOSE_CHANGE_DEGREE_OBJECTIVE$",
+                    "degree_requirements_exception": "$PURPOSE_DEGREE_REQUIREMENTS_EXCEPTION$",
+                    "leave_of_absence": "$PURPOSE_LEAVE_OF_ABSENCE$",
+                    "reinstate_discontinued": "$PURPOSE_REINSTATE_DISCONTINUED$",
+                    "request_to_graduate": "$PURPOSE_REQUEST_TO_GRADUATE$",
+                    "change_admin_term": "$PURPOSE_CHANGE_ADMIN_TERM$",
+                    "early_submission": "$PURPOSE_EARLY_SUBMISSION$",
+                    "other": "$PURPOSE_OTHER$",
+                }
+                selected_purpose = form_data.get("petition_purpose", "")
+                checkmark_dict = {}
+                for key, placeholder in all_purposes.items():
+                    checkmark_dict[placeholder] = (
+                        "\\checkmark" if key == selected_purpose else "\\square"
+                    )
+
+                replacements["$YEAR$"] = str(form_data.get("year", datetime.now().year))
+                replacements["$SEASON$"] = form_data.get("season", "")
+                replacements["$PETITION_EXPLANATION$"] = form_data.get(
+                    "petition_explanation", ""
+                )
+
+                # Add the checkmarks for petition purposes
+                replacements.update(checkmark_dict)
+
+                # Add these replacements for staff approval section
+                staff_approved = "\\checkmark" if decision == "approved" else "\\square"
+                staff_rejected = "\\checkmark" if decision == "rejected" else "\\square"
+
+                replacements.update(
+                    {
+                        "$STAFF_APPROVED$": staff_approved,
+                        "$STAFF_REJECTED$": staff_rejected,
+                        "$STAFF_SIGNATURE$": self._process_signature(approver)
+                        if approver.signature
+                        else "",
+                        "$STAFF_NAME$": f"{approver.first_name} {approver.last_name}",
+                        "$APPROVAL_DATE$": current_date,
+                        "$STAFF_COMMENTS$": comments if comments else "",
+                    }
+                )
+
+            elif "Term Withdrawal" in template_name:
+                # Process the season selection
+                season = form_data.get("season", "").lower()
+                replacements["$FALL_SELECTED$"] = (
+                    "\\checkmark" if season == "fall" else "\\square"
+                )
+                replacements["$SPRING_SELECTED$"] = (
+                    "\\checkmark" if season == "spring" else "\\square"
+                )
+                replacements["$SUMMER_SELECTED$"] = (
+                    "\\checkmark" if season == "summer" else "\\square"
+                )
+                replacements["$WITHDRAWAL_YEAR$"] = str(
+                    form_data.get("year", datetime.now().year)
+                )
+
+                # Process initials if available
+                initials = form_data.get("initials", {})
+                initials_text = form_data.get("initialsText", {})
+
+                # Dictionary placeholders for the initial all that apply section
+                initials_replacements = {}
+                for key in [
+                    "financial_aid",
+                    "international_student",
+                    "student_athlete",
+                    "veterans",
+                    "graduate_professional",
+                    "doctoral_student",
+                    "student_housing",
+                    "dining_services",
+                    "parking_transportation",
+                ]:
+                    placeholder = f"$INIT_{key.upper()}$"
+                    if (
+                        initials.get(key)
+                        and key in initials_text
+                        and initials_text[key]
+                    ):
+                        initials_replacements[placeholder] = initials_text[key]
+                    else:
+                        initials_replacements[placeholder] = " "
+
+                replacements.update(initials_replacements)
+
+                # Add staff approval placeholders for term withdrawal
+                staff_approved = "\\checkmark" if decision == "approved" else "\\square"
+                staff_rejected = "\\checkmark" if decision == "rejected" else "\\square"
+
+                replacements.update(
+                    {
+                        "$STAFF_APPROVED$": staff_approved,
+                        "$STAFF_REJECTED$": staff_rejected,
+                        "$STAFF_SIGNATURE$": self._process_signature(approver)
+                        if approver.signature
+                        else "",
+                        "$STAFF_NAME$": f"{approver.first_name} {approver.last_name}",
+                        "$APPROVAL_DATE$": current_date,
+                        "$STAFF_COMMENTS$": comments if comments else "",
+                    }
+                )
+
+            # Student signature handling
+            if user.signature:
+                user_signature = self._process_signature(user)
+                replacements["$STUDENT_SIGNATURE$"] = user_signature
+            else:
+                replacements["$STUDENT_SIGNATURE$"] = ""
+
+            # Perform the actual replacements in the LaTeX template
+            for placeholder, value in replacements.items():
+                template_content = template_content.replace(placeholder, str(value))
+
+            # Compile to PDF
+            pdf_file = self._compile_latex(template_content)
+
+            # Set a custom name for the PDF
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            identifier = ""
+            try:
+                identifier = form_submission.submission_identifier.identifier
+            except:
+                identifier = f"form{form_submission.id}"
+
+            pdf_file.name = f"{identifier}_{decision}_{timestamp}.pdf"
+
+            return pdf_file
+
+        except Exception as e:
+            pretty_print(f"Error generating signed form: {str(e)}", "ERROR")
+            import traceback
+
+            pretty_print(traceback.format_exc(), "ERROR")
+            return None
 
     def generate_template_form(self, template_name: str, user, form_data):
         """

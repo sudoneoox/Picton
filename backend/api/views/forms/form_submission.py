@@ -13,6 +13,7 @@ from ...models import (
     FormApprovalWorkflow,
     FormSubmission,
     FormTemplate,
+    FormSubmissionIdentifier,
 )
 from ...serializers import FormSubmissionSerializer
 
@@ -83,12 +84,17 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             )
 
             if not created:
-                draft_submission.form_data = form_data
-                draft_submission.save()
+                if isinstance(form_data, dict):
+                    draft_submission.form_data = form_data
+                    draft_submission.save()
+                else:
+                    pretty_print(
+                        f"form_data is not a dict before saving: {type(form_data)}",
+                        "ERROR",
+                    )
 
             # Generate identifier for the preview/draft if it doesnt have one
             # Store the identifier in the database
-            from ...models import FormSubmissionIdentifier
 
             identifier_obj, created = FormSubmissionIdentifier.objects.get_or_create(
                 form_submission=draft_submission,
@@ -145,6 +151,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     @action(detail=True, methods=["POST"])
     def submit(self, request, pk=None):
         """Submit a draft form for approval"""
+        pretty_print(f"Request in submit form {request}", "INFO")
         try:
             form_submission = self.get_object()
 
@@ -180,7 +187,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 form_submission.save()
 
                 # create identifer record even for auto-approved forms
-                from ...models import FormSubmissionIdentifier
 
                 identifier_obj, created = (
                     FormSubmissionIdentifier.objects.get_or_create(
@@ -385,8 +391,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             )
 
         try:
-            from ...models import FormSubmissionIdentifier
-
             identifier_obj = FormSubmissionIdentifier.objects.get(identifier=identifier)
             submission = identifier_obj.form_submission
 
@@ -433,7 +437,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     @action(detail=False, methods=["GET"])
     def all_identifiers(self, request):
         """Retrieve all form submission identifiers for the current user"""
-        from ...models import FormSubmissionIdentifier
 
         try:
             # get all identifiers for forms submitted by current user
@@ -464,15 +467,26 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     def _validate_form_data(self, form_data, form_template) -> bool:
         """Validate form data against template schema"""
-        # Get the schema from the template
+        pretty_print(f"[VALIDATION] form_data type: {type(form_data)}", "DEBUG")
+
+        if not isinstance(form_data, dict):
+            pretty_print("[VALIDATION] form_data is not a dict", "ERROR")
+            return False
+
         schema = form_template.field_schema
 
-        # Basic validation - check that all required fields are present
         if not schema or not isinstance(schema, dict):
-            return True  # Can't validate without schema
+            pretty_print("NO SCHEMA FOR THIS FORM", "ERROR")
+            return False
 
-        for field_name, field_def in schema.items():
-            if field_def.get("required", False) and field_name not in form_data:
+        fields = schema.get("fields", [])
+        if not isinstance(fields, list):
+            pretty_print("Schema 'fields' key is not a list", "ERROR")
+            return False
+
+        for field in fields:
+            field_name = field.get("name")
+            if field.get("required", False) and field_name not in form_data:
                 pretty_print(f"Missing required field: {field_name}", "ERROR")
                 return False
 

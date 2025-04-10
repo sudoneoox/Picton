@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from ...models import FormTemplate
+from ...models import FormApprovalWorkflow, FormTemplate
 
 
 class Command(BaseCommand):
@@ -198,7 +198,7 @@ class Command(BaseCommand):
             ]
         }
         # Create templates if they don't exist
-        FormTemplate.objects.get_or_create(
+        graduate_petition, _ = FormTemplate.objects.get_or_create(
             name="Graduate Petition Form",
             defaults={
                 "description": "For graduate students requesting exceptions to university policies",
@@ -207,7 +207,7 @@ class Command(BaseCommand):
             },
         )
 
-        FormTemplate.objects.get_or_create(
+        term_withdrawal, _ = FormTemplate.objects.get_or_create(
             name="Term Withdrawal Form",
             defaults={
                 "description": "For students withdrawing from all courses in the current term",
@@ -216,4 +216,18 @@ class Command(BaseCommand):
             },
         )
 
-        self.stdout.write(self.style.SUCCESS("Form templates created successfully"))
+        FormApprovalWorkflow.objects.get_or_create(
+            form_template=graduate_petition,
+            order=1,
+            defaults={"approver_role": "staff"},
+        )
+
+        FormApprovalWorkflow.objects.get_or_create(
+            form_template=term_withdrawal, order=1, defaults={"approver_role": "staff"}
+        )
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                "Form templates and approver workflows created successfully"
+            )
+        )

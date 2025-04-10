@@ -83,6 +83,9 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
 
 class FormApprovalSerializer(serializers.ModelSerializer):
     approver_name = serializers.SerializerMethodField()
+    submitter_name = serializers.SerializerMethodField()
+    form_title = serializers.SerializerMethodField()
+    submission_identifier = serializers.SerializerMethodField()
 
     class Meta:
         model = FormApproval
@@ -91,13 +94,39 @@ class FormApprovalSerializer(serializers.ModelSerializer):
             "form_submission",
             "approver",
             "approver_name",
+            "submitter_name",
+            "form_title",
+            "submission_identifier",
             "step_number",
             "decision",
             "comments",
             "signed_pdf",
+            "signed_pdf_url",
             "created_at",
+            "decided_at",
         ]
-        read_only_fields = ["id", "created_at", "approver_name"]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "approver_name",
+            "submitter_name",
+            "form_title",
+            "submission_identifier",
+            "decided_at",
+        ]
 
     def get_approver_name(self, obj):
         return f"{obj.approver.first_name} {obj.approver.last_name}"
+
+    def get_submitter_name(self, obj):
+        submitter = obj.form_submission.submitter
+        return f"{submitter.first_name} {submitter.last_name}"
+
+    def get_form_title(self, obj):
+        return obj.form_submission.form_template.name
+
+    def get_submission_identifier(self, obj):
+        try:
+            return obj.form_submission.submission_identifier.identifier
+        except Exception as e:
+            return None
