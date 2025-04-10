@@ -93,17 +93,17 @@ const FORM_TEMPLATES = {
         type: "radio",
         required: true,
         options: [
-          { 
-            value: "program_status", 
-            label: "Update program status/action (term activate, discontinue, etc)" 
+          {
+            value: "program_status",
+            label: "Update program status/action (term activate, discontinue, etc)"
           },
-          { 
-            value: "admission_status", 
-            label: "Admission status change (conditional, unconditional)" 
+          {
+            value: "admission_status",
+            label: "Admission status change (conditional, unconditional)"
           },
-          { 
-            value: "other", 
-            label: "Other (please explain below)" 
+          {
+            value: "other",
+            label: "Other (please explain below)"
           },
         ],
       },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ApprovalQueue from "@/Pages/dashboard/Staff/ApprovalQueue"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserDataTable from "@/Pages/dashboard/Privileged/UserDataTable";
 import UserCreationForm from "@/Pages/dashboard/Privileged/UserCreationForm"
@@ -7,7 +8,6 @@ import { api } from "@/api/api.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ToastNotification";
 import { pretty_log } from "@/api/common_util"
-import { act } from "react";
 import SubmitForms from "../Student/SubmitForms";
 import ViewForms from "./ViewForms";
 import { UserProfileSettings } from "@/components/UserProfileSettings";
@@ -338,6 +338,18 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
           )
         }
         return <FormSchemaManager />;
+
+      case "review-forms":
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Form Approvals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ApprovalQueue />
+            </CardContent>
+          </Card>
+        );
 
       default:
         return (

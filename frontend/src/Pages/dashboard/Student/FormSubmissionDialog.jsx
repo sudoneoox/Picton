@@ -211,13 +211,23 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
       setIsSubmitting(true);
 
       // Structure the data as expected by the backend
+      console.log("[DEBUG] formData type:", typeof formData, Array.isArray(formData), formData);
+
+      if (Array.isArray(formData)) {
+        console.error("❌ formData is an array! This will break the backend.");
+        showToast(
+          { error: "Internal error: form structure invalid. Please reload the page." },
+          "error"
+        );
+        return;
+      }
+
       const requestData = {
         form_template: {
           form_template: template.id,
           form_data: formData
         }
       };
-
       const response = await api.student.previewForm(requestData);
 
       if (response && response.pdf_content) {
@@ -241,6 +251,16 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
 
   const handleSubmitForm = async (e) => {
     e.preventDefault(); // Prevent default form submission
+    console.log("[DEBUG] formData type:", typeof formData, Array.isArray(formData), formData);
+
+    if (Array.isArray(formData)) {
+      console.error("❌ formData is an array! Submission will crash the backend.");
+      showToast(
+        { error: "Invalid form structure. Please refresh and try again." },
+        "error"
+      );
+      return;
+    }
     try {
       setIsSubmitting(true);
 
@@ -1022,8 +1042,8 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
   };
 
   return (
-    <Dialog 
-      open={isOpen} 
+    <Dialog
+      open={isOpen}
       onOpenChange={(open) => {
         if (!open && isSubmitting) {
           return;
