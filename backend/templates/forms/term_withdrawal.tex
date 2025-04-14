@@ -9,32 +9,31 @@
 \usepackage{amssymb}
 
 % Define placeholder variables that will be replaced by Python
-\newcommand{\lastName}{$LAST_NAME$}
 \newcommand{\firstName}{$FIRST_NAME$}
+\newcommand{\lastName}{$LAST_NAME$}
 \newcommand{\middleName}{$MIDDLE_NAME$}
 \newcommand{\studentID}{$STUDENT_ID$}
 \newcommand{\phoneNumber}{$PHONE_NUMBER$}
 \newcommand{\emailAddress}{$EMAIL_ADDRESS$}
 \newcommand{\programPlan}{$PROGRAM_PLAN$}
 \newcommand{\academicCareer}{$ACADEMIC_CAREER$}
+
 \newcommand{\withdrawalYear}{$WITHDRAWAL_YEAR$}
 \newcommand{\studentSignature}{$STUDENT_SIGNATURE$}
 \newcommand{\currentDate}{$CURRENT_DATE$}
 
 % INITIALS
-\newcommand{\initFinancialAid}{$INIT_FINANCIAL_AID$}
-\newcommand{\initInternational}{$INIT_INTERNATIONAL_STUDENT$}
-\newcommand{\initStudentAthletes}{$INIT_STUDENT_ATHLETE$}
-\newcommand{\initVeterans}{$INIT_VETERANS$}
-\newcommand{\initGradProfessional}{$INIT_GRADUATE_PROFESSIONAL$}
-\newcommand{\initDoctoral}{$INIT_DOCTORAL_STUDENT$}
-\newcommand{\initHousing}{$INIT_STUDENT_HOUSING$}
-\newcommand{\initDining}{$INIT_DINING_SERVICES$}
-\newcommand{\initParking}{$INIT_PARKING_TRANSPORTATION$}
+\newcommand{\initFinancialAid}{$INITIALS_FINANCIAL_AID$}
+\newcommand{\initInternational}{$INITIALS_INTERNATIONAL_STUDENT$}
+\newcommand{\initStudentAthletes}{$INITIALS_STUDENT_ATHLETE$}
+\newcommand{\initVeterans}{$INITIALS_VETERANS$}
+\newcommand{\initGradProfessional}{$INITIALS_GRADUATE_PROFESSIONAL$}
+\newcommand{\initDoctoral}{$INITIALS_DOCTORAL_STUDENT$}
+\newcommand{\initHousing}{$INITIALS_STUDENT_HOUSING$}
+\newcommand{\initDining}{$INITIALS_DINING_SERVICES$}
+\newcommand{\initParking}{$INITIALS_PARKING_TRANSPORTATION$}
 
-\newcommand{\seasonFall}{$FALL_SELECTED$}
-\newcommand{\seasonSpring}{$SPRING_SELECTED$}
-\newcommand{\seasonSummer}{$SUMMER_SELECTED$}
+\newcommand{\seasonValue}{$SEASON$}
 
 \begin{document}
 \thispagestyle{empty}
@@ -83,7 +82,7 @@ Program/Plan:  \underline{\programPlan} \\
 Withdrawal Term: \\
 \end{tabular}
 \\
-\underline{\withdrawalYear} \hspace{0.2in} Fall $\seasonFall$ \hspace{0.2in} Spring $\seasonSpring$ \hspace{0.2in} Summer $\seasonSummer$
+\underline{\withdrawalYear} \hspace{0.2in} Term: \seasonValue
 
 \vspace{0.5cm}
 \noindent\textbf{Initial all that apply:}

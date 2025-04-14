@@ -103,11 +103,6 @@ declare module '@/Pages/dashboard/Common/ViewForms' {
   export default ViewForms;
 }
 
-declare module '@/components/SubmissionHistory' {
-  import { ComponentType } from 'react';
-  const content: ComponentType<any>;
-  export default content;
-}
 
 declare module '@/Pages/dashboard/Common/DashboardContent' {
   import { ComponentType } from 'react';

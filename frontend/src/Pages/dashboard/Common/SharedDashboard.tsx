@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Separator } from "@/components/ui/separator";
-import SubmissionHistory from "@/components/SubmissionHistory";
 import { SidebarNav } from "@/Pages/dashboard/Common/SidebarNavbar";
 import DashboardContent from "@/Pages/dashboard/Common/DashboardContent";
 import { pretty_log } from "@/api/common_util";
@@ -32,11 +31,6 @@ export default function SharedDashboard({ userData }: { userData: UserData }) {
   pretty_log(`Current Active View ${activeView}`, "DEBUG");
 
   const renderDashboardContent = () => {
-    // If activeView is 'submissions' or user role is student and activeView is default/empty
-    if (activeView === 'submissions' || (userData?.role === 'student' && !activeView)) {
-      return <SubmissionHistory />;
-    }
-    // Otherwise render the default dashboard content
     return <DashboardContent activeView={activeView} dashboardConfig={config} />;
   };
 
