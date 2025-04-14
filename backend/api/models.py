@@ -114,7 +114,7 @@ class FormTemplate(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     # LaTeX template path relative to templates/forms directory
-    latex_template_path = models.CharField(max_length=255, blank=True)
+    latex_template_path = models.CharField(max_length=255)
 
     def get_latex_template_path(self):
         """Get the full path to the LaTeX template file"""
@@ -125,11 +125,35 @@ class FormTemplate(models.Model):
             settings.BASE_DIR, "templates", "forms", self.latex_template_path
         )
 
-    def initialize_latex_template_path(self):
+    def save(self, *args, **kwargs):
+        """Ensure template path is set before saving"""
         if not self.latex_template_path:
-            template_name = self.name.lower().replace(" ", "_")
-            self.latex_template_path = f"{template_name}.tex"
-            self.save()
+            # Default to normalized name if not set
+            self.latex_template_path = f"{self.name.lower().replace(' ', '_')}.tex"
+        super().save(*args, **kwargs)
+
+    def get_template_file_path(self):
+        """Get the normalized template file path based on name"""
+        if self.latex_template_path and self.latex_template_path.strip():
+            return self.latex_template_path
+
+        # Default naming convention
+        template_name = self.name.lower().replace(" ", "_")
+        return f"{template_name}.tex"
+
+    def get_form_type_code(self):
+        """Get a short code for the form type (useful for filenames)"""
+        if "Graduate Petition" in self.name:
+            return "petition"
+        elif "Term Withdrawal" in self.name:
+            return "withdrawal"
+        else:
+            # Create a short code from the name
+            words = self.name.split()
+            if len(words) > 1:
+                return "".join(word[0].lower() for word in words)  # Acronym
+            else:
+                return self.name.lower().replace(" ", "_")[:10]  # First 10 chars
 
     def __str__(self):
         return self.name

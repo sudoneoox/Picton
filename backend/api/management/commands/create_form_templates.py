@@ -6,7 +6,7 @@ class Command(BaseCommand):
     help = "Creates default form templates"
 
     def handle(self, *args, **options):
-        # Graduate Petition schema
+        # IMPORTANT: Graduate Petition schema
         graduate_petition_schema = {
             "fields": [
                 {
@@ -40,7 +40,7 @@ class Command(BaseCommand):
                     "label": "Phone Number",
                 },
                 {
-                    "name": "email",
+                    "name": "email_address",
                     "type": "email",
                     "required": True,
                     "label": "School Email",
@@ -100,7 +100,7 @@ class Command(BaseCommand):
             ]
         }
 
-        # Term Withdrawal schema
+        # IMPORTANT: Term Withdrawal schema
         term_withdrawal_schema = {
             "fields": [
                 {
@@ -134,7 +134,7 @@ class Command(BaseCommand):
                     "label": "Phone Number",
                 },
                 {
-                    "name": "email",
+                    "name": "email_address",
                     "type": "email",
                     "required": True,
                     "label": "School Email",
@@ -153,7 +153,7 @@ class Command(BaseCommand):
                     "options": ["undergraduate", "graduate"],
                 },
                 {
-                    "name": "year",
+                    "name": "withdrawal_year",
                     "type": "text",
                     "required": True,
                     "label": "Withdrawal Year",
@@ -198,31 +198,33 @@ class Command(BaseCommand):
             ]
         }
         # Create templates if they don't exist
-        graduate_petition, _ = FormTemplate.objects.get_or_create(
+        graduate_petition, _ = FormTemplate.objects.update_or_create(
             name="Graduate Petition Form",
             defaults={
                 "description": "For graduate students requesting exceptions to university policies",
                 "field_schema": graduate_petition_schema,
                 "required_approvals": 1,
+                "latex_template_path": "graduate_petition.tex",
             },
         )
 
-        term_withdrawal, _ = FormTemplate.objects.get_or_create(
+        term_withdrawal, _ = FormTemplate.objects.update_or_create(
             name="Term Withdrawal Form",
             defaults={
                 "description": "For students withdrawing from all courses in the current term",
                 "field_schema": term_withdrawal_schema,
                 "required_approvals": 1,
+                "latex_template_path": "term_withdrawal.tex",
             },
         )
 
-        FormApprovalWorkflow.objects.get_or_create(
+        FormApprovalWorkflow.objects.update_or_create(
             form_template=graduate_petition,
             order=1,
             defaults={"approver_role": "staff"},
         )
 
-        FormApprovalWorkflow.objects.get_or_create(
+        FormApprovalWorkflow.objects.update_or_create(
             form_template=term_withdrawal, order=1, defaults={"approver_role": "staff"}
         )
 

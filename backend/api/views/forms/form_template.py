@@ -34,38 +34,30 @@ class FormTemplateViewSet(viewsets.ModelViewSet, MethodNameMixin):
     def list(self, request, *args, **kwargs):
         """List all form templates including their LaTeX content"""
         templates = self.get_queryset()
-
         data = []
 
-        # Add existing database templates
+        # Process each template in the database
         for template in templates:
             template_data = self.serializer_class(template).data
-            latex_content = self.get_latex_template_content(
-                template.name.lower().replace(" ", "_")
-            )
-            if latex_content:
-                template_data["latex_template"] = latex_content
-            data.append(template_data)
 
-        # Add templates from filesystem that aren't in database
-        tex_files = [f for f in os.listdir(self.TEMPLATES_DIR) if f.endswith(".tex")]
-        for tex_file in tex_files:
-            template_name = tex_file[:-4]  # Remove .tex extension
-            if not templates.filter(
-                name__iexact=template_name.replace("_", " ")
-            ).exists():
-                latex_content = self.get_latex_template_content(template_name)
-                if latex_content:
-                    data.append(
-                        {
-                            "id": None,
-                            "name": template_name.replace("_", " ").title(),
-                            "description": f"LaTeX template for {template_name.replace('_', ' ').title()}",
-                            "field_schema": {},
-                            "required_approvals": 1,
-                            "latex_template": latex_content,
-                        }
+            # Get the LaTeX content for this template
+            try:
+                template_path = os.path.join(
+                    self.TEMPLATES_DIR, template.latex_template_path
+                )
+                if os.path.exists(template_path):
+                    with open(template_path, "r") as f:
+                        template_data["latex_template"] = f.read()
+                else:
+                    template_data["latex_template"] = ""
+                    pretty_print(
+                        f"Warning: LaTeX template not found: {template_path}", "WARNING"
                     )
+            except Exception as e:
+                template_data["latex_template"] = ""
+                pretty_print(f"Error reading LaTeX template: {str(e)}", "ERROR")
+
+            data.append(template_data)
 
         return Response(data)
 
