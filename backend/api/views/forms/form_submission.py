@@ -95,7 +95,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
             # Generate identifier for the preview/draft if it doesnt have one
             # Store the identifier in the database
-
             identifier_obj, created = FormSubmissionIdentifier.objects.get_or_create(
                 form_submission=draft_submission,
                 defaults={

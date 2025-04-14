@@ -1,9 +1,10 @@
 import os
+import subprocess
 import tempfile
 from datetime import datetime
+
 from django.conf import settings
 from django.core.files.base import ContentFile
-import subprocess
 
 from utils import pretty_print
 
@@ -111,7 +112,7 @@ class FormPDFGenerator:
         Returns:
             A ContentFile containing the generated PDF
         """
-        from ..api.models import FormTemplate
+        from api.models import FormTemplate
 
         try:
             # Get the template object from the database
@@ -251,7 +252,7 @@ class FormPDFGenerator:
                     "dining_services",
                     "parking_transportation",
                 ]:
-                    placeholder = f"$INIT_{key.upper()}$"
+                    placeholder = f"$INITIALS_{key.upper()}$"
                     if (
                         initials.get(key)
                         and key in initials_text
@@ -259,7 +260,9 @@ class FormPDFGenerator:
                     ):
                         replacements[placeholder] = initials_text[key]
                     else:
-                        replacements[placeholder] = " "  # Empty space if not initialed
+                        replacements[placeholder] = (
+                            " "  # Blank space in order to not render variable
+                        )
 
             # Add approval information if this is a signed form
             if approver and decision:
