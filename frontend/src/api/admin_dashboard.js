@@ -229,4 +229,49 @@ export const admin = {
       throw new Error(error.message || "Failed to generate preview");
     }
   },
+
+  /**
+   * Toggle form template active status
+   * @param {string} templateId - ID of template to toggle
+   * @returns {Promise<Object>} Updated template data
+   * @throws {Error} If toggle fails
+   */
+  async toggleFormTemplateStatus(templateId) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/forms/templates/${templateId}/toggle_status/`, {
+        method: "PATCH",
+      });
+    } catch (error) {
+      pretty_log(`Form template status toggle error: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to toggle form template status");
+    }
+  },
+
+  deleteUser: async (userId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/${userId}/delete_user/`, {
+        method: "DELETE",
+        credentials: 'include',
+        headers: {
+          'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete user: ${response.status}`);
+      }
+
+      // For 204 No Content, return true without trying to parse JSON
+      if (response.status === 204) {
+        return true;
+      }
+
+      // For other successful responses, try to parse JSON
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      pretty_log(`Delete user error (${userId}): ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to delete user");
+    }
+  },
 };

@@ -114,16 +114,16 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
   const handleNextStep = () => {
     // Validate required fields before proceeding
     if (!validateRequiredFields()) {
-      showToast({ error: "Please fill in all required fields" }, "error");
-      return;
+            showToast({ error: "Please fill in all required fields" }, "error");
+            return;
     }
 
     // If we're on step 1, generate PDF preview
     if (currentStep === 1) {
-      handleGeneratePreview();
-    }
+        handleGeneratePreview();
+      }
 
-    setCurrentStep(currentStep + 1);
+      setCurrentStep(currentStep + 1);
   };
 
   const validateRequiredFields = () => {
@@ -166,7 +166,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
       const requestData = {
         form_template: {
           form_template: template.id,
-          form_data: formData
+        form_data: formData
         }
       };
 
@@ -223,7 +223,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
       return <p>No form schema available</p>;
     }
 
-    return (
+        return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
         {template.field_schema.fields.map((field, index) => {
           // Skip hidden fields
@@ -238,7 +238,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
             </div>
           );
         })}
-      </div>
+          </div>
     );
   };
 
@@ -289,7 +289,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
               {field.label}
               {field.required && <span className="text-red-500">*</span>}
             </Label>
-            <RadioGroup
+                <RadioGroup
               value={formData[field.name] || ''}
               onValueChange={(value) => handleInputChange(field.name, value)}
               className="flex flex-wrap gap-2 mt-2"
@@ -306,7 +306,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
                   </div>
                 );
               })}
-            </RadioGroup>
+                </RadioGroup>
           </>
         );
 
@@ -315,7 +315,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
           <>
             <div className="border-t pt-4 mt-2">
               <h3 className="font-medium mb-2">{field.label}</h3>
-              <div className="space-y-4">
+                <div className="space-y-4">
                 {field.subfields.map((subfield) => (
                   <div key={subfield.name} className="flex space-x-2">
                     <Checkbox
