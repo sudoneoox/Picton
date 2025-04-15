@@ -68,6 +68,7 @@ export function UserProfileSettings({ userData, onUpdate }: UserProfileSettingsP
     }
   };
 
+
   /**
    * Handle username update submission
    * Validates and sends request to update user's username
