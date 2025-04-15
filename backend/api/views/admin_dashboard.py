@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAdminUser
 
 from ..serializers import AdminUserSerializer, UserSerializer
 from .common import AdminRequiredMixin
@@ -16,14 +17,81 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
 
     serializer_class = AdminUserSerializer
     queryset = User.objects.all()
+    permission_classes = [IsAdminUser]
 
-    @action(detail=False, methods=["GET"])
+    @action(detail=False, methods=["GET", "POST"])
     def users(self, request):
         """
-        Pagination list of all users for admin
+        GET: Pagination list of all users for admin
+        POST: Create a new user
         EXAMPLE pagination:
             GET /api/admin/users/?page=1&page_size=5
         """
+        if request.method == "POST":
+            try:
+                data = request.data
+                pretty_print(f"Creating new user with data: {data}", "DEBUG")
+
+                # Validate required fields
+                required_fields = ["username", "email", "role", "first_name", "last_name"]
+                missing_fields = [field for field in required_fields if not data.get(field)]
+                if missing_fields:
+                    return Response(
+                        {"error": f"Missing required fields: {', '.join(missing_fields)}"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Check for existing users
+                if User.objects.filter(email=data["email"]).exists():
+                    return Response(
+                        {"error": "User with this email already exists"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if User.objects.filter(username=data["username"]).exists():
+                    return Response(
+                        {"error": "User with this username already exists"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Create user
+                user = User.objects.create(
+                    username=data["username"],
+                    email=data["email"],
+                    first_name=data["first_name"],
+                    last_name=data["last_name"],
+                    role=data["role"],
+                    is_active=True,
+                )
+
+                # Set password if provided
+                if data.get("password"):
+                    user.set_password(data["password"])
+                    user.save()
+
+                # Set admin/staff flags based on role
+                if data["role"] == "admin":
+                    user.is_superuser = True
+                    user.is_staff = True
+                elif data["role"] == "staff":
+                    user.is_staff = True
+                user.save()
+
+                return Response(
+                    {
+                        "message": "User created successfully",
+                        "user": UserSerializer(user).data,
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+
+            except Exception as e:
+                pretty_print(f"Error creating user: {str(e)}", "ERROR")
+                return Response(
+                    {"error": str(e)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # GET method - list users
         page = int(request.query_params.get("page", 1))
         page_size = int(request.query_params.get("page_size", 10))
         offset = (page - 1) * page_size
@@ -172,3 +240,97 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
             return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def create(self, request, *args, **kwargs):
+        """Create a new user"""
+        try:
+            data = request.data
+            pretty_print(f"Creating new user with data: {data}", "DEBUG")
+
+            # Validate required fields
+            required_fields = ["username", "email", "role", "first_name", "last_name"]
+            missing_fields = [field for field in required_fields if not data.get(field)]
+            if missing_fields:
+                return Response(
+                    {"error": f"Missing required fields: {', '.join(missing_fields)}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Check for existing users
+            if User.objects.filter(email=data["email"]).exists():
+                return Response(
+                    {"error": "User with this email already exists"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if User.objects.filter(username=data["username"]).exists():
+                return Response(
+                    {"error": "User with this username already exists"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Create user
+            user = User.objects.create(
+                username=data["username"],
+                email=data["email"],
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+                role=data["role"],
+                is_active=True,
+            )
+
+            # Set password if provided
+            if data.get("password"):
+                user.set_password(data["password"])
+                user.save()
+
+            # Set admin/staff flags based on role
+            if data["role"] == "admin":
+                user.is_superuser = True
+                user.is_staff = True
+            elif data["role"] == "staff":
+                user.is_staff = True
+            user.save()
+
+            return Response(
+                {
+                    "message": "User created successfully",
+                    "user": UserSerializer(user).data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except Exception as e:
+            pretty_print(f"Error creating user: {str(e)}", "ERROR")
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    @action(detail=True, methods=["delete"])
+    def delete_user(self, request, pk=None):
+        """Delete a user - only superusers can delete users"""
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Only superusers can delete users"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        user = self.get_object()
+
+        # Prevent deleting self
+        if user.id == request.user.id:
+            return Response(
+                {"error": "Cannot delete your own account"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Prevent deleting other superusers
+        if user.is_superuser and user.id != request.user.id:
+            return Response(
+                {"error": "Cannot delete other superuser accounts"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        pretty_print(f"Deleting user {user.id}", "DEBUG")
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
