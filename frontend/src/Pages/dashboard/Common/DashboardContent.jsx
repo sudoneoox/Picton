@@ -3,6 +3,7 @@ import ApprovalQueue from "@/Pages/dashboard/Staff/ApprovalQueue"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserDataTable from "@/Pages/dashboard/Privileged/UserDataTable";
 import UserCreationForm from "@/Pages/dashboard/Privileged/UserCreationForm"
+import SignatureUpdatePage from "@/Pages/dashboard/Common/SignatureUpdatePage"
 import FormSchemaManager from "@/Pages/dashboard/Privileged/FormSchemaManager";
 import { api } from "@/api/api.js";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,6 +26,7 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
     canCreateUsers: false,
     canToggleUsers: false,
     canManageFormSchemas: false,
+    canUpdateSignature: false,
   }
 
   // Load data based on active view
@@ -350,6 +352,23 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
             </CardContent>
           </Card>
         );
+
+      case 'update-signature':
+        if (!permissions.canUpdateSignature) {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Permission Denied</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>You do not have permission to access this page.</p>
+              </CardContent>
+            </Card>
+          )
+        }
+        return (
+          <SignatureUpdatePage />
+        )
 
       default:
         return (
