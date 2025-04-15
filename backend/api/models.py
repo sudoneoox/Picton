@@ -178,6 +178,65 @@ class FormApprovalWorkflow(models.Model):
         return f"{self.form_template.name} - {self.approver_role} (Step {self.order})"
 
 
+class OrganizationalUnit(models.Model):
+    """Represents a unit in the organizational hierarchy"""
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=20, unique=True)
+    description = models.TextField(blank=True)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='sub_units')
+    level = models.PositiveIntegerField(help_text="Hierarchy level (0 for top level)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['level', 'name']
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+    def get_hierarchy_path(self):
+        """Returns the full path of units from root to this unit"""
+        path = [self]
+        current = self
+        while current.parent:
+            current = current.parent
+            path.append(current)
+        return list(reversed(path))
+
+class UnitApprover(models.Model):
+    """Links approvers to organizational units with specific roles"""
+    unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE, related_name='approvers')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unit_approver_roles')
+    role = models.CharField(max_length=50)
+    is_organization_wide = models.BooleanField(default=False, help_text="Can approve across all units")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['unit', 'user', 'role']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role} in {self.unit.name}"
+
+class ApprovalDelegation(models.Model):
+    """Tracks temporary delegations of approval authority"""
+    delegator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='delegated_from')
+    delegate = models.ForeignKey(User, on_delete=models.CASCADE, related_name='delegated_to')
+    unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    reason = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-start_date']
+
+    def __str__(self):
+        return f"{self.delegator.username} -> {self.delegate.username} ({self.unit.name})"
+
 class FormSubmission(models.Model):
     """Stores submitted form data"""
 
@@ -217,6 +276,9 @@ class FormSubmission(models.Model):
         blank=True,
         related_name="revisions",
     )
+
+    # Add new field for organizational unit
+    unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE, related_name='form_submissions', null=True, blank=True)
 
     def __str__(self):
         return f"{self.form_template.name} - {self.submitter.username} ({self.status})"
@@ -275,6 +337,15 @@ class FormApproval(models.Model):
     signed_pdf_url = models.TextField(null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # Add delegation tracking
+    delegated_by = models.ForeignKey(
+        User, 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL, 
+        related_name='delegated_approvals'
+    )
 
     class Meta:
         unique_together = ["form_submission", "approver", "step_number"]

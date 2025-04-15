@@ -144,125 +144,133 @@ class FormPDFGenerator:
                 raise ValueError(f"Template file not found: {template_path}")
 
             # Load template content
-            with open(template_path, "r") as file:
-                template_content = file.read()
+            try:
+                with open(template_path, "r") as file:
+                    template_content = file.read()
 
-            # Start with basic replacements
-            replacements = {
-                "$CURRENT_DATE$": datetime.now().strftime("%m/%d/%Y"),
-                "$UNIVERSITY_LOGO$": self.logo_path,
-            }
+                # Start with basic replacements
+                replacements = {
+                    "$CURRENT_DATE$": datetime.now().strftime("%m/%d/%Y"),
+                    "$UNIVERSITY_LOGO$": self.logo_path,
+                }
 
-            # Add student signature
-            if user.signature:
-                replacements["$STUDENT_SIGNATURE$"] = self._process_signature(user)
-            else:
-                replacements["$STUDENT_SIGNATURE$"] = ""
+                # Add student signature
+                if user.signature:
+                    replacements["$STUDENT_SIGNATURE$"] = self._process_signature(user)
+                else:
+                    replacements["$STUDENT_SIGNATURE$"] = ""
 
-            # Common fields that exist in most forms
-            common_fields = {
-                "first_name": "$FIRST_NAME$",
-                "last_name": "$LAST_NAME$",
-                "middle_name": "$MIDDLE_NAME$",
-                "student_id": "$STUDENT_ID$",
-                "phone_number": "$PHONE_NUMBER$",
-                "email": "$EMAIL_ADDRESS$",
-                "email_address": "$EMAIL_ADDRESS$",
-                "program_plan": "$PROGRAM_PLAN$",
-                "academic_career": "$ACADEMIC_CAREER$",
-                "year": "$YEAR$",  # Graduate petition or common year
-                "withdrawal_year": "$WITHDRAWAL_YEAR$",  # Term withdrawal
-                "season": "$SEASON$",  # Season value itself
-            }
+                # Common fields that exist in most forms
+                common_fields = {
+                    "first_name": "$FIRST_NAME$",
+                    "last_name": "$LAST_NAME$",
+                    "middle_name": "$MIDDLE_NAME$",
+                    "student_id": "$STUDENT_ID$",
+                    "phone_number": "$PHONE_NUMBER$",
+                    "email": "$EMAIL_ADDRESS$",
+                    "email_address": "$EMAIL_ADDRESS$",
+                    "program_plan": "$PROGRAM_PLAN$",
+                    "academic_career": "$ACADEMIC_CAREER$",
+                    "year": "$YEAR$",  # Graduate petition or common year
+                    "withdrawal_year": "$WITHDRAWAL_YEAR$",  # Term withdrawal
+                    "season": "$SEASON$",  # Season value itself
+                }
 
-            # Process common fields
-            for field_name, placeholder in common_fields.items():
-                if field_name in form_data:
-                    # Get value with proper handling
-                    value = form_data.get(field_name, "")
+                # Process common fields
+                for field_name, placeholder in common_fields.items():
+                    if field_name in form_data:
+                        # Get value with proper handling
+                        value = form_data.get(field_name, "")
 
-                    # Format phone number if needed
-                    if field_name == "phone_number" and value:
-                        value = self._format_phone_number(value)
-
-                    # Fall back to user profile if empty
-                    if not value and hasattr(user, field_name):
-                        value = getattr(user, field_name)
-                        if field_name == "phone_number":
+                        # Format phone number if needed
+                        if field_name == "phone_number" and value:
                             value = self._format_phone_number(value)
 
-                    replacements[placeholder] = str(value)
+                        # Fall back to user profile if empty
+                        if not value and hasattr(user, field_name):
+                            value = getattr(user, field_name)
+                            if field_name == "phone_number":
+                                value = self._format_phone_number(value)
 
-            # Handle template-specific fields
-            if "Graduate Petition" in form_template.name:
-                self._process_graduate_petition_fields(form_data, replacements)
-            elif "Term Withdrawal" in form_template.name:
-                self._process_term_withdrawal_fields(form_data, replacements)
-            elif "Graduate Posthumous" in form_template.name:
-                self._process_graduate_posthumous_fields(form_data, replacements)
-            else:
-                # Generic processing for other templates
-                pretty_print(
-                    f"Using generic field processing for {form_template.name}", "DEBUG"
-                )
-                self._process_generic_fields(
-                    form_template.field_schema.get("fields", []),
-                    form_data,
-                    template_content,
-                    replacements,
-                )
+                        replacements[placeholder] = str(value)
 
-            # Add approval information if this is a signed form
-            if approver and decision:
-                # Set checkmarks for approval status
-                staff_approved = "\\checkmark" if decision == "approved" else "\\square"
-                staff_rejected = "\\checkmark" if decision == "rejected" else "\\square"
-
-                # Add approval information to replacements
-                replacements.update(
-                    {
-                        "$STAFF_APPROVED$": staff_approved,
-                        "$STAFF_REJECTED$": staff_rejected,
-                        "$STAFF_SIGNATURE$": self._process_signature(approver)
-                        if approver.signature
-                        else "",
-                        "$STAFF_NAME$": f"{approver.first_name} {approver.last_name}",
-                        "$APPROVAL_DATE$": datetime.now().strftime("%m/%d/%Y"),
-                        "$STAFF_COMMENTS$": comments if comments else "",
-                    }
-                )
-
-            # Perform all replacements
-            for placeholder, value in replacements.items():
-                template_content = template_content.replace(placeholder, str(value))
-
-            # Compile the LaTeX to PDF
-            pdf_file = self._compile_latex(template_content)
-
-            # Set appropriate filename
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            user_id = getattr(user, "id", "0")
-
-            if approver and decision:
-                # For signed forms
-                try:
-                    identifier = form_submission.submission_identifier.identifier
-                except:
-                    identifier = f"form{form_submission.id}"
-
-                pdf_file.name = f"{identifier}_{decision}_{timestamp}.pdf"
-            else:
-                # For regular forms
+                # Handle template-specific fields
                 if "Graduate Petition" in form_template.name:
-                    template_code = "petition"
+                    self._process_graduate_petition_fields(form_data, replacements)
                 elif "Term Withdrawal" in form_template.name:
-                    template_code = "withdrawal"
+                    self._process_term_withdrawal_fields(form_data, replacements)
+                elif "Graduate Posthumous" in form_template.name:
+                    self._process_graduate_posthumous_fields(form_data, replacements)
                 else:
-                    template_code = form_template.name.lower().replace(" ", "_")[:10]
+                    # Generic processing for other templates
+                    pretty_print(
+                        f"Using generic field processing for {form_template.name}", "DEBUG"
+                    )
+                    self._process_generic_fields(
+                        form_template.field_schema.get("fields", []),
+                        form_data,
+                        template_content,
+                        replacements,
+                    )
 
-                pdf_file.name = f"{template_code}_user{user_id}_{timestamp}.pdf"
+                # Add approval information if this is a signed form
+                if approver and decision:
+                    # Set checkmarks for approval status
+                    staff_approved = "\\checkmark" if decision == "approved" else "\\square"
+                    staff_rejected = "\\checkmark" if decision == "rejected" else "\\square"
 
-            return pdf_file
+                    # Add approval information to replacements
+                    replacements.update(
+                        {
+                            "$STAFF_APPROVED$": staff_approved,
+                            "$STAFF_REJECTED$": staff_rejected,
+                            "$STAFF_SIGNATURE$": self._process_signature(approver)
+                            if approver.signature
+                            else "",
+                            "$STAFF_NAME$": f"{approver.first_name} {approver.last_name}",
+                            "$APPROVAL_DATE$": datetime.now().strftime("%m/%d/%Y"),
+                            "$STAFF_COMMENTS$": comments if comments else "",
+                        }
+                    )
+
+                # Perform all replacements
+                for placeholder, value in replacements.items():
+                    template_content = template_content.replace(placeholder, str(value))
+
+                # Compile the LaTeX to PDF
+                pdf_file = self._compile_latex(template_content)
+
+                # Set appropriate filename
+                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                user_id = getattr(user, "id", "0")
+
+                if approver and decision:
+                    # For signed forms
+                    try:
+                        identifier = form_submission.submission_identifier.identifier
+                    except:
+                        identifier = f"form{form_submission.id}"
+
+                    pdf_file.name = f"{identifier}_{decision}_{timestamp}.pdf"
+                else:
+                    # For regular forms
+                    if "Graduate Petition" in form_template.name:
+                        template_code = "petition"
+                    elif "Term Withdrawal" in form_template.name:
+                        template_code = "withdrawal"
+                    else:
+                        template_code = form_template.name.lower().replace(" ", "_")[:10]
+
+                    pdf_file.name = f"{template_code}_user{user_id}_{timestamp}.pdf"
+
+                return pdf_file
+
+            except Exception as e:
+                pretty_print(f"Error in _generate_form_dynamically: {str(e)}", "ERROR")
+                import traceback
+
+                pretty_print(traceback.format_exc(), "ERROR")
+                return None
 
         except Exception as e:
             pretty_print(f"Error in _generate_form_dynamically: {str(e)}", "ERROR")
@@ -436,8 +444,8 @@ class FormPDFGenerator:
             # Run pdflatex
             try:
                 subprocess.run(
-                    ["pdflatex", "-interaction=nonstopmode", tex_file],
-                    cwd=temp_dir,
+                        ["pdflatex", "-interaction=nonstopmode", tex_file],
+                        cwd=temp_dir,
                     check=True,
                     capture_output=True,
                 )
