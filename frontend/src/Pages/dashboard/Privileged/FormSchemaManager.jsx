@@ -315,6 +315,22 @@ const FormSchemaManager = () => {
     }
   };
 
+  /**
+   * Toggle form template active status
+   */
+  const handleToggleStatus = async (template) => {
+    setLoading(true);
+    try {
+      await api.admin.toggleFormTemplateStatus(template.id);
+      showToast({ message: "Form template status updated successfully" }, "success");
+      fetchTemplates();
+    } catch (error) {
+      showToast({ error: "Failed to update form template status" }, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Reset form to default state
   const resetForm = () => {
     setFormData(DEFAULT_FORM_DATA);
@@ -353,26 +369,40 @@ const FormSchemaManager = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Required Approvals</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-[200px]">Name</TableHead>
+                <TableHead className="w-[300px]">Description</TableHead>
+                <TableHead className="w-[150px]">Required Approvals</TableHead>
+                <TableHead className="w-[100px]">Status</TableHead>
+                <TableHead className="w-[200px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {templates.map((template) => (
-                <TableRow key={template.id || `template-${template.name}`}>
-                  <TableCell>{template.name}</TableCell>
+                <TableRow key={template.id}>
+                  <TableCell className="font-medium">{template.name}</TableCell>
                   <TableCell>{template.description}</TableCell>
                   <TableCell>{template.required_approvals}</TableCell>
                   <TableCell>
+                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                      template.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {template.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mr-2"
                       onClick={() => handleEdit(template)}
                     >
                       Edit
+                    </Button>
+                    <Button
+                      variant={template.is_active ? "destructive" : "outline"}
+                      size="sm"
+                      onClick={() => handleToggleStatus(template)}
+                    >
+                      {template.is_active ? 'Deactivate' : 'Activate'}
                     </Button>
                     <Button
                       variant="destructive"
@@ -384,6 +414,13 @@ const FormSchemaManager = () => {
                   </TableCell>
                 </TableRow>
               ))}
+              {templates.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No form templates found. Click "Add New Template" to create one.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         )}
