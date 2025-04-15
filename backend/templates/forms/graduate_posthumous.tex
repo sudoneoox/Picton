@@ -1,0 +1,128 @@
+\documentclass[12pt]{article}
+\usepackage[paperwidth=1000pt, paperheight=1100pt, margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amssymb}
+
+% -- placeholder variables 
+\newcommand{\firstName}{$FIRST_NAME$}
+\newcommand{\lastName}{$LAST_NAME$}
+\newcommand{\middleName}{$MIDDLE_NAME$}
+\newcommand{\studentID}{$STUDENT_ID$}
+\newcommand{\phoneNumber}{$PHONE_NUMBER$}
+\newcommand{\emailAddress}{$EMAIL_ADDRESS$}
+\newcommand{\programPlan}{$PROGRAM_PLAN$}
+\newcommand{\academicCareer}{$ACADEMIC_CAREER$}
+\newcommand{\yearValue}{$YEAR$}
+\newcommand{\seasonValue}{$SEASON$}
+\newcommand{\petitionExplanation}{$PETITION_EXPLANATION$}
+\newcommand{\purposePosthumousDegree}{$PURPOSE_POSTHUMOUS_DEGREE$}
+\newcommand{\studentSignature}{$STUDENT_SIGNATURE$}
+\newcommand{\currentDate}{$CURRENT_DATE$}
+
+% -- for quick checkboxes
+\newcommand{\checkbox}[1]{$#1$}
+
+\begin{document}
+\thispagestyle{empty}
+
+% Logo
+\begin{center}
+  \includegraphics[width=2in]{$UNIVERSITY_LOGO$}
+  \vspace{1em}
+\end{center}
+
+\begin{center}
+  \textbf{\huge \color{gray} UNIVERSITY of \color{red} HOUSTON \color{darkgray} | GRADUATE SCHOOL}
+\end{center}
+\begin{center}
+\textbf{\center{\LARGE GRAD/PROF for POSTHUMOUS DEGREE}} 
+\end{center}
+\vspace{1.5em}
+
+% === STUDENT INFO ===
+\begin{tabular}{|p{0.30\textwidth}|p{0.30\textwidth}|p{0.321\textwidth}|}
+\hline
+\textbf{Name:} & \multicolumn{2}{l|}{\lastName, \firstName \middleName} \\
+\scriptsize (Last, First, Middle) & \multicolumn{2}{l|}{} \\
+\hline
+\textbf{myUH ID:} \studentID & \textbf{Contact Phone:} \phoneNumber & \textbf{UH Email:} \emailAddress \\
+\hline
+\textbf{Current Student Information} & \textbf{Career:} \academicCareer & \textbf{Program/Plan:} \programPlan \\
+\hline
+\textbf{Petition Effective Term:} \yearValue & \multicolumn{2}{l|}{\seasonValue} \\
+\hline
+\end{tabular}
+\vspace{0.5em}
+
+% === PURPOSE ===
+\begin{tabular}{|p{0.60\textwidth}|p{0.335\textwidth}|}
+\hline
+\multicolumn{1}{|c|}{\textbf{\large PURPOSE OF PETITION}} 
+& \multicolumn{1}{c|}{\textbf{\large EXPLANATION OF REQUEST}} \\
+\hline
+% Purpose: Posthumous degree
+\begin{minipage}[t]{0.43\textwidth}
+    \vspace{0.5em}
+    1. \checkbox{\purposePosthumousDegree} Requesting the university award a posthumous degree. \\
+    \vspace{0.5em}
+\end{minipage}
+&
+\begin{minipage}[t]{0.30\textwidth}
+    \vspace{0.5em}
+    \raggedright
+    \petitionExplanation
+    \vspace{1em}
+\end{minipage}\\
+\hline
+\end{tabular}
+\vspace{0.5em}
+
+% === SIGNATURES ===
+\begin{tabular}{|p{0.32\textwidth}|p{0.20\textwidth}|p{0.401\textwidth}|}
+\hline
+\textbf{STUDENT SIGNATURE} & \textbf{DATE} & \textbf{Administrative Request}\\
+\hline
+\parbox[t]{0.32\textwidth}{
+    \studentSignature
+} 
+& \parbox[t]{0.20\textwidth}{
+    \currentDate
+}
+& 
+\parbox[t]{0.48\textwidth}{
+    % administrative notes if any
+}\\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+% === APPROVALS ===
+\begin{tabular}{|p{0.695\textwidth}|p{0.20\textwidth}|}
+\hline
+\multicolumn{1}{|c|}{\textbf{REQUIRED APPROVALS}} & \multicolumn{1}{c|}{\textbf{ACADEMIC OFFICE USE ONLY}}\\
+\hline
+\begin{minipage}[t]{0.68\textwidth}
+    \textbf{Staff Approval}\hfill 
+    \checkbox{$STAFF_APPROVED$} APPROVED \quad \checkbox{$STAFF_REJECTED$} REJECTED \hfill 
+    Signature: $STAFF_SIGNATURE$ \hfill Date: $APPROVAL_DATE$ \\
+    Print Name: $STAFF_NAME$
+\end{minipage}
+&
+\begin{minipage}[t]{0.26\textwidth}
+\vspace{1em}
+\textbf{COMMENTS / NOTES:}
+
+$STAFF_COMMENTS$
+
+\vspace{4em}
+\end{minipage}\\
+\hline
+\end{tabular}
+
+\end{document}
+

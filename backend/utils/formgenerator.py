@@ -195,74 +195,22 @@ class FormPDFGenerator:
 
             # Handle template-specific fields
             if "Graduate Petition" in form_template.name:
-                # Add petition explanation
-                petition_explanation = form_data.get("petition_explanation", "")
-                replacements["$PETITION_EXPLANATION$"] = petition_explanation
-
-                # Handle petition purpose checkboxes
-                purpose_fields = {
-                    "update_program_status": "$PURPOSE_UPDATE_PROGRAM_STATUS$",
-                    "admission_status_change": "$PURPOSE_ADMISSION_STATUS_CHANGE$",
-                    "add_concurrent_degree": "$PURPOSE_ADD_CONCURRENT$",
-                    "change_degree_objective": "$PURPOSE_CHANGE_DEGREE_OBJECTIVE$",
-                    "degree_requirements_exception": "$PURPOSE_DEGREE_REQUIREMENTS_EXCEPTION$",
-                    "leave_of_absence": "$PURPOSE_LEAVE_OF_ABSENCE$",
-                    "reinstate_discontinued": "$PURPOSE_REINSTATE_DISCONTINUED$",
-                    "request_to_graduate": "$PURPOSE_REQUEST_TO_GRADUATE$",
-                    "change_admin_term": "$PURPOSE_CHANGE_ADMIN_TERM$",
-                    "early_submission": "$PURPOSE_EARLY_SUBMISSION$",
-                    "other": "$PURPOSE_OTHER$",
-                }
-
-                # Get selected purpose from form data
-                selected_purpose = form_data.get("petition_purpose", "")
-
-                # Set checkmark for selected purpose, square for others
-                for purpose, placeholder in purpose_fields.items():
-                    replacements[placeholder] = (
-                        "\\checkmark" if purpose == selected_purpose else "\\square"
-                    )
-
+                self._process_graduate_petition_fields(form_data, replacements)
             elif "Term Withdrawal" in form_template.name:
-                # Season checkboxes for term withdrawal
-                season = form_data.get("season", "").lower()
-                replacements["$FALL_SELECTED$"] = (
-                    "\\checkmark" if season == "fall" else "\\square"
+                self._process_term_withdrawal_fields(form_data, replacements)
+            elif "Graduate Posthumous" in form_template.name:
+                self._process_graduate_posthumous_fields(form_data, replacements)
+            else:
+                # Generic processing for other templates
+                pretty_print(
+                    f"Using generic field processing for {form_template.name}", "DEBUG"
                 )
-                replacements["$SPRING_SELECTED$"] = (
-                    "\\checkmark" if season == "spring" else "\\square"
+                self._process_generic_fields(
+                    form_template.field_schema.get("fields", []),
+                    form_data,
+                    template_content,
+                    replacements,
                 )
-                replacements["$SUMMER_SELECTED$"] = (
-                    "\\checkmark" if season == "summer" else "\\square"
-                )
-
-                # Handle initials section for term withdrawal
-                initials = form_data.get("initials", {})
-                initials_text = form_data.get("initialsText", {})
-
-                # Process each initial field
-                for key in [
-                    "financial_aid",
-                    "international_student",
-                    "student_athlete",
-                    "veterans",
-                    "graduate_professional",
-                    "doctoral_student",
-                    "student_housing",
-                    "dining_services",
-                    "parking_transportation",
-                ]:
-                    placeholder = f"$INITIALS_{key.upper()}$"
-                    if (
-                        initials.get(key)
-                        and key in initials_text
-                        and initials_text[key]
-                    ):
-                        replacements[placeholder] = initials_text[key]
-                    else:
-                        replacements[placeholder] = (
-                            " "  # Blank space in order to not render variable
-                        )
 
             # Add approval information if this is a signed form
             if approver and decision:
@@ -322,6 +270,20 @@ class FormPDFGenerator:
 
             pretty_print(traceback.format_exc(), "ERROR")
             return None
+
+    def _process_graduate_posthumous_fields(self, form_data, replacements):
+        """Process specific fields for Graduate Posthumous Degree Petition"""
+        # Year and season
+        replacements["$YEAR$"] = str(form_data.get("year", datetime.now().year))
+        replacements["$SEASON$"] = form_data.get("season", "")
+
+        # Petition explanation (required for posthumous forms)
+        replacements["$PETITION_EXPLANATION$"] = form_data.get(
+            "petition_explanation", ""
+        )
+
+        # Handle petition purpose checkbox - for posthumous it's always the same purpose
+        replacements["$PURPOSE_POSTHUMOUS_DEGREE$"] = "\\checkmark"
 
     def _process_graduate_petition_fields(self, form_data, replacements):
         """Process specific fields for Graduate Petition forms"""
