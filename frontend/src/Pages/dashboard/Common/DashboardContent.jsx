@@ -29,91 +29,72 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
     canUpdateSignature: false,
   }
 
+  // Move fetchData outside useEffect so it can be passed to child components
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      let response;
+
+      // Check permissions before making API calls
+      switch (activeView) {
+        case "profile":
+          // No data fetching needed for profile view
+          setData([]);
+          break;
+
+        case "manage-users":
+          if (!permissions.canEditUsers) {
+            pretty_log("User does not have permission to manage users", "WARNING");
+            setData([]);
+            break;
+          }
+
+          response = await api.admin.getUsers();
+          if (response && response.results) {
+            setData(response.results);
+          } else if (Array.isArray(response)) {
+            setData(response);
+          } else {
+            setData([]);
+            pretty_log(`Unexpected Data Type Received ${response} ${typeof response}`, "ERROR");
+          }
+          break;
+
+        case "submit-forms":
+          response = await api.student.getFormTemplates();
+          setData(response);
+          break;
+
+        case "view-forms":
+          response = await api.student.getFormSubmissions();
+          setData(response);
+          break;
+
+        case "notifications":
+          setData([]);
+          break;
+
+        case "manage-form-schemas":
+          if (!permissions.canManageFormSchemas) {
+            return;
+          }
+          break;
+
+        default:
+          setData([]);
+      }
+    } catch (error) {
+      pretty_log(`Error fetching data: ${error}`, "ERROR");
+      showToast({ error: "Failed to fetch data" }, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load data based on active view
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        let response;
-
-        // Check permissions before making API calls
-        switch (activeView) {
-          case "profile":
-            // No data fetching needed for profile view
-            setData([]);
-            break;
-
-          case "manage-users":
-
-            if (!permissions.canEditUsers) {
-              pretty_log("User does not have permission to manage users", "WARNING");
-              setData([]);
-              break;
-            }
-
-            response = await api.admin.getUsers();
-            if (response && response.results) {
-              setData(response.results);
-            } else if (Array.isArray(response)) {
-              setData(response);
-            } else {
-              setData([]);
-              pretty_log(`Unexpected Data Type Received ${response} ${typeof response}`, "ERROR");
-            }
-            break;
-
-          case "create-users":
-            if (!permissions.canCreateUsers) {
-              pretty_log("User does not have permission to create users", "WARNING");
-              setData([]);
-              break;
-            }
-            response = await api.admin.getUsers();
-            setData(response);
-            break;
-
-          case "submit-forms":
-            response = await api.student.getFormTemplates();
-            setData(response);
-            break;
-
-          case "view-forms":
-            response = await api.student.getFormSubmissions();
-            setData(response);
-            break;
-
-          case "notifications":
-            setData([]);
-            break;
-
-          case "manage-form-schemas":
-            if (!permissions.canManageFormSchemas) {
-              return (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Permission Denied</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    You do not have permission to manage form templates.
-                  </CardContent>
-                </Card>
-              );
-            }
-            return <FormSchemaManager />;
-
-          default:
-            setData([]);
-        }
-      } catch (error) {
-        pretty_log(`Error fetching data: ${error}`, "ERROR");
-        showToast({ error: "Failed to fetch data" }, "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, [activeView, showToast, permissions]);
+  }, [activeView]);
 
   // TODO: implement in frontend API and backend
   const handleToggleStatus = async (userId) => {
@@ -203,36 +184,6 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
                     dashboardConfig.updateUserData(updatedData);
                   }
                 }}
-              />
-            </CardContent>
-          </Card>
-        );
-
-      case "manage-users":
-        if (!permissions.canEditUsers) {
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle>Permission Denied</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>You do not have permission to access this page.</p>
-              </CardContent>
-            </Card>
-          )
-        }
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                User Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <UserDataTable
-                userData={data}
-                onToggleStatus={handleToggleStatus}
-                canToggleUserStatus={permissions.canToggleUserStatus}
               />
             </CardContent>
           </Card>
@@ -369,6 +320,37 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
         return (
           <SignatureUpdatePage />
         )
+
+      case "manage-users":
+        if (!permissions.canEditUsers) {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Permission Denied</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>You do not have permission to access this page.</p>
+              </CardContent>
+            </Card>
+          )
+        }
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                User Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UserDataTable
+                userData={data}
+                onToggleStatus={handleToggleStatus}
+                canToggleUserStatus={permissions.canToggleUserStatus}
+                onUserCreated={fetchData}
+              />
+            </CardContent>
+          </Card>
+        );
 
       default:
         return (

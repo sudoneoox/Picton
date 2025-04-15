@@ -12,11 +12,6 @@ const roleConfigs = {
             id: "manage-users",
             title: "Manage Users",
             permissions: ["admin.manage_users"]
-          },
-          {
-            id: "create-users",
-            title: "Create Users",
-            permissions: ["admin.create_users"]
           }
         ]
       },
