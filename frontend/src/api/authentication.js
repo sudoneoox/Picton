@@ -150,7 +150,10 @@ export const auth = {
     }
   },
 
-  // LOGS OUT USER
+
+  /**
+     * Logs out user and clears out cookies and storage cache
+  */
   async logout() {
     pretty_log(`Attempting to logout user`, "DEBUG")
     try {

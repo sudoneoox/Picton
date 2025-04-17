@@ -1,6 +1,4 @@
 from django.db.models import OuterRef
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -69,7 +67,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         # Save with user and their unit
         serializer.save(submitter=user, unit=user_unit)
 
-    @method_decorator(csrf_exempt)
     @action(detail=False, methods=["POST"])
     def preview(self, request):
         """
@@ -186,7 +183,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @method_decorator(csrf_exempt)
     @action(detail=True, methods=["POST"])
     def submit(self, request, pk=None):
         """Submit a draft form for approval"""

@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError
 from django.forms import ValidationError
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie
 from jwt.algorithms import RSAAlgorithm
 from rest_framework import status, views, viewsets
 from rest_framework.decorators import action
@@ -41,10 +41,13 @@ class LoginView(views.APIView, MethodNameMixin):
 
     def post(self, request):
         try:
+            personal_id = request.data.get("personalId")
+            password = request.data.get("password")
+            # in the frontend its sent as personalId but the serializer is expecting personal_id
+            request.data["personal_id"] = personal_id
+
             serializer = LoginSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            personal_id = request.data.get("personal_id")
-            password = request.data.get("password")
 
             if not personal_id or not password:
                 pretty_print(
@@ -158,12 +161,14 @@ class RegisterView(views.APIView, MethodNameMixin):
                 "ERROR",
             )
             raise ValidationError("User with this email already exists")
+
         if User.objects.filter(username=data["username"]).exists():
             pretty_print(
                 f"from {self._get_method_name()}: User with this username already exists",
                 "ERROR",
             )
             raise ValidationError("User with this username already exists")
+
         if (
             data.get("phone")
             and User.objects.filter(phone_number=data["phone"]).exists()
@@ -357,7 +362,6 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
 class LogoutView(views.APIView):
     permission_classes = [IsAuthenticated]
 
-    @method_decorator(csrf_exempt)
     @action(detail=False, methods=["POST"])
     def post(self, request):
         try:
