@@ -184,12 +184,21 @@ const Registrations = () => {
         {
           status: "Success",
           message: "Registration successful",
+          personalId: response.personal_id,
         },
         "success",
-        "SUCCESS",
+        "Your Student ID",
       );
-      // Redirect to login after successful registration
-      navigate("/login");
+
+      // add confirmation dialog to show id before redirecting
+      const confirmRedirect = window.confirm(
+        `Registration successful! Your CougarnetID is ${response.personal_id}. Please save this ID as you'll need it to log in.\n\nClick OK to continue to login.`
+      )
+
+      if (confirmRedirect) {
+        // Redirect to login after successful registration
+        navigate("/login");
+      }
     } catch (error) {
       showToast(
         {

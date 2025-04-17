@@ -16,7 +16,7 @@ export const auth = {
    * @param {string} password 
    * @returns {Promise<Object>} User data
    */
-  async loginUser(username, password) {
+  async loginUser(personalId, password) {
     pretty_log("Entering loginUser API", "INFO");
     const response = await fetch(`${API_BASE_URL}/login/`, {
       method: "POST",
@@ -25,7 +25,7 @@ export const auth = {
         "Content-Type": "application/json",
         "X-CSRFToken": getCSRFToken(),
       },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ personalId, password }),
     });
     pretty_log("Received Request inside login_user", "DEBUG");
 

@@ -1,3 +1,4 @@
+from enum import unique
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -59,6 +60,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=128, default="")
     last_name = models.CharField(max_length=128, default="")
 
+    personal_id = models.CharField(max_length=7, unique=True, null=True, blank=True)
+
     # Optional fields
     phone_number = models.CharField(max_length=15, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
@@ -91,6 +94,22 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "username"
     EMAIL_FIELD = "email"
     REQUIRED_FIELDS = ["email"]  # username is automatically required
+
+    def save(self, *args, **kwargs):
+        # Generate personal_id if not provided
+        if not self.personal_id:
+            self.personal_id = self._generate_unique_personal_id()
+        super().save(*args, **kwargs)
+
+    def _generate_unique_personal_id(self):
+        """Generate a unique 7-digit personal ID"""
+        import random
+
+        while True:
+            personal_id = str(random.randint(1000000, 9999999))
+            # check if generated id is unique
+            if not User.objects.filter(personal_id=personal_id).exists():
+                return personal_id
 
     def __str__(self):
         return self.username
