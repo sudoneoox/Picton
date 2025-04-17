@@ -1,6 +1,4 @@
 from django.db.models import OuterRef
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -25,11 +23,50 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     queryset = FormSubmission.objects.all()
     permission_classes = [IsAuthenticated, IsActiveUser]
 
-    def perform_create(self, serializer) -> None:
-        # Set the submitter as the current user
-        serializer.save(submitter=self.request.user)
+    def get_approval_path(self):
+        """
+        Determines the approval path based on the organizational unit hierarchy
+        """
+        if not self.unit:
+            return []
 
-    @method_decorator(csrf_exempt)
+        # Get the hierarchy from unit to root
+        unit_path = self.unit.get_hierarchy_path()
+
+        # Get all approvers for each unit in the path
+        approvers = []
+        for unit in unit_path:
+            unit_approvers = UnitApprover.objects.filter(
+                unit=unit, is_active=True
+            ).select_related("user")
+
+            # Add organization-wide approvers
+            org_approvers = UnitApprover.objects.filter(
+                is_organization_wide=True, is_active=True
+            ).select_related("user")
+
+            approvers.extend(list(unit_approvers))
+            approvers.extend(list(org_approvers))
+
+        return approvers
+
+    def perform_create(self, serializer) -> None:
+        """Set the submitter as the current user and assign to their unit if available"""
+        # Try to determine the user's organizational unit
+        user = self.request.user
+        user_unit = None
+
+        # If user has an approver role, assign to their primary unit
+        if user.role in ["staff", "admin"]:
+            user_approver = UnitApprover.objects.filter(
+                user=user, is_active=True
+            ).first()
+            if user_approver:
+                user_unit = user_approver.unit
+
+        # Save with user and their unit
+        serializer.save(submitter=user, unit=user_unit)
+
     @action(detail=False, methods=["POST"])
     def preview(self, request):
         """
@@ -146,7 +183,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @method_decorator(csrf_exempt)
     @action(detail=True, methods=["POST"])
     def submit(self, request, pk=None):
         """Submit a draft form for approval"""
@@ -186,7 +222,6 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 form_submission.save()
 
                 # create identifer record even for auto-approved forms
-
                 identifier_obj, created = (
                     FormSubmissionIdentifier.objects.get_or_create(
                         form_submission=form_submission,
@@ -240,12 +275,28 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                     "student_id": form_submission.form_data.get("student_id", ""),
                 },
             )
+
+            # If the unit is not assigned, try to determine it
+            if not form_submission.unit:
+                # Try to assign unit based on submitter
+                user = form_submission.submitter
+                user_approver = UnitApprover.objects.filter(
+                    user=user, is_active=True
+                ).first()
+                if user_approver:
+                    form_submission.unit = user_approver.unit
+                    form_submission.save()
+
             return Response(
                 {
                     "status": "pending",
                     "current_step": form_submission.current_step,
                     "approver_role": approval_workflows.first().approver_role,
                     "identifier": identifier,
+                    "unit": form_submission.unit.id if form_submission.unit else None,
+                    "unit_name": form_submission.unit.name
+                    if form_submission.unit
+                    else None,
                 }
             )
         except Exception as e:
@@ -490,4 +541,3 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 return False
 
         return True
-

@@ -5,6 +5,7 @@ import UserDataTable from "@/Pages/dashboard/Privileged/UserDataTable";
 import UserCreationForm from "@/Pages/dashboard/Privileged/UserCreationForm"
 import SignatureUpdatePage from "@/Pages/dashboard/Common/SignatureUpdatePage"
 import FormSchemaManager from "@/Pages/dashboard/Privileged/FormSchemaManager";
+import OrganizationManager from "@/Pages/dashboard//Privileged/OrganizationManager";
 import { api } from "@/api/api.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ToastNotification";
@@ -350,6 +351,36 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
             </CardContent>
           </Card>
         );
+
+      case "manage-organization":
+        if (!permissions.canManageOrganization) {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Permission Denied</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>You do not have permission to access this page.</p>
+              </CardContent>
+            </Card>
+          )
+        }
+        return <OrganizationManager />;
+
+      case "manage-delegations":
+        if (!permissions.canManageDelegations) {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Permission Denied</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>You do not have permission to access this page.</p>
+              </CardContent>
+            </Card>
+          )
+        }
+        return <DelegationManager />;
 
       default:
         return (

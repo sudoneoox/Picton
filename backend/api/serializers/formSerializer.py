@@ -7,6 +7,9 @@ from ..models import (
     FormApproval,
     FormApprovalWorkflow,
     FormSubmissionIdentifier,
+    UnitApprover,
+    OrganizationalUnit,
+    ApprovalDelegation,
 )
 
 
@@ -36,6 +39,7 @@ class FormTemplateSerializer(serializers.ModelSerializer):
 class FormSubmissionSerializer(serializers.ModelSerializer):
     submitter_name = serializers.SerializerMethodField()
     template_name = serializers.SerializerMethodField()
+    unit_name = serializers.SerializerMethodField()
 
     class Meta:
         model = FormSubmission
@@ -50,6 +54,8 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
             "status",
             "current_step",
             "created_at",
+            "unit",
+            "unit_name",
             # "identifier",
         ]
         read_only_fields = [
@@ -57,8 +63,12 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
             "created_at",
             "submitter_name",
             "template_name",
+            "unit_name",
             # "identifier",
         ]
+
+    def get_unit_name(self, obj):
+        return obj.unit.name if obj.unit else ""
 
     def get_submitter_name(self, obj):
         return f"{obj.submitter.first_name} {obj.submitter.last_name}"
@@ -130,3 +140,77 @@ class FormApprovalSerializer(serializers.ModelSerializer):
             return obj.form_submission.submission_identifier.identifier
         except Exception as e:
             return None
+
+
+class OrganizationalUnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrganizationalUnit
+        fields = [
+            "id",
+            "name",
+            "code",
+            "description",
+            "parent",
+            "level",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class UnitApproverSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    unit_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UnitApprover
+        fields = [
+            "id",
+            "unit",
+            "unit_name",
+            "user",
+            "user_name",
+            "role",
+            "is_organization_wide",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_user_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}"
+
+    def get_unit_name(self, obj):
+        return obj.unit.name
+
+
+class ApprovalDelegationSerializer(serializers.ModelSerializer):
+    delegator_name = serializers.SerializerMethodField()
+    delegate_name = serializers.SerializerMethodField()
+    unit_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ApprovalDelegation
+        fields = [
+            "id",
+            "delegator",
+            "delegator_name",
+            "delegate",
+            "delegate_name",
+            "unit",
+            "unit_name",
+            "start_date",
+            "end_date",
+            "reason",
+            "is_active",
+            "created_at",
+        ]
+
+    def get_delegator_name(self, obj):
+        return f"{obj.delegator.first_name} {obj.delegator.last_name}"
+
+    def get_delegate_name(self, obj):
+        return f"{obj.delegate.first_name} {obj.delegate.last_name}"
+
+    def get_unit_name(self, obj):
+        return obj.unit.name

@@ -12,7 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [formData, setFormData] = useState({
-    username: "",
+    personalId: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -125,14 +125,14 @@ const Login = () => {
 
     try {
       const response = await api.auth.loginUser(
-        formData.username,
+        formData.personalId,
         formData.password,
       );
 
       showToast(
         {
           message: "Login successful",
-          user: response.user.username,
+          user: response.user.firstName
         },
         "success",
         "Welcome",
@@ -150,8 +150,8 @@ const Login = () => {
           navigate("/staff/dashboard")
           break;
         default:
-          // not yet implemented
-          navigate("/202")
+          // unknown role ? send to page not found
+          navigate("/404")
           break;
       }
 
@@ -195,9 +195,9 @@ const Login = () => {
           <form className="registration-formCard__form" onSubmit={handleSubmit}>
             <Input
               type="text"
-              placeholder="Enter your username"
-              value={formData.username}
-              onChange={(e) => handleInputChange("username", e.target.value)}
+              placeholder="Enter your CougarID"
+              value={formData.personalId}
+              onChange={(e) => handleInputChange("personalId", e.target.value)}
               className="registration-formCard__input"
               required
             />

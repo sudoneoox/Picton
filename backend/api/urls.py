@@ -15,18 +15,27 @@ from .views import (
     CheckSignatureView,
     LogoutView,
     AuthViewSet,
+    OrganizationalUnitViewSet,
+    UnitApproverViewSet,
+    ApprovalDelegationViewSet,
 )
 
 
 router = DefaultRouter()
 router.register(r"azure", AzureAuthViewSet, basename="azure")
 router.register(r"auth", AuthViewSet, basename="auth")
-# makes new url admin
 router.register(r"admin", AdminDashboardViewSet, basename="admin")
 router.register(r"users", UserManagementViewSet, basename="users")
 router.register(r"forms/templates", FormTemplateViewSet, basename="form-templates")
 router.register(r"forms/submission", FormSubmissionViewSet, basename="form-submissions")
 router.register(r"forms/approvals", FormApprovalViewSet, basename="form-approvals")
+router.register(r"organization/units", OrganizationalUnitViewSet, basename="org-units")
+router.register(
+    r"organization/approvers", UnitApproverViewSet, basename="unit-approvers"
+)
+router.register(
+    r"organization/delegations", ApprovalDelegationViewSet, basename="delegations"
+)
 
 
 urlpatterns = [

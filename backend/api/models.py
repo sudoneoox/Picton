@@ -1,3 +1,4 @@
+from enum import unique
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -59,6 +60,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=128, default="")
     last_name = models.CharField(max_length=128, default="")
 
+    personal_id = models.CharField(max_length=7, unique=True, null=True, blank=True)
+
     # Optional fields
     phone_number = models.CharField(max_length=15, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
@@ -91,6 +94,22 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "username"
     EMAIL_FIELD = "email"
     REQUIRED_FIELDS = ["email"]  # username is automatically required
+
+    def save(self, *args, **kwargs):
+        # Generate personal_id if not provided
+        if not self.personal_id:
+            self.personal_id = self._generate_unique_personal_id()
+        super().save(*args, **kwargs)
+
+    def _generate_unique_personal_id(self):
+        """Generate a unique 7-digit personal ID"""
+        import random
+
+        while True:
+            personal_id = str(random.randint(1000000, 9999999))
+            # check if generated id is unique
+            if not User.objects.filter(personal_id=personal_id).exists():
+                return personal_id
 
     def __str__(self):
         return self.username
@@ -180,17 +199,24 @@ class FormApprovalWorkflow(models.Model):
 
 class OrganizationalUnit(models.Model):
     """Represents a unit in the organizational hierarchy"""
+
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True)
-    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='sub_units')
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="sub_units",
+    )
     level = models.PositiveIntegerField(help_text="Hierarchy level (0 for top level)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ['level', 'name']
+        ordering = ["level", "name"]
 
     def __str__(self):
         return f"{self.name} ({self.code})"
@@ -204,26 +230,40 @@ class OrganizationalUnit(models.Model):
             path.append(current)
         return list(reversed(path))
 
+
 class UnitApprover(models.Model):
     """Links approvers to organizational units with specific roles"""
-    unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE, related_name='approvers')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unit_approver_roles')
+
+    unit = models.ForeignKey(
+        OrganizationalUnit, on_delete=models.CASCADE, related_name="approvers"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="unit_approver_roles"
+    )
     role = models.CharField(max_length=50)
-    is_organization_wide = models.BooleanField(default=False, help_text="Can approve across all units")
+    is_organization_wide = models.BooleanField(
+        default=False, help_text="Can approve across all units"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ['unit', 'user', 'role']
+        unique_together = ["unit", "user", "role"]
 
     def __str__(self):
         return f"{self.user.username} - {self.role} in {self.unit.name}"
 
+
 class ApprovalDelegation(models.Model):
     """Tracks temporary delegations of approval authority"""
-    delegator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='delegated_from')
-    delegate = models.ForeignKey(User, on_delete=models.CASCADE, related_name='delegated_to')
+
+    delegator = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="delegated_from"
+    )
+    delegate = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="delegated_to"
+    )
     unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
@@ -232,10 +272,48 @@ class ApprovalDelegation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-start_date']
+        ordering = ["-start_date"]
 
     def __str__(self):
-        return f"{self.delegator.username} -> {self.delegate.username} ({self.unit.name})"
+        return (
+            f"{self.delegator.username} -> {self.delegate.username} ({self.unit.name})"
+        )
+
+    @classmethod
+    def get_active_delegation(cls, user, unit=None):
+        """
+        Check if a user has delegated their approval authority
+        Returns the active delegate user or None
+        """
+        from django.utils import timezone
+
+        query = cls.objects.filter(
+            delegator=user,
+            is_active=True,
+            start_date__lte=timezone.now(),
+            end_date__gte=timezone.now(),
+        )
+
+        if unit:
+            query = query.filter(unit=unit)
+
+        delegation = query.first()
+        return delegation.delegate if delegation else None
+
+    @classmethod
+    def get_active_delegations_for_user(cls, user):
+        """
+        Get all active delegations where this user is the delegate
+        """
+        from django.utils import timezone
+
+        return cls.objects.filter(
+            delegate=user,
+            is_active=True,
+            start_date__lte=timezone.now(),
+            end_date__gte=timezone.now(),
+        ).select_related("delegator", "unit")
+
 
 class FormSubmission(models.Model):
     """Stores submitted form data"""
@@ -278,7 +356,13 @@ class FormSubmission(models.Model):
     )
 
     # Add new field for organizational unit
-    unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE, related_name='form_submissions', null=True, blank=True)
+    unit = models.ForeignKey(
+        OrganizationalUnit,
+        on_delete=models.CASCADE,
+        related_name="form_submissions",
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return f"{self.form_template.name} - {self.submitter.username} ({self.status})"
@@ -340,11 +424,11 @@ class FormApproval(models.Model):
 
     # Add delegation tracking
     delegated_by = models.ForeignKey(
-        User, 
-        null=True, 
-        blank=True, 
-        on_delete=models.SET_NULL, 
-        related_name='delegated_approvals'
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="delegated_approvals",
     )
 
     class Meta:
@@ -352,6 +436,37 @@ class FormApproval(models.Model):
 
     def __str__(self):
         return f"{self.form_submission} - {self.approver.username} ({self.decision})"
+
+    @classmethod
+    def create_or_reassign(cls, form_submission, approver, step_number):
+        """
+        Creates a new approval or reassigns to the correct approver based on delegations
+        """
+        # Check if the approver has delegated their authority
+        delegate = ApprovalDelegation.get_active_delegation(
+            approver, form_submission.unit
+        )
+
+        # If there's a delegation, assign to delegate instead
+        actual_approver = delegate if delegate else approver
+
+        # Create or get the approval
+        approval, created = cls.objects.get_or_create(
+            form_submission=form_submission,
+            step_number=step_number,
+            defaults={
+                "approver": actual_approver,
+                "delegated_by": approver if delegate else None,
+            },
+        )
+
+        # If approval exists but delegation changed, update it
+        if not created and delegate and approval.approver != delegate:
+            approval.approver = delegate
+            approval.delegated_by = approver
+            approval.save()
+
+        return approval
 
 
 class FormSubmissionIdentifier(models.Model):

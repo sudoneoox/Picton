@@ -157,7 +157,7 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
 
     @action(detail=False, methods=["GET"])
     def pending(self, request):
-        """Get all pending approvals for the current user's role"""
+        """Get all pending approvals for the current user's role including delegated ones"""
         user = request.user
         role = user.role
 
@@ -168,28 +168,47 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Find all form submissions that are pending and current step matches this user's role
-        pending_submissions = FormSubmission.objects.filter(
-            status="pending",
+        # Get units where user is an approver
+        user_units = UnitApprover.objects.filter(user=user, is_active=True).values_list(
+            "unit", flat=True
+        )
+
+        # Get units delegated to this user
+        now = timezone.now()
+        delegated_units = ApprovalDelegation.objects.filter(
+            delegate=user, is_active=True, start_date__lte=now, end_date__gte=now
+        ).values_list("unit", flat=True)
+
+        # Combine user's units with delegated units
+        all_units = list(user_units) + list(delegated_units)
+
+        # Find submissions in user's units or where user is organization-wide approver
+        is_org_wide_approver = UnitApprover.objects.filter(
+            user=user, is_organization_wide=True, is_active=True
+        ).exists()
+
+        # Find all form submissions that are pending and match this user's units
+        pending_submissions_query = FormSubmission.objects.filter(status="pending")
+
+        if not user.is_superuser and not is_org_wide_approver:
+            pending_submissions_query = pending_submissions_query.filter(
+                unit__in=all_units
+            )
+
+        # Match current step with workflow
+        pending_submissions = pending_submissions_query.filter(
             form_template__approvals_workflows__approver_role=role,
             current_step=FormApprovalWorkflow.objects.filter(
                 form_template=OuterRef("form_template"), approver_role=role
             ).values("order")[:1],
         ).distinct()
 
-        # Create approval entries if they don't exist yet
+        # Create or update approval entries
         for submission in pending_submissions:
-            # Check if an approval entry already exists for this user and submission
-            approval, created = FormApproval.objects.get_or_create(
-                form_submission=submission,
-                step_number=submission.current_step,
-                defaults={
-                    "approver": user,
-                    "decision": "",  # No decision yet
-                },
-            )
+            # Use the new method to handle delegations
+            FormApproval.create_or_reassign(submission, user, submission.current_step)
 
-        # Get all pending approvals that don't have a decision yet
+        # Get all pending approvals assigned to this user or delegated to this user
         approvals = FormApproval.objects.filter(
             form_submission__status="pending", approver=user, decision=""
         ).select_related(
