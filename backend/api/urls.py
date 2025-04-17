@@ -1,7 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.views import exception_handler
-from rest_framework.response import Response
 from .views import (
     LoginView,
     RegisterView,
