@@ -26,7 +26,19 @@ const roleConfigs = {
             permissions: ["admin.manage_form_schemas"]
           }
         ]
-      }
+      },
+      {
+        title: "Organization",
+        icon: "Building",
+        isActive: true,
+        items: [
+          {
+            id: "manage-organization",
+            title: "Organization Structure",
+            permissions: ["admin.manage_organization"]
+          }
+        ]
+      },
     ],
     dashboard: {
       defaultView: "",
@@ -36,7 +48,8 @@ const roleConfigs = {
       canEditUsers: true,
       canCreateUsers: true,
       canToggleUserStatus: true,
-      canManageFormSchemas: true
+      canManageFormSchemas: true,
+      canManageOrganization: true
     }
   },
 
@@ -59,7 +72,12 @@ const roleConfigs = {
           }
 
         ],
-      }
+      },
+      {
+        id: 'manage-delegations',
+        title: 'Manage Delegations',
+        permissions: ['staff.manage_delegations']
+      },
     ],
 
     dashboard: {
@@ -72,6 +90,7 @@ const roleConfigs = {
       canCreateUsers: false,
       canToggleUserStatus: false,
       canUpdateSignature: true,
+      canManageDelegations: true
     }
   },
 

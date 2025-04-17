@@ -32,6 +32,7 @@ const ApprovalQueue = () => {
   const { showToast } = useToast();
   const [pdfContent, setPdfContent] = useState(null);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [delegatedApprovals, setDelegatedApprovals] = useState([])
 
 
 
@@ -39,6 +40,17 @@ const ApprovalQueue = () => {
   useEffect(() => {
     fetchPendingApprovals();
     checkSignature();
+
+
+    const fetchDelegations = async () => {
+      try {
+        const delegations = await api.staff.getActiveDelegations();
+        setDelegatedApprovals(delegations.filter(d => d.delegate === user.id));
+      } catch (error) {
+        pretty_log(`Error fetching delegations: ${error}`, "ERROR")
+      }
+    }
+    fetchDelegations();
   }, []);
 
   const checkSignature = async () => {
@@ -201,6 +213,7 @@ const ApprovalQueue = () => {
             <TableRow>
               <TableHead>Form Type</TableHead>
               <TableHead>Submitter</TableHead>
+              <TableHead>Delegation</TableHead>
               <TableHead>Submission Date</TableHead>
               <TableHead>Form ID</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -211,6 +224,15 @@ const ApprovalQueue = () => {
               <TableRow key={approval.id}>
                 <TableCell className="font-medium">{approval.form_title || "Unknown Form"}</TableCell>
                 <TableCell>{approval.submitter_name || "Unknown"}</TableCell>
+                <TableCell>
+                  {approval.delegated_by ? (
+                    <span className='inline-flex items-center text-xs'>
+                      <span className='bg-blue-100 text-blue-800 rounded-full px-2 py-1 mr-1'>Delegated</span>
+                      <span>from {users.find(u => u.ui === approval.delegated_by)?.first_name || approval.delegated_by}</span>
+
+                    </span>
+                  ) : null}
+                </TableCell>
                 <TableCell>{formatDate(approval.created_at)}</TableCell>
                 <TableCell>{approval.submission_identifier || `ID: ${approval.form_submission}`}</TableCell>
                 <TableCell className="text-right">
