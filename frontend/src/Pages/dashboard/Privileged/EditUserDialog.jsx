@@ -1,183 +1,249 @@
-
-import { Button } from "@/components/ui/button"
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectGroup, SelectValue } from "@/components/ui/select"
-import { api } from "@/api/api.js"
-import { useToast } from "@/components/ToastNotification"
-import { useState } from "react"
-import { useEffect } from "react"
-import { pretty_log } from "@/api/common_util.js"
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { api } from "@/api/api";
+import { useToast } from "@/components/ToastNotification";
+import { pretty_log } from "@/api/common_util";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-export function EditUserDialog({ user, onUserUpdated }) {
+const EditUserDialog = ({ user, onUserUpdated }) => {
   const [open, setOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    role: "",
-  })
-  // multiple errors can occur so a dict is better
-  const [errors, setErrors] = useState({})
-  const { showToast } = useToast()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    username: user.username,
+    email: user.email,
+    first_name: user.first_name || "",
+    last_name: user.last_name || "",
+    role: user.role,
+  });
+  const { showToast } = useToast();
 
-
-  // initial form data when user prop changes or dialog opens
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        username: user.username || "",
-        email: user.email || "",
-        role: user.role || "",
-      })
-      // clear previous errors
-      setErrors({})
-    }
-  }, [user, open])
-
-  const handleInputChange = ((field, value) => {
-    pretty_log(`Input change on ${field}: ${value}`, "DEBUG")
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    // clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
-    }
-  })
-
-  // API request and error handling 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setErrors({})
-
     try {
-      const updatedUser = await api.admin.updateUser(user.id, formData);
-
-      pretty_log(`UpdateUser: Sent Data To API ${user.id} ${formData}`, "DEBUG")
-
+      const response = await api.admin.updateUser(user.id, formData);
       showToast({ message: "User updated successfully" }, "success");
-
-
-      // Close dialog if success and notify parent component
+      onUserUpdated(response);
       setOpen(false);
-      if (onUserUpdated) {
-        onUserUpdated(updatedUser);
-      }
     } catch (error) {
-      console.error("Error updating user:", error);
+      pretty_log(`Error updating user: ${error}`, "ERROR");
+      showToast({ error: error.message || "Failed to update user" }, "error");
+    }
+  };
 
-      // Check if the error response contains field-specific errors
-      if (error.errors && typeof error.errors === 'object') {
-        setErrors(error.errors);
-        // Show the first error in a toast
-        const firstErrorField = Object.keys(error.errors)[0];
-        const firstErrorMessage = error.errors[firstErrorField][0];
+  const handleDelete = async () => {
+    try {
+      await api.admin.deleteUser(user.id);
+      showToast({ message: "User deleted successfully" }, "success");
+      setDeleteDialogOpen(false);
+      setTimeout(() => {
+        setOpen(false);
+        if (onUserUpdated) {
+          onUserUpdated({ ...user, deleted: true });
+        }
+      }, 100);
+    } catch (error) {
+      pretty_log(`Error deleting user: ${error}`, "ERROR");
+      const errorMessage = error.message || "Failed to delete user";
+      
+      if (errorMessage.includes("superuser")) {
         showToast(
-          { error: firstErrorMessage },
+          { error: "Cannot delete superuser accounts" },
           "error",
-          "Validation Error"
+          "Permission Denied"
+        );
+      } else if (errorMessage.includes("own account")) {
+        showToast(
+          { error: "You cannot delete your own account" },
+          "error",
+          "Permission Denied"
         );
       } else {
-        // Generic error handling
         showToast(
-          { error: error.message || "Failed to update user" },
+          { error: errorMessage },
           "error",
           "Error"
         );
       }
+    }
+  };
 
-      // IMPORTANT: don't close the dialog here, to allow the user to fix the errors
-    } finally {
-      setIsSubmitting(false);
+  const handleOpenChange = (newOpen) => {
+    if (!newOpen) {
+      if (!deleteDialogOpen) {
+        setOpen(false);
+      }
+    } else {
+      setOpen(true);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Edit</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Edit profile</DialogTitle>
-          <DialogDescription>
-            Make changes to the user here. Click Save when finished
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="username" className="text-right">
-                Username
-              </Label>
-              <div className="col-span-3">
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+          >
+            Edit
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Make changes to the user's information below.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="username" className="text-right">
+                  Username
+                </Label>
                 <Input
                   id="username"
                   value={formData.username}
-                  onChange={(e) => handleInputChange("username", e.target.value)}
-                  className={`${errors.username ? "border-red-500" : ""}`}
+                  onChange={(e) =>
+                    setFormData({ ...formData, username: e.target.value })
+                  }
+                  className="col-span-3"
                 />
-                {errors.username && (
-                  <p className="text-red-500 text-sm mt-1">{errors.username[0]}</p>
-                )}
-              </div>            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <div className="col-span-3">
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className={`${errors.email ? "border-red-500" : ""}`}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  className="col-span-3"
                 />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email[0]}</p>
-                )}
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="first_name" className="text-right">
+                  First Name
+                </Label>
+                <Input
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, first_name: e.target.value })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="last_name" className="text-right">
+                  Last Name
+                </Label>
+                <Input
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, last_name: e.target.value })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="role" className="text-right">
+                  Role
+                </Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, role: value })
+                  }
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="student">Student</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="role" className="text-right">
-              Role
-            </Label>
-            <div className="col-span-3">
-              <Select
-                id="role"
-                // value={formData.role}
-                onValueChange={(value) => handleInputChange('role', value)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue value={formData.role} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="admin"> Admin </SelectItem>
-                    <SelectItem value="staff"> Staff </SelectItem>
-                    <SelectItem value="student"> Student </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="pt-5">
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save changes"}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
+            <DialogFooter className="flex justify-between">
+              <div className="flex gap-2">
+                <Button type="submit">Save Changes</Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  Delete User
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-export default EditUserDialog
+      <AlertDialog 
+        open={deleteDialogOpen} 
+        onOpenChange={setDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user
+              account and remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+};
+
+export default EditUserDialog;

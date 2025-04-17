@@ -433,25 +433,52 @@ class FormPDFGenerator:
             with open(tex_file, "w") as f:
                 f.write(content)
 
-            # Run pdflatex
+            # Run pdflatex with better error handling
             try:
-                subprocess.run(
+                result = subprocess.run(
                     ["pdflatex", "-interaction=nonstopmode", tex_file],
                     cwd=temp_dir,
-                    check=True,
                     capture_output=True,
+                    text=True,  # Get output as text for easier logging
                 )
-            except subprocess.CalledProcessError as e:
-                pretty_print(f"Error compiling LaTeX: {e.stderr.decode()}", "ERROR")
-                raise
 
-            # Read the generated PDF
-            pdf_file = os.path.join(temp_dir, "document.pdf")
-            with open(pdf_file, "rb") as f:
-                pdf_content = f.read()
+                # Check if the compilation was successful
+                if result.returncode != 0:
+                    # Log detailed error output to help with debugging
+                    pretty_print(
+                        f"LaTeX compile error. Return code: {result.returncode}",
+                        "ERROR",
+                    )
+                    pretty_print(
+                        f"LaTeX stderr: {result.stderr[:500]}", "ERROR"
+                    )  # Log first 500 chars of error
 
-            # Create a ContentFile from the PDF content
-            return ContentFile(pdf_content)
+                    # Save the problematic LaTeX file for debugging if DEBUG_PDF is enabled
+                    if self.DEBUG_PDF:
+                        debug_file = os.path.join(settings.BASE_DIR, "debug_latex.tex")
+                        with open(debug_file, "w") as f:
+                            f.write(content)
+                        pretty_print(f"Saved problematic LaTeX to {debug_file}", "INFO")
+
+                    # Check if PDF was still generated despite errors
+                    pdf_file_path = os.path.join(temp_dir, "document.pdf")
+                    if not os.path.exists(pdf_file_path):
+                        pretty_print("PDF file was not generated", "ERROR")
+                        return None  # Return None instead of raising an exception
+
+                # Read the generated PDF
+                pdf_file_path = os.path.join(temp_dir, "document.pdf")
+                if os.path.exists(pdf_file_path):
+                    with open(pdf_file_path, "rb") as f:
+                        pdf_content = f.read()
+                    return ContentFile(pdf_content)
+                else:
+                    pretty_print("PDF file was not generated", "ERROR")
+                    return None
+
+            except Exception as e:
+                pretty_print(f"Exception during LaTeX compilation: {str(e)}", "ERROR")
+                return None
 
     def _format_phone_number(self, phone_number):
         """Format phone number for display"""

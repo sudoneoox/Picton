@@ -4,6 +4,7 @@ from django.conf import settings
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from utils import MethodNameMixin
 from utils.prettyPrint import pretty_print
 
@@ -111,3 +112,15 @@ class FormTemplateViewSet(viewsets.ModelViewSet, MethodNameMixin):
         if self.action in ["create", "update", "partial_update", "destroy"]:
             self.permission_classes = [IsAdminUser]
         return super().get_permissions()
+
+    @action(detail=True, methods=["patch"])
+    def toggle_status(self, request, pk=None):
+        """Toggle form template active status"""
+        template = self.get_object()
+        pretty_print(f"Toggling Form Template Status for {template.id}", "DEBUG")
+
+        template.is_active = not template.is_active
+        template.save()
+        return Response(
+            {"id": template.id, "name": template.name, "is_active": template.is_active}
+        )
