@@ -96,7 +96,6 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
     fetchData();
   }, [activeView]);
 
-  // TODO: implement in frontend API and backend
   const handleToggleStatus = async (userId) => {
     try {
       // check permission before allowing status toggle
