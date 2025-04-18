@@ -34,7 +34,7 @@ const UserDataTable = ({ userData = [], onToggleStatus, canToggleStatus = true, 
   const [currentPage, setCurrentPage] = useState(1);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  const rowsPerPage = 10; // Increased from 5 to show more users per page
+  const rowsPerPage = 5;
 
   // Ensure userData is an array
   const dataArray = Array.isArray(userData) ? userData : [];

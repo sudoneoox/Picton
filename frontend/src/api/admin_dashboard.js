@@ -84,11 +84,11 @@ export const admin = {
     } catch (error) {
       // Enhanced error handling for validation errors
       const errorObj = new Error(error.message || "Failed to update user");
-      
+
       if (error.errors) {
         errorObj.errors = error.errors;  // Attach validation details
       }
-      
+
       pretty_log(`Update error (${userId}): ${error.message}`, "ERROR");
       throw errorObj;
     }
@@ -272,6 +272,158 @@ export const admin = {
     } catch (error) {
       pretty_log(`Delete user error (${userId}): ${error.message}`, "ERROR");
       throw new Error(error.message || "Failed to delete user");
+    }
+  },
+
+  /**
+   * Get all organizational units
+   * @returns {Promise<Array>} List of organizational unit objects
+   */
+  async getOrganizationalUnits() {
+    try {
+      return await securedFetch(`${API_BASE_URL}/organization/units/`, {
+        method: "GET",
+      });
+    } catch (error) {
+      pretty_log(`Error fetching organizational units: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to fetch organizational units");
+    }
+  },
+
+  /**
+   * Create a new organizational unit
+   * @param {Object} unitData - Unit details
+   * @returns {Promise<Object>} Created unit data
+   */
+  async createOrganizationalUnit(unitData) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/organization/units/`, {
+        method: "POST",
+        body: JSON.stringify(unitData),
+      });
+    } catch (error) {
+      pretty_log(`Error creating organizational unit: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to create organizational unit");
+    }
+  },
+
+  /**
+   * Update an organizational unit
+   * @param {string} unitId - ID of the unit to update
+   * @param {Object} unitData - Updated unit data
+   * @returns {Promise<Object>} Updated unit data
+   */
+  async updateOrganizationalUnit(unitId, unitData) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/organization/units/${unitId}/`, {
+        method: "PATCH",
+        body: JSON.stringify(unitData),
+      });
+    } catch (error) {
+      pretty_log(`Error updating organizational unit: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to update organizational unit");
+    }
+  },
+
+  /**
+   * Delete an organizational unit
+   * @param {string} unitId - ID of the unit to delete
+   * @returns {Promise<boolean>} Success status
+   */
+  async deleteOrganizationalUnit(unitId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/organization/units/${unitId}/`, {
+        method: "DELETE",
+        credentials: 'include',
+        headers: {
+          'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete unit: ${response.status}`);
+      }
+
+      return response.status === 204 ? true : await response.json();
+    } catch (error) {
+      pretty_log(`Error deleting organizational unit: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to delete organizational unit");
+    }
+  },
+
+  /**
+   * Get all unit approvers
+   * @returns {Promise<Array>} List of unit approver objects
+   */
+  async getUnitApprovers() {
+    try {
+      return await securedFetch(`${API_BASE_URL}/organization/approvers/`, {
+        method: "GET",
+      });
+    } catch (error) {
+      pretty_log(`Error fetching unit approvers: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to fetch unit approvers");
+    }
+  },
+
+  /**
+   * Create a new unit approver
+   * @param {Object} approverData - Approver details
+   * @returns {Promise<Object>} Created approver data
+   */
+  async createUnitApprover(approverData) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/organization/approvers/`, {
+        method: "POST",
+        body: JSON.stringify(approverData),
+      });
+    } catch (error) {
+      pretty_log(`Error creating unit approver: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to create unit approver");
+    }
+  },
+
+  /**
+   * Update a unit approver
+   * @param {string} approverId - ID of the approver to update
+   * @param {Object} approverData - Updated approver data
+   * @returns {Promise<Object>} Updated approver data
+   */
+  async updateUnitApprover(approverId, approverData) {
+    try {
+      return await securedFetch(`${API_BASE_URL}/organization/approvers/${approverId}/`, {
+        method: "PATCH",
+        body: JSON.stringify(approverData),
+      });
+    } catch (error) {
+      pretty_log(`Error updating unit approver: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to update unit approver");
+    }
+  },
+
+  /**
+   * Delete a unit approver
+   * @param {string} approverId - ID of the approver to delete
+   * @returns {Promise<boolean>} Success status
+   */
+  async deleteUnitApprover(approverId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/organization/approvers/${approverId}/`, {
+        method: "DELETE",
+        credentials: 'include',
+        headers: {
+          'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete approver: ${response.status}`);
+      }
+
+      return response.status === 204 ? true : await response.json();
+    } catch (error) {
+      pretty_log(`Error deleting unit approver: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to delete unit approver");
     }
   },
 };

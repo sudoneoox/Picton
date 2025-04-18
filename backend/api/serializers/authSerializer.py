@@ -4,7 +4,7 @@ from rest_framework import serializers
 class LoginSerializer(serializers.Serializer):
     """Serializer for login endpoint validation"""
 
-    username = serializers.CharField(required=True)
+    personal_id = serializers.CharField(required=True)
     password = serializers.CharField(required=True)
 
 

@@ -6,7 +6,7 @@
  */
 import { API_BASE_URL } from "@/api/common_util";
 import { securedFetch } from "./http";
-import { pretty_log } from "./common_util";
+import { pretty_log, getCSRFToken } from "./common_util";
 
 export const commonAPI = {
   /**
@@ -17,6 +17,11 @@ export const commonAPI = {
     try {
       const data = await securedFetch(`${API_BASE_URL}/signature/check/`, {
         method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCSRFToken(),
+        },
         body: JSON.stringify({}),
       });
       pretty_log("Signature check successful", "DEBUG");
@@ -36,11 +41,12 @@ export const commonAPI = {
     try {
       const data = await securedFetch(`${API_BASE_URL}/signature/upload/`, {
         method: "POST",
-        body: formData,
+        credentials: "include",
         headers: {
-          // Remove Content-Type header to let browser set it with boundary
-          'Content-Type': null
-        }
+          'Content-Type': null,
+          "X-CSRFToken": getCSRFToken(),
+        },
+        body: formData,
       });
       pretty_log("Signature upload successful", "DEBUG");
       return data;

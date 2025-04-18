@@ -58,5 +58,91 @@ export const staff = {
       pretty_log(`Error rejecting form: ${error.message}`, "ERROR");
       throw new Error(error.message || "Failed to reject form");
     }
+  },
+
+  /**
+   * Get all active delegations for the current user
+   * @returns {Promise<Array>} List of delegation objects
+   */
+  async getActiveDelegations() {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/organization/delegations/active/`, {
+        method: "GET",
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Error fetching active delegations: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to fetch active delegations");
+    }
+  },
+
+  /**
+   * Create a new delegation
+   * @param {Object} delegationData - Delegation details
+   * @returns {Promise<Object>} Created delegation data
+   */
+  async createDelegation(delegationData) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/organization/delegations/`, {
+        method: "POST",
+        body: JSON.stringify(delegationData),
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Error creating delegation: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to create delegation");
+    }
+  },
+
+  /**
+   * Update a delegation
+   * @param {string} delegationId - ID of the delegation to update
+   * @param {Object} delegationData - Updated delegation data
+   * @returns {Promise<Object>} Updated delegation data
+   */
+  async updateDelegation(delegationId, delegationData) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/organization/delegations/${delegationId}/`, {
+        method: "PATCH",
+        body: JSON.stringify(delegationData),
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Error updating delegation: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to update delegation");
+    }
+  },
+
+  /**
+   * Cancel a delegation
+   * @param {string} delegationId - ID of the delegation to cancel
+   * @returns {Promise<Object>} Updated delegation data
+   */
+  async cancelDelegation(delegationId) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/organization/delegations/${delegationId}/cancel/`, {
+        method: "POST",
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Error canceling delegation: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to cancel delegation");
+    }
+  },
+
+  /**
+   * Get units where the current user is an approver
+   * @returns {Promise<Array>} List of unit objects
+   */
+  async getMyUnits() {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/organization/approvers/my_units/`, {
+        method: "GET",
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Error fetching my units: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to fetch units");
+    }
   }
 };

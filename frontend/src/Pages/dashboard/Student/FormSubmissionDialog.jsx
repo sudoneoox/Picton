@@ -15,12 +15,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { pretty_log } from "@/api/common_util";
 import { api } from "@/api/api.js";
 import { useToast } from "@/components/ToastNotification";
+import { initial } from "lodash";
 
 const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
   const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [units, setUnits] = useState([]);
   const [previewPdf, setPreviewPdf] = useState(null);
 
   // Reset form when dialog opens/closes or template changes
@@ -57,6 +59,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
         }
       });
 
+
       // Add current year as default for year fields
       if ('year' in initialData && !initialData.year) {
         initialData.year = new Date().getFullYear().toString();
@@ -65,8 +68,19 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
         initialData.withdrawal_year = new Date().getFullYear().toString();
       }
 
+      initialData.unit = "";
       setFormData(initialData);
     }
+
+    const fetchUnits = async () => {
+      try {
+        const unitsData = await api.admin.getOrganizationalUnits();
+        setUnits(unitsData.filter(unit => unit.is_active));
+      } catch (error) {
+        pretty_log(`Error fetching organizational units: ${error}`, "ERROR");
+      }
+    }
+    fetchUnits()
   }, [isOpen, template]);
 
   const handleInputChange = (field, value) => {
@@ -114,16 +128,16 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
   const handleNextStep = () => {
     // Validate required fields before proceeding
     if (!validateRequiredFields()) {
-            showToast({ error: "Please fill in all required fields" }, "error");
-            return;
+      showToast({ error: "Please fill in all required fields" }, "error");
+      return;
     }
 
     // If we're on step 1, generate PDF preview
     if (currentStep === 1) {
-        handleGeneratePreview();
-      }
+      handleGeneratePreview();
+    }
 
-      setCurrentStep(currentStep + 1);
+    setCurrentStep(currentStep + 1);
   };
 
   const validateRequiredFields = () => {
@@ -143,6 +157,11 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
     // Additional validation for special cases
     if (formData.petition_purpose === "other" && !formData.petition_explanation) {
       showToast({ error: "Please provide an explanation for your petition" }, "error");
+      return false;
+    }
+
+    if (!formData.unit) {
+      showToast({ error: 'Please select an organizational unit' }, 'error');
       return false;
     }
 
@@ -166,7 +185,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
       const requestData = {
         form_template: {
           form_template: template.id,
-        form_data: formData
+          form_data: formData
         }
       };
 
@@ -217,13 +236,48 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
     }
   };
 
+
+  const renderUnitSelection = () => {
+    return (
+      <div className="grid grid-cols-1 gap-4 mb-4">
+        <div>
+          <Label htmlFor="unit-selection">
+            Organizational Unit
+            <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={formData.unit?.toString() || ""}
+            onValueChange={(value) => setFormData({
+              ...formData,
+              unit: value ? parseInt(value) : ""
+            })}
+          >
+            <SelectTrigger id="unit-selection" className="w-full">
+              <SelectValue placeholder="Select the organizational unit" />
+            </SelectTrigger>
+            <SelectContent>
+              {units.map((unit) => (
+                <SelectItem key={unit.id} value={unit.id.toString()}>
+                  {unit.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">
+            Select the organizational unit this form is being submitted to
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   // Render form fields dynamically based on schema
   const renderFormFields = () => {
     if (!template || !template.field_schema || !template.field_schema.fields) {
       return <p>No form schema available</p>;
     }
 
-        return (
+    return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
         {template.field_schema.fields.map((field, index) => {
           // Skip hidden fields
@@ -238,7 +292,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
             </div>
           );
         })}
-          </div>
+      </div>
     );
   };
 
@@ -289,7 +343,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
               {field.label}
               {field.required && <span className="text-red-500">*</span>}
             </Label>
-                <RadioGroup
+            <RadioGroup
               value={formData[field.name] || ''}
               onValueChange={(value) => handleInputChange(field.name, value)}
               className="flex flex-wrap gap-2 mt-2"
@@ -306,7 +360,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
                   </div>
                 );
               })}
-                </RadioGroup>
+            </RadioGroup>
           </>
         );
 
@@ -315,7 +369,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
           <>
             <div className="border-t pt-4 mt-2">
               <h3 className="font-medium mb-2">{field.label}</h3>
-                <div className="space-y-4">
+              <div className="space-y-4">
                 {field.subfields.map((subfield) => (
                   <div key={subfield.name} className="flex space-x-2">
                     <Checkbox
@@ -389,6 +443,7 @@ const FormSubmissionDialog = ({ isOpen, onClose, template }) => {
               </DialogDescription>
             </DialogHeader>
 
+            {renderUnitSelection()}
             {renderFormFields()}
 
             <DialogFooter>
