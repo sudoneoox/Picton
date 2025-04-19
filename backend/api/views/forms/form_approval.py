@@ -224,7 +224,7 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
 
 class FormApprovalWorkflowViewSet(viewsets.ModelViewSet):
     """
-    CRUD API for managing approval worflow steps.
+    CRUD API for managing approval workflow steps.
     -list/retrieve: any authenticated user
     -create/update/delete: admin only
     """
