@@ -5,7 +5,7 @@ from django.contrib.auth.models import (
 )
 
 from django.db import models
-from models import RoleChoices, BaseModel
+from .ModelConstants import RoleChoices, BaseModel
 from utils import signature_upload_path
 
 
