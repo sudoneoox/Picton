@@ -1,14 +1,13 @@
 from django.db import models
-from models import (
-    ApprovalDelegation,
-    OrganizationalUnit,
-    User,
-    RoleChoices,
-    FormStatusChoices,
-    BaseModel,
-)
 from django.conf import settings
 import os
+
+from .ModelConstants import RoleChoices, FormStatusChoices, BaseModel
+from .OrganizationalModels import (
+    OrganizationalUnit,
+    ApprovalDelegation,
+)
+from .UserModel import User
 
 
 class FormTemplate(BaseModel, models.Model):
