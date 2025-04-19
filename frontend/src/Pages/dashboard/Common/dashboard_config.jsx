@@ -24,6 +24,11 @@ const roleConfigs = {
             id: "manage-form-schemas",
             title: "Manage Form Templates",
             permissions: ["admin.manage_form_schemas"]
+          },
+          {
+            id: "workflow-designer",
+            title: "Workflow Designer",
+            permissions: ["admin.manage_form_workflows"]
           }
         ]
       },
@@ -49,7 +54,8 @@ const roleConfigs = {
       canCreateUsers: true,
       canToggleUserStatus: true,
       canManageFormSchemas: true,
-      canManageOrganization: true
+      canManageOrganization: true,
+      canManageFormWorkflows: true
     }
   },
 
