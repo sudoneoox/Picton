@@ -1,5 +1,6 @@
 from django.db import models
-from models import User, BaseModel
+from .UserModel import User
+from .ModelConstants import BaseModel
 
 
 class OrganizationalUnit(BaseModel, models.Model):
