@@ -19,7 +19,6 @@ from .views import (
     ApprovalDelegationViewSet,
 )
 
-from .views.forms.form_approval import FormApprovalViewSet
 from .views.forms.form_approval import FormApprovalWorkflowViewSet
 
 
