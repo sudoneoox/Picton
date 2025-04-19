@@ -19,6 +19,9 @@ from .views import (
     ApprovalDelegationViewSet,
 )
 
+from .views.forms.form_approval import FormApprovalViewSet
+from .views.forms.form_approval import FormApprovalWorkflowViewSet
+
 
 router = DefaultRouter()
 router.register(r"azure", AzureAuthViewSet, basename="azure")
@@ -35,6 +38,7 @@ router.register(
 router.register(
     r"organization/delegations", ApprovalDelegationViewSet, basename="delegations"
 )
+router.register(r"form-approval-workflows", FormApprovalWorkflowViewSet, basename="formapprovalworkflow")
 
 
 urlpatterns = [

@@ -13,6 +13,10 @@ from ...serializers import (
     FormApprovalSerializer,
 )
 
+from rest_framework import viewsets, permissions
+from ...models import FormApprovalWorkflow
+from ...serializers.formSerializer import FormApprovalWorkflowSerializer
+
 
 class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
     """ViewSet for viewing form approvals"""
@@ -219,3 +223,17 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
 
         serializer = self.get_serializer(approvals, many=True)
         return Response(serializer.data)
+
+class FormApprovalWorkflowViewSet(viewsets.ModelViewSet):
+    """
+    CRUD API for managing approval worflow steps.
+    -list/retrieve: any authenticated user
+    -create/update/delete: admin only
+    """
+    queryset = FormApprovalWorkflow.objects.all().order_by('template', 'order')
+    serializer_class = FormApprovalWorkflowSerializer
+
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]

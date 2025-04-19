@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from utils.prettyPrint import pretty_print
 from ..models import (
     FormTemplate,
@@ -14,9 +13,31 @@ from ..models import (
 
 
 class FormApprovalWorkflowSerializer(serializers.ModelSerializer):
+    
+    """
+    Serializer for approval workflow steps, including template and unit.
+    """
+    template = serializers.PrimaryKeyRelatedField(
+        queryset = FormTemplate.objects.all(),
+        help_text = "ID of the form template this step belongs to"
+    )
+    unit = serializers.PrimaryKeyRelatedField(
+        queryset = OrganizationalUnit.objects.all(),
+        help_text = "ID of the organizational unit responsible for this step"
+    )
+
     class Meta:
         model = FormApprovalWorkflow
-        fields = ["id", "approver_role", "order"]
+        fields = ['id',
+            'template',
+            'unit',
+            'approver_role',
+            'order',
+        ]
+        read_only_fields = ['id']
+
+
+
 
 
 class FormTemplateSerializer(serializers.ModelSerializer):
