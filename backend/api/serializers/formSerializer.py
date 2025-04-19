@@ -17,7 +17,7 @@ class FormApprovalWorkflowSerializer(serializers.ModelSerializer):
     """
     Serializer for approval workflow steps, including template and unit.
     """
-    template = serializers.PrimaryKeyRelatedField(
+    form_template = serializers.PrimaryKeyRelatedField(
         queryset = FormTemplate.objects.all(),
         help_text = "ID of the form template this step belongs to"
     )
@@ -29,7 +29,7 @@ class FormApprovalWorkflowSerializer(serializers.ModelSerializer):
     class Meta:
         model = FormApprovalWorkflow
         fields = ['id',
-            'template',
+            'form_template',
             'unit',
             'approver_role',
             'order',

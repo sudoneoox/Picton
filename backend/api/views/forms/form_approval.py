@@ -1,6 +1,6 @@
 from django.db.models import OuterRef, Q
 from django.utils import timezone
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -8,13 +8,11 @@ from utils import FormPDFGenerator, MethodNameMixin
 from utils.prettyPrint import pretty_print
 
 from ...core import IsActiveUser
-from ...models import FormApproval, FormApprovalWorkflow, FormSubmission
+from ...models import FormApproval, FormApprovalWorkflow, FormSubmission, UnitApprover, ApprovalDelegation
 from ...serializers import (
     FormApprovalSerializer,
 )
 
-from rest_framework import viewsets, permissions
-from ...models import FormApprovalWorkflow
 from ...serializers.formSerializer import FormApprovalWorkflowSerializer
 
 
@@ -230,7 +228,7 @@ class FormApprovalWorkflowViewSet(viewsets.ModelViewSet):
     -list/retrieve: any authenticated user
     -create/update/delete: admin only
     """
-    queryset = FormApprovalWorkflow.objects.all().order_by('template', 'order')
+    queryset = FormApprovalWorkflow.objects.all().order_by("form_template", "order")
     serializer_class = FormApprovalWorkflowSerializer
 
     def get_permissions(self):
