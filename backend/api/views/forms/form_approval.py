@@ -1,19 +1,21 @@
 from django.db.models import OuterRef, Q
 from django.utils import timezone
-from rest_framework import status, viewsets, permissions
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from utils import FormPDFGenerator, MethodNameMixin
 from utils.prettyPrint import pretty_print
 
-from ...core import IsActiveUser
-from ...models import FormApproval, FormApprovalWorkflow, FormSubmission, UnitApprover, ApprovalDelegation
-from ...serializers import (
-    FormApprovalSerializer,
+from api.core import IsActiveUser
+from api.models import (
+    ApprovalDelegation,
+    FormApproval,
+    FormApprovalWorkflow,
+    FormSubmission,
+    UnitApprover,
 )
-
-from ...serializers.formSerializer import FormApprovalWorkflowSerializer
+from api.serializers import FormApprovalSerializer, FormApprovalWorkflowSerializer
 
 
 class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
@@ -71,11 +73,13 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
                 except:
                     identifier = f"form{submission.id}"
 
+                # BUG: THIS IS A FIXED IF VALUE WE SHOULD GET THIS FROM THE DATABASE WE HAVE MORE THAN 2 FORMS
                 template_code = (
                     "withdrawal"
                     if submission.form_template.name == "Term Withdrawal Form"
                     else "petition"
                 )
+
                 pdf_filename = f"forms/signed/{identifier}_{template_code}_approved.pdf"
                 approval.signed_pdf.save(pdf_filename, signed_pdf, save=False)
                 approval.signed_pdf_url = pdf_filename
@@ -147,8 +151,12 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
                 pdf_filename = f"forms/signed/{identifier}_{template_code}_rejected.pdf"
                 approval.signed_pdf.save(pdf_filename, signed_pdf, save=False)
                 approval.signed_pdf_url = pdf_filename
+
         except Exception as e:
-            pretty_print(f"Error generating signed PDF: {str(e)}", "ERROR")
+            pretty_print(
+                f"Error generating signed PDF in FormApproval.ViewSet.reject: {str(e)}",
+                "ERROR",
+            )
 
         approval.save()
 
@@ -221,17 +229,3 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
 
         serializer = self.get_serializer(approvals, many=True)
         return Response(serializer.data)
-
-class FormApprovalWorkflowViewSet(viewsets.ModelViewSet):
-    """
-    CRUD API for managing approval workflow steps.
-    -list/retrieve: any authenticated user
-    -create/update/delete: admin only
-    """
-    queryset = FormApprovalWorkflow.objects.all().order_by("form_template", "order")
-    serializer_class = FormApprovalWorkflowSerializer
-
-    def get_permissions(self):
-        if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            return [permissions.IsAdminUser()]
-        return [permissions.IsAuthenticated()]

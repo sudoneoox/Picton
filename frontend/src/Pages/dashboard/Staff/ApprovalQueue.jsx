@@ -213,6 +213,7 @@ const ApprovalQueue = () => {
             <TableRow>
               <TableHead>Form Type</TableHead>
               <TableHead>Submitter</TableHead>
+              <TableHead>Position</TableHead>
               <TableHead>Delegation</TableHead>
               <TableHead>Submission Date</TableHead>
               <TableHead>Form ID</TableHead>
@@ -224,6 +225,7 @@ const ApprovalQueue = () => {
               <TableRow key={approval.id}>
                 <TableCell className="font-medium">{approval.form_title || "Unknown Form"}</TableCell>
                 <TableCell>{approval.submitter_name || "Unknown"}</TableCell>
+                <TableCell>{approval.workflow?.approval_position || "Approver"}</TableCell>
                 <TableCell>
                   {approval.delegated_by ? (
                     <span className='inline-flex items-center text-xs'>
