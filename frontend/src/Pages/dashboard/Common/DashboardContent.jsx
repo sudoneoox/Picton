@@ -386,7 +386,7 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
 
         case "workflow-designer":
           // admin-only permissions check
-          if (!permissions.canManageWorkflows) {
+          if (!permissions.canManageFormWorkflows) {
             return (
               <Card>
                 <CardHeader>
