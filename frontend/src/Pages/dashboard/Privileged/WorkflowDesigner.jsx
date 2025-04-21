@@ -34,8 +34,8 @@ function SortableItem({ id, children }) {
 
 export default function WorkflowDesigner() {
   const token = localStorage.getItem("authToken");
-  const { data: templates } = useSWR(["/api/forms/templates", token], fetcher);
-  const { data: units } = useSWR(["/api/organization/units", token], fetcher);
+  const { data: templates } = useSWR(["/api/forms/templates/",    token], fetcher);
+  const { data: units }     = useSWR(["/api/organization/units/", token], fetcher);
   const { data: workflows, mutate } = useSWR(["/api/form-approval-workflows/", token], fetcher);
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -126,6 +126,12 @@ export default function WorkflowDesigner() {
           ))}
         </SelectContent>
       </Select>
+      
+      {templates && templates.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          No form templates available. Head over to Manage Form Templates to create one!
+        </p>
+      )}
 
       {selectedTemplate && (
         <Card className="w-full">
