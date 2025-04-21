@@ -384,7 +384,7 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
         }
         return <DelegationManager />;
 
-        case "workflow-designer":
+        case "approval-flow-builder":
           // admin-only permissions check
           if (!permissions.canManageFormWorkflows) {
             return (

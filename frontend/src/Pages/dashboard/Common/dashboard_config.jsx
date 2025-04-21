@@ -26,8 +26,8 @@ const roleConfigs = {
             permissions: ["admin.manage_form_schemas"]
           },
           {
-            id: "workflow-designer",
-            title: "Workflow Designer",
+            id: "approval-flow-builder",
+            title: "Approval Flow Builder",
             permissions: ["admin.manage_form_workflows"]
           }
         ]
