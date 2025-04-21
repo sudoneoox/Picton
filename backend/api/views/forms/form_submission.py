@@ -218,6 +218,10 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
             if not approval_workflows.exists():
                 # If no approval workflow, mark as approved immediately
+                pretty_print(
+                    "NO APPROVAL WORKFLOW FOUND MARKING AS APPROVED COULD BE A BUG, \n IN form_submissin.ViewSet.submit",
+                    "WARNING",
+                )
                 form_submission.status = "approved"
                 form_submission.save()
 
@@ -243,7 +247,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
             # Set form to pending approval and set current step to first approval step
             form_submission.status = "pending"
-            form_submission.current_step = approval_workflows.first().order
+            form_submission.current_step = 1
             form_submission.save()
 
             pretty_print(
@@ -256,7 +260,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 form_submission.form_template.name, form_submission
             )
 
-            # SAVE pdf with unique identifier as the filename
+            # BUG: static should get template name from database
             if pdf_file:
                 template_code = (
                     "withdrawal"
@@ -290,12 +294,11 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             return Response(
                 {
                     "status": "pending",
-                    "current_step": form_submission.current_step,
-                    "approver_role": approval_workflows.first().approver_role,
+                    "required_approvals": form_submission.required_approval_count,
                     "identifier": identifier,
                     "unit": form_submission.unit.id if form_submission.unit else None,
                     "unit_name": form_submission.unit.name
-                    if form_submission.unit
+                    if form_submission.unit_name
                     else None,
                 }
             )

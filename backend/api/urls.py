@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.views import exception_handler
-from .views import (
+from api.views import (
     LoginView,
     RegisterView,
     AzureAuthViewSet,
@@ -19,8 +19,6 @@ from .views import (
     ApprovalDelegationViewSet,
 )
 
-from .views.forms.form_approval import FormApprovalWorkflowViewSet
-
 
 router = DefaultRouter()
 router.register(r"azure", AzureAuthViewSet, basename="azure")
@@ -37,7 +35,6 @@ router.register(
 router.register(
     r"organization/delegations", ApprovalDelegationViewSet, basename="delegations"
 )
-router.register(r"form-approval-workflows", FormApprovalWorkflowViewSet, basename="formapprovalworkflow")
 
 
 urlpatterns = [

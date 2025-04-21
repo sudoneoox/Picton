@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from ...models import FormApprovalWorkflow, FormTemplate
+from api.models import FormApprovalWorkflow, FormTemplate
 
 
 class Command(BaseCommand):

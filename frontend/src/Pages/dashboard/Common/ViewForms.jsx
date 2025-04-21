@@ -138,39 +138,103 @@ const ViewForms = () => {
               {selectedForm?.template_name || "Form"} - {selectedIdentifier}
             </DialogTitle>
           </DialogHeader>
-          {loadingForm ? (
-            <div className="h-[70vh] flex items-center justify-center">
-              <p>Loading form details...</p>
-            </div>
-          ) : (
-            <div className="mt-2">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <p className="text-sm">{selectedForm && <Badge className={`${getStatusColor(selectedForm.status)}`}> Status: {selectedForm.status}</Badge>}</p>
-                  <p className="text-sm">Submitted: {selectedForm && formatDate(selectedForm.created_at)}</p>
+
+          {/* APPROVAL PROGRESS BAR */}
+          <div className="mb-1 border rounded-md p-2.5 bg-gray-50 text-gray-800">
+            <h3 className="font-medium mb-2">Approval Progress</h3>
+            <div className="space-y-2">
+              {selectedForm?.approvals?.map((approval, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div>
+                    <span className="font-medium">{approval.workflow?.approval_position || `Approver ${index + 1}`}</span>
+                    <span className="text-sm text-muted-foreground ml-2">
+                      {approval.approver_name}
+                    </span>
+                  </div>
+                  <div>
+                    {approval.decision === "approved" && (
+                      <span className="bg-green-100 text-green-800 rounded-full px-2 py-1 text-xs">
+                        Approved
+                      </span>
+                    )}
+                    {approval.decision === "rejected" && (
+                      <span className="bg-red-100 text-red-800 rounded-full px-2 py-1 text-xs">
+                        Rejected
+                      </span>
+                    )}
+                    {approval.decision === "returned" && (
+                      <span className="bg-orange-100 text-orange-800 rounded-full px-2 py-1 text-xs">
+                        Returned
+                      </span>
+                    )}
+                    {(!approval.decision || approval.decision === "") && (
+                      <span className="bg-gray-100 text-gray-800 rounded-full px-2 py-1 text-xs">
+                        Pending
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm">Current Step: {selectedForm?.current_step || "N/A"}</p>
-                  <p className="text-sm">Form ID: {selectedIdentifier || "N/A"}</p>
+              ))}
+
+              {selectedForm && (
+                <div className="mt-2 pt-2 border-t">
+                  <div className="flex justify-between items-center">
+                    <span>Progress:</span>
+                    <span>
+                      {selectedForm.completed_approval_count || 0} of {selectedForm.required_approval_count || 0} required approvals
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
+                    <div
+                      className="bg-blue-600 h-2.5 rounded-full"
+                      style={{
+                        width: `${selectedForm.completed_approval_count && selectedForm.required_approval_count ?
+                          (selectedForm.completed_approval_count / selectedForm.required_approval_count) * 100 : 0}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+
+          {
+            loadingForm ? (
+              <div className="h-[50vh] flex items-center justify-center">
+                <p>Loading form details...</p>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <p className="text-sm">{selectedForm && <Badge className={`${getStatusColor(selectedForm.status)}`}> Status: {selectedForm.status}</Badge>}</p>
+                    <p className="text-sm">Submitted: {selectedForm && formatDate(selectedForm.created_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm">Current Step: {selectedForm?.current_step || "N/A"}</p>
+                    <p className="text-sm">Form ID: {selectedIdentifier || "N/A"}</p>
+                  </div>
+                </div>
+                <div className="h-[50vh] w-auto border rounded">
+                  {selectedForm?.pdf_content ? (
+                    <iframe
+                      src={`data:application/pdf;base64,${selectedForm.pdf_content}`}
+                      className="w-full h-full"
+                      title="Form PDF"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full bg-gray-50">
+                      <p className="text-gray-500">PDF not available</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="h-[70vh] border rounded">
-                {selectedForm?.pdf_content ? (
-                  <iframe
-                    src={`data:application/pdf;base64,${selectedForm.pdf_content}`}
-                    className="w-full h-full"
-                    title="Form PDF"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full bg-gray-50">
-                    <p className="text-gray-500">PDF not available</p>
-                  </div>
-                )}
-              </div>            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+            )
+          }
+        </DialogContent >
+      </Dialog >
+    </div >
   );
 };
 
