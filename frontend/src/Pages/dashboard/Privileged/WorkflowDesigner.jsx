@@ -12,12 +12,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import useSWR from "swr";
 
-const fetcher = (url, token) =>
-  fetch(url, {
-    headers: {
-      Authorization: `Token ${token}`,
-    },
-  }).then((r) => (r.ok ? r.json() : Promise.reject(r)));
 
 function SortableItem({ id, children }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -37,13 +31,16 @@ export default function WorkflowDesigner() {
   
   const fetcher = (url) =>
     fetch(url, {
-      headers: { Authorization: 'Token ${token}' },
+      headers: { Authorization: `Token ${token}` },
     }).then((r) => (r.ok ? r.json() : Promise.reject(r)));
 
   
   const { data: templates } = useSWR("/api/forms/templates/", fetcher);
   const { data: units }     = useSWR("/api/organization/units/", fetcher);
   const { data: workflows, mutate } = useSWR("/api/forms/approvals/", fetcher);
+
+  //Log the units to debug
+  console.log("Units:", units);
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [items, setItems] = useState([]);
@@ -179,6 +176,7 @@ export default function WorkflowDesigner() {
             <DialogTitle>Add Workflow Step</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {units && units.length === 0 && (<p className="text-sm text-muted-foreground">No units available. Please add some under Organization Structure.</p>)}
             <Select value={formState.unit} onValueChange={(val) => setFormState({ ...formState, unit: val })}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Unit" />

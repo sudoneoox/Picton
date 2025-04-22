@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from utils import FormPDFGenerator, MethodNameMixin
 from utils.prettyPrint import pretty_print
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import BasePermission
 
 from ...core import IsActiveUser
 from ...models import FormApproval, FormApprovalWorkflow, FormSubmission
@@ -13,13 +15,16 @@ from ...serializers import (
     FormApprovalSerializer,
 )
 
+class IsActiveUser(BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.is_active
 
-class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
+class FormApprovalViewSet(ModelViewSet, MethodNameMixin):
     """ViewSet for viewing form approvals"""
 
     serializer_class = FormApprovalSerializer
     queryset = FormApproval.objects.all()
-    permission_classes = [IsAuthenticated, IsActiveUser]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """Filter approvals based on user role"""
