@@ -8,6 +8,9 @@ from utils import FormPDFGenerator, MethodNameMixin
 from utils.prettyPrint import pretty_print
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import BasePermission
+from api.serializers import FormApprovalWorkflowSerializer
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 from api.core import IsActiveUser
 from api.models import (
@@ -18,6 +21,23 @@ from api.models import (
     UnitApprover,
 )
 from api.serializers import FormApprovalSerializer, FormApprovalWorkflowSerializer
+
+class DebugPermission(BasePermission):
+    def has_permission(self, request, view):
+        print("[DEBUG] Permission check for:", request.user)
+        return request.user.is_authenticated  # Just return True for testing
+    
+class FormApprovalWorkflowViewSet(ModelViewSet):
+    queryset = FormApprovalWorkflow.objects.all()
+    serializer_class = FormApprovalWorkflowSerializer
+    permission_classes = [DebugPermission]
+
+    @csrf_exempt
+    def create(self, request, *args, **kwargs):
+        print("[DEBUG] User trying to create:", request.user)
+        print("[DEBUG] Data:", request.data)
+        return super().create(request, *args, **kwargs)
+
 
 class IsActiveUser(BasePermission):
     def has_permission(self, request, view):

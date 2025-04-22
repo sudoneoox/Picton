@@ -8,6 +8,7 @@ from api.views import (
     AdminDashboardViewSet,
     UserManagementViewSet,
     FormApprovalViewSet,
+    FormApprovalWorkflowViewSet,
     FormSubmissionViewSet,
     FormTemplateViewSet,
     SubmitSignatureView,
@@ -29,12 +30,10 @@ router.register(r"forms/templates", FormTemplateViewSet, basename="form-template
 router.register(r"forms/submission", FormSubmissionViewSet, basename="form-submissions")
 router.register(r"forms/approvals", FormApprovalViewSet, basename="form-approvals")
 router.register(r"organization/units", OrganizationalUnitViewSet, basename="org-units")
-router.register(
-    r"organization/approvers", UnitApproverViewSet, basename="unit-approvers"
-)
-router.register(
-    r"organization/delegations", ApprovalDelegationViewSet, basename="delegations"
-)
+router.register(r"organization/approvers", UnitApproverViewSet, basename="unit-approvers")
+router.register(r"organization/delegations", ApprovalDelegationViewSet, basename="delegations")
+router.register(r"form-approval-workflows", FormApprovalWorkflowViewSet, basename="form-approval-workflows")
+
 
 
 urlpatterns = [
