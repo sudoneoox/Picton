@@ -221,14 +221,14 @@ class FormPDFGenerator:
                     replacements[placeholder] = str(value)
 
             # BUG: Static for now but move this over to a lookup table
-            standard_posititions = [
+            standard_positions = [
                 "PROGRAM_DIRECTOR",
                 "DEPT_CHAIR",
                 "ASSOC_DEAN",
                 "VICE_PROVOST",
             ]
 
-            for position in standard_posititions:
+            for position in standard_positions:
                 replacements[f"${position}_SIGNATURE$"] = ""
                 replacements[f"${position}_NAME$"] = ""
                 replacements[f"${position}_DATE$"] = ""
