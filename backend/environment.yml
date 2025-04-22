@@ -11,14 +11,8 @@ dependencies:
   - django-cors-headers
   - pip
   - whitenoise=6.4.0
+  - wfastcgi=3.0.0
   - python-dotenv
   - colorama=0.4.6
   - drf-spectacular
   - pillow
-  - pip:
-      - django-auth-adfs
-      - social-auth-app-django==5.4.3
-      - wfastcgi==3.0.0
-
-
-
