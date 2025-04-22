@@ -14,31 +14,29 @@ from ..models import (
 
 
 class FormApprovalWorkflowSerializer(serializers.ModelSerializer):
-    
     """
     Serializer for approval workflow steps, including template and unit.
     """
+
     form_template = serializers.PrimaryKeyRelatedField(
-        queryset = FormTemplate.objects.all(),
-        help_text = "ID of the form template this step belongs to"
+        queryset=FormTemplate.objects.all(),
+        help_text="ID of the form template this step belongs to",
     )
     unit = serializers.PrimaryKeyRelatedField(
-        queryset = OrganizationalUnit.objects.all(),
-        help_text = "ID of the organizational unit responsible for this step"
+        queryset=OrganizationalUnit.objects.all(),
+        help_text="ID of the organizational unit responsible for this step",
     )
 
     class Meta:
         model = FormApprovalWorkflow
-        fields = ['id',
-            'form_template',
-            'unit',
-            'approver_role',
-            'order',
+        fields = [
+            "id",
+            "form_template",
+            "unit",
+            "approver_role",
+            "order",
         ]
-        read_only_fields = ['id']
-
-
-
+        read_only_fields = ["id"]
 
 
 class FormTemplateSerializer(serializers.ModelSerializer):
@@ -207,25 +205,31 @@ class UnitApproverSerializer(serializers.ModelSerializer):
 
 
 class ApprovalDelegationSerializer(serializers.ModelSerializer):
+    unit_name = serializers.SerializerMethodField()
     delegator_name = serializers.SerializerMethodField()
     delegate_name = serializers.SerializerMethodField()
-    unit_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ApprovalDelegation
         fields = [
             "id",
             "delegator",
-            "delegator_name",
             "delegate",
-            "delegate_name",
             "unit",
             "unit_name",
             "start_date",
             "end_date",
             "reason",
             "is_active",
-            "created_at",
+            "delegator_name",
+            "delegate_name",
+        ]
+        read_only_fields = [
+            "delegator",
+            "id",
+            "unit_name",
+            "delegator_name",
+            "delegate_name",
         ]
 
     def get_delegator_name(self, obj):

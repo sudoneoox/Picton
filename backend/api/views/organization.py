@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from django.utils import timezone
-from utils import MethodNameMixin
+from utils import MethodNameMixin, pretty_print
 
 from ..models import (
     OrganizationalUnit,
@@ -88,6 +88,33 @@ class UnitApproverViewSet(viewsets.ModelViewSet, MethodNameMixin):
         serializer = OrganizationalUnitSerializer(units, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=["GET"])
+    def role(self, request):
+        """Get the current user's approver role for a specific unit"""
+        unit_id = request.query_params.get("unit")
+        if not unit_id:
+            return Response(
+                {"error": "Unit ID is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            unit_approver = UnitApprover.objects.get(
+                user=request.user, unit_id=unit_id, is_active=True
+            )
+            return Response(
+                {
+                    "role": unit_approver.role,
+                    "unit_name": unit_approver.unit.name,
+                    "is_organization_wide": unit_approver.is_organization_wide,
+                }
+            )
+        except UnitApprover.DoesNotExist:
+            return Response(
+                {"error": "No approver role found for this unit"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
 
 class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
     """
@@ -96,6 +123,33 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     serializer_class = ApprovalDelegationSerializer
     queryset = ApprovalDelegation.objects.all()
+
+    @action(detail=True, methods=["POST"])
+    def cancel(self, request, pk=None):
+        """Cancel a delegation"""
+        try:
+            delegation = self.get_object()
+
+            # Only allow canceling by the delegator or an admin
+            if delegation.delegator != request.user and not request.user.is_superuser:
+                return Response(
+                    {"error": "You can only cancel your own delegations"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # Set delegation as inactive
+            delegation.is_active = False
+            delegation.save()
+
+            return Response(
+                {"message": "Delegation cancelled successfully", "id": delegation.id}
+            )
+        except Exception as e:
+            pretty_print(f"Error cancelling delegation: {str(e)}", "ERROR")
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     def get_permissions(self):
         # Creating delegations requires being an approver
@@ -114,9 +168,18 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
         unit_id = request.data.get("unit")
         delegate_id = request.data.get("delegate")
 
-        if not unit_id or not delegate_id:
+        # Log the incoming request data
+        pretty_print(f"Delegation creation request data: {request.data}", "DEBUG")
+
+        if not unit_id:
             return Response(
-                {"error": "Unit and delegate are required"},
+                {"error": "Unit is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not delegate_id:
+            return Response(
+                {"error": "Delegate is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

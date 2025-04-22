@@ -60,7 +60,9 @@ class FormPDFGenerator:
 
         return self._generate_form_dynamically(template_name, user, form_data)
 
-    def generate_signed_form(self, form_submission, approver, decision, comments):
+    def generate_signed_form(
+        self, form_submission, approver, decision, comments, signature_position=None
+    ):
         """
         Generate a signed version of the form with approver's signature
 
@@ -69,19 +71,38 @@ class FormPDFGenerator:
             approver: The User (staff) who is approving/rejecting
             decision: "approved" or "rejected"
             comments: Comments from the approver
+            signature_position: Position key for signature placement (PROGRAM_DIRECTOR, DEPARTMENT_CHAIR...)
 
         Returns:
             ContentFile with the signed PDF
         """
         try:
-            return self._generate_form_dynamically(
-                form_submission.form_template,
+            # Get template content based on form_submission template
+            template_name = form_submission.form_template
+
+            # Get all existing approvals for this form
+            from api.models import FormApproval
+
+            existing_approvals = FormApproval.objects.filter(
+                form_submission=form_submission, decision__in=["approved", "rejected"]
+            ).select_related("approver", "workflow")
+
+            form_data = form_submission.form_data.copy()
+
+            # Start with a base PDF generation
+            pdf_content = self._generate_form_dynamically(
+                template_name,
                 form_submission.submitter,
-                form_submission.form_data,
+                form_data,
                 approver=approver,
                 decision=decision,
                 comments=comments,
+                signature_position=signature_position,
+                existing_approvals=existing_approvals,
+                submission=form_submission,
             )
+
+            return pdf_content
         except Exception as e:
             pretty_print(f"Error generating signed form: {str(e)}", "ERROR")
             import traceback
@@ -97,6 +118,9 @@ class FormPDFGenerator:
         approver=None,
         decision=None,
         comments=None,
+        signature_position=None,
+        existing_approvals=None,
+        submission=None,
     ):
         """
         Generate a form dynamically based on the form template schema
@@ -108,6 +132,8 @@ class FormPDFGenerator:
             approver: Optional approver for signed forms
             decision: Optional decision for signed forms (approved/rejected)
             comments: Optional comments from approver
+            signature_position: Position key for signature placement
+            existing_approvals: List of existing approvals to include in the document
 
         Returns:
             A ContentFile containing the generated PDF
@@ -154,6 +180,7 @@ class FormPDFGenerator:
             }
 
             # Add student signature
+            # BUG: possible bug have to check what happens to student signature when a staff signs and returns it
             if user.signature:
                 replacements["$STUDENT_SIGNATURE$"] = self._process_signature(user)
             else:
@@ -193,7 +220,76 @@ class FormPDFGenerator:
 
                     replacements[placeholder] = str(value)
 
+            # BUG: Static for now but move this over to a lookup table
+            standard_positions = [
+                "PROGRAM_DIRECTOR",
+                "DEPT_CHAIR",
+                "ASSOC_DEAN",
+                "VICE_PROVOST",
+            ]
+
+            for position in standard_positions:
+                replacements[f"${position}_SIGNATURE$"] = ""
+                replacements[f"${position}_NAME$"] = ""
+                replacements[f"${position}_DATE$"] = ""
+
+            if existing_approvals:
+                for approval in existing_approvals:
+                    if not approval.workflow or not approval.approver:
+                        continue
+
+                    position_map = {
+                        "Graduate Studies/Program Director": "PROGRAM_DIRECTOR",
+                        "Department Chair": "DEPT_CHAIR",
+                        "Associate/Assistant Dean for Graduate Studies": "ASSOC_DEAN",
+                        "Vice Provost/Dean of the Graduate School": "VICE_PROVOST",
+                    }
+
+                    position = approval.workflow.approval_position
+                    key = position_map.get(position)
+
+                    if key:
+                        if approval.approver.signature:
+                            replacements[f"${key}_SIGNATURE$"] = (
+                                self._process_signature(approval.approver)
+                            )
+                        replacements[f"${key}_NAME$"] = (
+                            f"{approval.approver.first_name} {approval.approver.last_name}"
+                        )
+                        replacements[f"${key}_DATE$"] = (
+                            approval.decided_at.strftime("%m/%d/%Y")
+                            if approval.decided_at
+                            else ""
+                        )
+
+            # Add current approver's signature if provided
+            if approver and decision and signature_position:
+                # Set checkmarks for approval status based on position
+                if decision == "approved":
+                    replacements[f"${signature_position}_APPROVED$"] = "\\checkmark"
+                    replacements[f"${signature_position}_REJECTED$"] = "\\square"
+                else:
+                    replacements[f"${signature_position}_APPROVED$"] = "\\square"
+                    replacements[f"${signature_position}_REJECTED$"] = "\\checkmark"
+
+                # Add signature and metadata
+                if approver.signature:
+                    replacements[f"${signature_position}_SIGNATURE$"] = (
+                        self._process_signature(approver)
+                    )
+                replacements[f"${signature_position}_NAME$"] = (
+                    f"{approver.first_name} {approver.last_name}"
+                )
+                replacements[f"${signature_position}_DATE$"] = datetime.now().strftime(
+                    "%m/%d/%Y"
+                )
+                replacements[f"${signature_position}_COMMENTS$"] = (
+                    comments if comments else ""
+                )
+
             # Handle template-specific fields
+            #
+            # BUG: static remove this and shift over to a dynamic form processor
             if "Graduate Petition" in form_template.name:
                 self._process_graduate_petition_fields(form_data, replacements)
             elif "Term Withdrawal" in form_template.name:
@@ -212,8 +308,8 @@ class FormPDFGenerator:
                     replacements,
                 )
 
-            # Add approval information if this is a signed form
-            if approver and decision:
+            # Add approval information if this is a signed form and no specific position
+            if approver and decision and not signature_position:
                 # Set checkmarks for approval status
                 staff_approved = "\\checkmark" if decision == "approved" else "\\square"
                 staff_rejected = "\\checkmark" if decision == "rejected" else "\\square"
@@ -244,13 +340,20 @@ class FormPDFGenerator:
             user_id = getattr(user, "id", "0")
 
             if approver and decision:
-                # For signed forms
+                # For signed forms - fix the reference to form_submission
                 try:
-                    identifier = form_submission.submission_identifier.identifier
+                    # submission should be passed in instead of referencing an undefined variable
+                    identifier = (
+                        submission.submission_identifier.identifier
+                        if "submission" in locals()
+                        else f"form_{timestamp}"
+                    )
                 except:
-                    identifier = f"form{form_submission.id}"
+                    # Use a safer fallback that doesn't reference the undefined variable
+                    identifier = f"form_{timestamp}"
 
                 pdf_file.name = f"{identifier}_{decision}_{timestamp}.pdf"
+
             else:
                 # For regular forms
                 if "Graduate Petition" in form_template.name:
@@ -261,7 +364,6 @@ class FormPDFGenerator:
                     template_code = form_template.name.lower().replace(" ", "_")[:10]
 
                 pdf_file.name = f"{template_code}_user{user_id}_{timestamp}.pdf"
-
             return pdf_file
 
         except Exception as e:
@@ -316,6 +418,20 @@ class FormPDFGenerator:
             replacements[placeholder] = (
                 "\\checkmark" if purpose == selected_purpose else "\\square"
             )
+
+        # Initialize standard approval signature placeholders
+        replacements["$PROGRAM_DIRECTOR_SIGNATURE$"] = ""
+        replacements["$DEPT_CHAIR_SIGNATURE$"] = ""
+        replacements["$ASSOC_DEAN_SIGNATURE$"] = ""
+        replacements["$VICE_PROVOST_SIGNATURE$"] = ""
+        replacements["$PROGRAM_DIRECTOR_NAME$"] = ""
+        replacements["$DEPT_CHAIR_NAME$"] = ""
+        replacements["$ASSOC_DEAN_NAME$"] = ""
+        replacements["$VICE_PROVOST_NAME$"] = ""
+        replacements["$PROGRAM_DIRECTOR_DATE$"] = ""
+        replacements["$DEPT_CHAIR_DATE$"] = ""
+        replacements["$ASSOC_DEAN_DATE$"] = ""
+        replacements["$VICE_PROVOST_DATE$"] = ""
 
     def _process_term_withdrawal_fields(self, form_data, replacements):
         """Process specific fields for Term Withdrawal forms"""
