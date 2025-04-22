@@ -36,6 +36,17 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Search, Download, Filter, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 const DelegationManager = () => {
   const { showToast } = useToast();
@@ -44,10 +55,23 @@ const DelegationManager = () => {
   const [units, setUnits] = useState([]);
   const [users, setUsers] = useState([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({
+    status: "all", // all, active, upcoming, expired
+    unit: "all",
+  });
+  const [analytics, setAnalytics] = useState({
+    total: 0,
+    active: 0,
+    upcoming: 0,
+    expired: 0,
+    byUnit: {},
+  });
   const [formData, setFormData] = useState({
     unit: "",
     delegate: "",
-    start_date: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
+    start_date: new Date().toISOString().split('T')[0],
     end_date: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
     reason: "",
   });
@@ -55,6 +79,85 @@ const DelegationManager = () => {
   // Add state for existing delegations warning
   const [existingDelegations, setExistingDelegations] = useState([]);
   const [showExistingDelegationsWarning, setShowExistingDelegationsWarning] = useState(false);
+
+  const itemsPerPage = 10;
+
+  // Add filter function first
+  const filteredDelegations = delegations.filter(delegation => {
+    const now = new Date();
+    const startDate = new Date(delegation.start_date);
+    const endDate = new Date(delegation.end_date);
+    
+    // Search match
+    const searchMatch = 
+      delegation.delegator_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      delegation.delegate_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      delegation.unit_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      delegation.reason?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Status match
+    let statusMatch = true;
+    if (filters.status !== "all") {
+      switch (filters.status) {
+        case "active":
+          statusMatch = startDate <= now && endDate >= now;
+          break;
+        case "upcoming":
+          statusMatch = startDate > now;
+          break;
+        case "expired":
+          statusMatch = endDate < now;
+          break;
+      }
+    }
+
+    // Unit match
+    const unitMatch = filters.unit === "all" || delegation.unit.toString() === filters.unit;
+
+    return searchMatch && statusMatch && unitMatch;
+  });
+
+  // Calculate pagination after filtered delegations
+  const totalPages = Math.ceil(filteredDelegations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentDelegations = filteredDelegations.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters]);
+
+  // Add function to update analytics
+  const updateAnalytics = (delegationsData) => {
+    const now = new Date();
+    const stats = {
+      total: delegationsData.length,
+      active: 0,
+      upcoming: 0,
+      expired: 0,
+      byUnit: {},
+    };
+
+    delegationsData.forEach(delegation => {
+      const startDate = new Date(delegation.start_date);
+      const endDate = new Date(delegation.end_date);
+
+      if (endDate < now) {
+        stats.expired++;
+      } else if (startDate > now) {
+        stats.upcoming++;
+      } else {
+        stats.active++;
+      }
+
+      // Count by unit
+      const unitName = delegation.unit_name || 'Unknown Unit';
+      stats.byUnit[unitName] = (stats.byUnit[unitName] || 0) + 1;
+    });
+
+    setAnalytics(stats);
+  };
 
   // Add a function to fetch delegations
   const fetchDelegations = async () => {
@@ -110,6 +213,7 @@ const DelegationManager = () => {
         setDelegations(delegationsData);
         setUnits(unitsData || []); // Ensure we set an empty array if null/undefined
         setUsers(usersData);
+        updateAnalytics(delegationsData);
       } catch (error) {
         pretty_log(`Error fetching delegation data: ${error}`, "ERROR");
         showToast({ error: "Failed to load delegation data" }, "error");
@@ -244,79 +348,22 @@ const DelegationManager = () => {
     return date.toLocaleDateString();
   };
 
-  // Render delegation table
-  const renderDelegationTable = () => {
-    if (loading) {
-      return (
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      );
+  // Update the DelegationStatus component
+  const DelegationStatus = ({ delegation }) => {
+    const now = new Date();
+    const startDate = new Date(delegation.start_date);
+    const endDate = new Date(delegation.end_date);
+
+    if (endDate < now) {
+      return <Badge variant="secondary">Expired</Badge>;
+    } else if (startDate > now) {
+      return <Badge variant="secondary">Upcoming</Badge>;
+    } else {
+      return <Badge variant="secondary">Active</Badge>;
     }
-
-    // Filter to show only active delegations first
-    const sortedDelegations = [...delegations].sort((a, b) => {
-      if (a.is_active && !b.is_active) return -1;
-      if (!a.is_active && b.is_active) return 1;
-      return new Date(b.start_date) - new Date(a.start_date);
-    });
-
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Unit</TableHead>
-            <TableHead>Delegated To</TableHead>
-            <TableHead>Start Date</TableHead>
-            <TableHead>End Date</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Reason</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedDelegations.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                No delegations found
-              </TableCell>
-            </TableRow>
-          ) : (
-            sortedDelegations.map((delegation) => (
-              <TableRow key={delegation.id}>
-                <TableCell className="font-medium">{delegation.unit_name}</TableCell>
-                <TableCell>{delegation.delegate_name}</TableCell>
-                <TableCell>{formatDate(delegation.start_date)}</TableCell>
-                <TableCell>{formatDate(delegation.end_date)}</TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${delegation.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {delegation.is_active ? 'Active' : 'Expired'}
-                  </span>
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate">{delegation.reason}</TableCell>
-                <TableCell className="text-right">
-                  {delegation.is_active && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteDelegation(delegation.id)}
-                    >
-                      Delete
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    );
   };
 
   // Get future dated users only for delegation
-
   const getEligibleDelegates = () => {
     return users.filter(user => {
       // Must be active user
@@ -365,15 +412,267 @@ const DelegationManager = () => {
     }).filter(Boolean);
   };
 
+  // Add export function
+  const exportToCSV = () => {
+    // Prepare CSV data
+    const headers = [
+      "Delegator",
+      "Delegate",
+      "Unit",
+      "Start Date",
+      "End Date",
+      "Status",
+      "Reason",
+      "Created At"
+    ];
+
+    const csvData = filteredDelegations.map(delegation => {
+      const now = new Date();
+      const startDate = new Date(delegation.start_date);
+      const endDate = new Date(delegation.end_date);
+      
+      let status = "Active";
+      if (endDate < now) {
+        status = "Expired";
+      } else if (startDate > now) {
+        status = "Upcoming";
+      }
+
+      return [
+        delegation.delegator_name,
+        delegation.delegate_name,
+        delegation.unit_name,
+        formatDate(delegation.start_date),
+        formatDate(delegation.end_date),
+        status,
+        delegation.reason,
+        formatDate(delegation.created_at)
+      ];
+    });
+
+    // Convert to CSV string
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => row.map(cell => 
+        typeof cell === "string" && cell.includes(",") ? 
+        `"${cell}"` : cell
+      ).join(","))
+    ].join("\n");
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `delegations-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setShowCreateDialog(true)} disabled={units.length === 0}>
+      {/* Analytics Dashboard */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Delegations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active Delegations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics.active}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Upcoming Delegations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics.upcoming}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Expired Delegations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics.expired}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="flex items-center space-x-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search delegations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select
+          value={filters.status}
+          onValueChange={(value) => setFilters({ ...filters, status: value })}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.unit}
+          onValueChange={(value) => setFilters({ ...filters, unit: value })}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by unit" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Units</SelectItem>
+            {units.map((unit) => (
+              <SelectItem key={unit.id} value={unit.id.toString()}>
+                {unit.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" onClick={exportToCSV}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+        <Button onClick={() => {
+          resetForm();
+          setShowCreateDialog(true);
+        }}>
           Create Delegation
         </Button>
       </div>
 
-      {renderDelegationTable()}
+      {/* Update the table to use filtered delegations and include status */}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Delegator</TableHead>
+            <TableHead>Delegate</TableHead>
+            <TableHead>Unit</TableHead>
+            <TableHead>Start Date</TableHead>
+            <TableHead>End Date</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Reason</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={8}>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : currentDelegations.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
+                No delegations found
+              </TableCell>
+            </TableRow>
+          ) : (
+            currentDelegations.map((delegation) => (
+              <TableRow key={delegation.id}>
+                <TableCell>{delegation.delegator_name}</TableCell>
+                <TableCell>{delegation.delegate_name}</TableCell>
+                <TableCell>{delegation.unit_name}</TableCell>
+                <TableCell>{formatDate(delegation.start_date)}</TableCell>
+                <TableCell>{formatDate(delegation.end_date)}</TableCell>
+                <TableCell>
+                  <DelegationStatus delegation={delegation} />
+                </TableCell>
+                <TableCell className="max-w-[200px] truncate" title={delegation.reason}>
+                  {delegation.reason}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteDelegation(delegation.id)}
+                  >
+                    Cancel
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {/* Add Pagination */}
+      {filteredDelegations.length > 0 && (
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-muted-foreground">
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredDelegations.length)} of {filteredDelegations.length} entries
+          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                />
+              </PaginationItem>
+              
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                // Show first page, last page, current page, and pages around current page
+                if (
+                  pageNumber === 1 ||
+                  pageNumber === totalPages ||
+                  (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(pageNumber)}
+                        isActive={currentPage === pageNumber}
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                } else if (
+                  (pageNumber === currentPage - 2 && pageNumber > 2) ||
+                  (pageNumber === currentPage + 2 && pageNumber < totalPages - 1)
+                ) {
+                  return <PaginationEllipsis key={pageNumber} />;
+                }
+                return null;
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
