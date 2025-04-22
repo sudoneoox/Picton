@@ -120,75 +120,72 @@ const UserDataTable = ({ userData = [], onToggleStatus, canToggleStatus = true, 
   }, [users, currentPage, rowsPerPage]);
 
   return (
-    <div className="flex flex-col h-full space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">User Management</h2>
+    <div className="space-y-4">
+      <div className="flex justify-end">
         <Button onClick={() => setShowCreateDialog(true)}>
           Create New User
         </Button>
       </div>
 
-      <div className="relative flex-grow min-h-[500px] border rounded-md">
-        <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">ID</TableHead>
+            <TableHead>Username</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead className="w-[150px]">Status</TableHead>
+            <TableHead className="text-right w-[100px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
             <TableRow>
-              <TableHead className="w-[100px]">ID</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="w-[150px]">Status</TableHead>
-              <TableHead className="text-right w-[100px]">Actions</TableHead>
+              <TableCell colSpan={6} className="text-center py-4">
+                Loading...
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  Loading...
+          ) : error ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-4 text-red-500">
+                {error}
+              </TableCell>
+            </TableRow>
+          ) : visibleUsers.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-4">
+                No users found
+              </TableCell>
+            </TableRow>
+          ) : (
+            visibleUsers.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.id}</TableCell>
+                <TableCell>{user.username}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.role}</TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`user-status-${user.id}`}
+                      checked={user.is_active}
+                      onCheckedChange={() => onToggleStatus(user.id)}
+                      disabled={!canToggleStatus}
+                      className="min-w-[36px]"
+                    />
+                    <Label htmlFor={`user-status-${user.id}`} className="min-w-[60px]">
+                      {user.is_active ? "Active" : "Inactive"}
+                    </Label>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <EditUserDialog user={user} onUserUpdated={handleUserUpdated} />
                 </TableCell>
               </TableRow>
-            ) : error ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4 text-red-500">
-                  {error}
-                </TableCell>
-              </TableRow>
-            ) : visibleUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  No users found
-                </TableCell>
-              </TableRow>
-            ) : (
-              visibleUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.id}</TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id={`user-status-${user.id}`}
-                        checked={user.is_active}
-                        onCheckedChange={() => onToggleStatus(user.id)}
-                        disabled={!canToggleStatus}
-                        className="min-w-[36px]"
-                      />
-                      <Label htmlFor={`user-status-${user.id}`} className="min-w-[60px]">
-                        {user.is_active ? "Active" : "Inactive"}
-                      </Label>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <EditUserDialog user={user} onUserUpdated={handleUserUpdated} />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
       {totalPages > 1 && (
         <div className="flex justify-center mt-4">

@@ -115,6 +115,42 @@ class UnitApproverViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+    def perform_create(self, serializer):
+        """Create a new unit approver with validation"""
+        try:
+            approver = serializer.save()
+            # Create history entry
+            approver.create_history('created')
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def perform_update(self, serializer):
+        """Update a unit approver with validation"""
+        try:
+            approver = serializer.save()
+            # Create history entry
+            approver.create_history('updated')
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def perform_destroy(self, instance):
+        """Delete a unit approver with validation"""
+        try:
+            # Create history entry before deletion
+            instance.create_history('deleted')
+            instance.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
     """

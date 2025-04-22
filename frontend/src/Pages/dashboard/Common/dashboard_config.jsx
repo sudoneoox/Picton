@@ -1,4 +1,5 @@
 import { pretty_log } from "@/api/common_util.js"
+import UnitApproverManager from "../Staff/UnitApproverManager";
 
 const roleConfigs = {
   admin: {
@@ -81,6 +82,11 @@ const roleConfigs = {
             id: 'manage-delegations',
             title: 'Manage Delegations',
             permissions: ['staff.manage_delegations']
+          },
+          {
+            id: 'manage-approvers',
+            title: 'Manage Approvers',
+            permissions: ['staff.manage_approvers']
           }
         ]
       },
@@ -260,6 +266,10 @@ export const initializeConfig = (userData) => {
   });
 
   return dashboardConfig;
+};
+
+export const staffDashboardComponents = {
+  'manage-approvers': UnitApproverManager,
 };
 
 export default dashboardConfig;

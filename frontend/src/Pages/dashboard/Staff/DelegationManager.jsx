@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from "@/api/api.js";
 import { pretty_log } from "@/api/common_util";
+import { useToast } from "@/components/ToastNotification";
 import {
   Card,
   CardContent,
@@ -118,8 +119,7 @@ const DelegationManager = () => {
     };
 
     fetchData();
-    fetchCurrentUser();
-  }, []);
+  }, [showToast]); // Add showToast to dependencies
 
   // Debug: Log whenever units state changes
   useEffect(() => {
@@ -326,8 +326,8 @@ const DelegationManager = () => {
       if (user.id === parseInt(formData.delegator)) return false;
 
       // Only staff or admin can be delegates
-      (user.role === "staff" || user.role === "admin")
-    );
+      return (user.role === "staff" || user.role === "admin");
+    });
   };
 
   // Update the units rendering to handle potential different data structures
@@ -367,31 +367,20 @@ const DelegationManager = () => {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Delegations</CardTitle>
-            {units.length === 0 && (
-              <CardDescription className="text-yellow-600 dark:text-yellow-400">
-                No units available for delegation. Please contact an administrator.
-              </CardDescription>
-            )}
-          </div>
-          <Button onClick={() => setShowCreateDialog(true)} disabled={units.length === 0}>
-            Create Delegation
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {renderDelegationTable()}
-        </CardContent>
-      </Card>
+      <div className="flex justify-end">
+        <Button onClick={() => setShowCreateDialog(true)} disabled={units.length === 0}>
+          Create Delegation
+        </Button>
+      </div>
+
+      {renderDelegationTable()}
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Delegation</DialogTitle>
             <DialogDescription>
-              Fill in the details below to create a new delegation. All fields marked with * are required.
+              Fill in the details to create a new delegation. All fields marked with * are required.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

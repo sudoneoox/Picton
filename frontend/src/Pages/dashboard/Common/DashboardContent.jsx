@@ -15,7 +15,7 @@ import SubmitForms from "../Student/SubmitForms";
 import ViewForms from "./ViewForms";
 import { UserProfileSettings } from "@/components/UserProfileSettings";
 import { Switch } from "@/components/ui/switch";
-import DelegationManager from "../Staff/DelegationManager";
+import UnitApproverManager from "@/Pages/dashboard/Staff/UnitApproverManager";
 
 const DashboardContent = ({ activeView, dashboardConfig }) => {
   const [data, setData] = useState([]);
@@ -387,6 +387,18 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
           )
         }
         return <OrganizationManager />;
+
+      case "manage-approvers":
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Unit Approver Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UnitApproverManager />
+            </CardContent>
+          </Card>
+        );
 
       default:
         return (
