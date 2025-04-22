@@ -1,4 +1,5 @@
 import { pretty_log } from "@/api/common_util.js"
+import UnitApproverManager from "../Staff/UnitApproverManager";
 
 const roleConfigs = {
   admin: {
@@ -70,34 +71,53 @@ const roleConfigs = {
             title: 'Update Signature',
             permissions: ['student.update_signature']
           }
-
-        ],
+        ]
       },
       {
-        title: 'Delegations',
-        icon: "UserPlus",
+        title: "Organization",
+        icon: "Building",
         isActive: true,
         items: [
           {
-            id: "manage-delegations",
-            title: "Manage Delegations",
-            permissions: ['staff.manage_delegations'],
+            id: 'manage-delegations',
+            title: 'Manage Delegations',
+            permissions: ['staff.manage_delegations']
+          },
+          {
+            id: 'manage-approvers',
+            title: 'Manage Approvers',
+            permissions: ['staff.manage_approvers']
           }
         ]
       },
+      {
+        title: "Account",
+        icon: "User",
+        isActive: true,
+        items: [
+          {
+            id: "profile",
+            title: "Profile Settings",
+            permissions: ["staff.edit_profile"]
+          }
+        ]
+      }
     ],
-
     dashboard: {
-      defaultView: "",
-      title: "Staff Dashboard",
+      defaultView: "review-forms",
+      title: "Staff Dashboard"
     },
-
     permissions: {
       canEditUsers: false,
       canCreateUsers: false,
-      canToggleUserStatus: false,
+      canToggleUserStatus: true,
       canUpdateSignature: true,
-      canManageDelegations: true
+      canManageDelegations: true,
+      staff: {
+        review_forms: true,
+        edit_profile: true,
+        manage_delegations: true
+      }
     }
   },
 
@@ -246,6 +266,10 @@ export const initializeConfig = (userData) => {
   });
 
   return dashboardConfig;
+};
+
+export const staffDashboardComponents = {
+  'manage-approvers': UnitApproverManager,
 };
 
 export default dashboardConfig;

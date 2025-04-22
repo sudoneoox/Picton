@@ -17,6 +17,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ToastNotification";
 import SignatureDialog from "@/Pages/dashboard/Common/SignatureDialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Search, Download, CheckSquare, Square, AlertCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const ApprovalQueue = () => {
   const [pendingApprovals, setPendingApprovals] = useState([]);
@@ -34,6 +45,24 @@ const ApprovalQueue = () => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [delegatedApprovals, setDelegatedApprovals] = useState([]);
   const [users, setUsers] = useState([]);
+  const [analytics, setAnalytics] = useState({
+    total: 0,
+    byFormType: {},
+    byUnit: {},
+    byPosition: {},
+    averageTimeToApproval: 0,
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    formType: "all",
+    unit: "all",
+    position: "all",
+  });
+  const [formTypes, setFormTypes] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [selectedApprovals, setSelectedApprovals] = useState(new Set());
+  const [batchActionDialogOpen, setBatchActionDialogOpen] = useState(false);
+  const [batchAction, setBatchAction] = useState(null); // 'approve' or 'reject'
 
   useEffect(() => {
     fetchPendingApprovals();
@@ -75,9 +104,8 @@ const ApprovalQueue = () => {
     try {
       setLoading(true);
       const response = await api.staff.getPendingApprovals();
-      // Add this debug log to see the actual structure
-      pretty_log(`API Response: ${JSON.stringify(response)}`, "INFO");
       setPendingApprovals(response || []);
+      updateAnalytics(response || []);
       pretty_log(`Fetched ${response?.length || 0} pending approvals`, "DEBUG");
     } catch (error) {
       pretty_log(`Error fetching pending approvals: ${error}`, "ERROR");
@@ -186,13 +214,242 @@ const ApprovalQueue = () => {
     return user ? `${user.first_name} ${user.last_name}` : delegatorId;
   };
 
+  const updateAnalytics = (approvals) => {
+    const stats = {
+      total: approvals.length,
+      byFormType: {},
+      byUnit: {},
+      byPosition: {},
+      averageTimeToApproval: 0,
+    };
+
+    approvals.forEach(approval => {
+      const formType = approval.form_title || "Unknown";
+      stats.byFormType[formType] = (stats.byFormType[formType] || 0) + 1;
+
+      const unit = approval.unit_name || "Unknown";
+      stats.byUnit[unit] = (stats.byUnit[unit] || 0) + 1;
+
+      const position = approval.workflow?.approval_position || approval.unit_role || "Unknown";
+      stats.byPosition[position] = (stats.byPosition[position] || 0) + 1;
+    });
+
+    setAnalytics(stats);
+
+    setFormTypes([...new Set(approvals.map(a => a.form_title).filter(Boolean))]);
+    setPositions([...new Set(approvals.map(a => 
+      a.workflow?.approval_position || a.unit_role
+    ).filter(Boolean))]);
+  };
+
+  const filteredApprovals = pendingApprovals.filter(approval => {
+    const searchMatch = 
+      (approval.form_title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (approval.submitter_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (approval.submission_identifier || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (approval.unit_name || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+    const formTypeMatch = filters.formType === "all" || approval.form_title === filters.formType;
+    const unitMatch = filters.unit === "all" || approval.unit_name === filters.unit;
+    const positionMatch = filters.position === "all" || 
+      (approval.workflow?.approval_position || approval.unit_role) === filters.position;
+
+    return searchMatch && formTypeMatch && unitMatch && positionMatch;
+  });
+
+  // Add batch selection functions
+  const toggleSelectAll = () => {
+    if (selectedApprovals.size === filteredApprovals.length) {
+      setSelectedApprovals(new Set());
+    } else {
+      setSelectedApprovals(new Set(filteredApprovals.map(a => a.id)));
+    }
+  };
+
+  const toggleSelectApproval = (approvalId) => {
+    const newSelected = new Set(selectedApprovals);
+    if (newSelected.has(approvalId)) {
+      newSelected.delete(approvalId);
+    } else {
+      newSelected.add(approvalId);
+    }
+    setSelectedApprovals(newSelected);
+  };
+
+  // Add batch action handlers
+  const handleBatchAction = async () => {
+    if (!selectedApprovals.size || !batchAction) return;
+
+    setIsSubmitting(true);
+    try {
+      const promises = Array.from(selectedApprovals).map(approvalId => {
+        if (batchAction === 'approve') {
+          return api.staff.approveForm(approvalId, { comments });
+        } else {
+          return api.staff.rejectForm(approvalId, { comments });
+        }
+      });
+
+      await Promise.all(promises);
+      showToast({ 
+        message: `Successfully ${batchAction}d ${selectedApprovals.size} forms` 
+      }, "success");
+      setBatchActionDialogOpen(false);
+      setSelectedApprovals(new Set());
+      fetchPendingApprovals();
+    } catch (error) {
+      pretty_log(`Error in batch ${batchAction}: ${error}`, "ERROR");
+      showToast({ 
+        error: `Failed to ${batchAction} some forms. Please try again.` 
+      }, "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Add export function
+  const handleExport = () => {
+    const exportData = filteredApprovals.map(approval => ({
+      'Form Type': approval.form_title || 'Unknown Form',
+      'Submitter': approval.submitter_name || 'Unknown',
+      'Position': approval.workflow?.approval_position || approval.unit_role || 'Approver',
+      'Unit': approval.unit_name || 'N/A',
+      'Submission Date': formatDate(approval.created_at),
+      'Form ID': approval.submission_identifier || `ID: ${approval.form_submission}`,
+      'Status': 'Pending',
+    }));
+
+    const csv = [
+      Object.keys(exportData[0]).join(','),
+      ...exportData.map(row => Object.values(row).map(value => 
+        `"${String(value).replace(/"/g, '""')}"`
+      ).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `pending_approvals_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-medium">Pending Approvals</h2>
-        <Button onClick={fetchPendingApprovals} variant="outline" size="sm">
-          Refresh
-        </Button>
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Pending</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Form Types</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{Object.keys(analytics.byFormType).length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Units</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{Object.keys(analytics.byUnit).length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Positions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{Object.keys(analytics.byPosition).length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex items-center justify-between space-x-4">
+        <div className="flex items-center flex-1 space-x-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search forms..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <Select
+            value={filters.formType}
+            onValueChange={(value) => setFilters({ ...filters, formType: value })}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Form Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {formTypes.map((type) => (
+                <SelectItem key={type} value={type}>{type}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={filters.position}
+            onValueChange={(value) => setFilters({ ...filters, position: value })}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Position" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Positions</SelectItem>
+              {positions.map((position) => (
+                <SelectItem key={position} value={position}>{position}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-2">
+          {selectedApprovals.size > 0 && (
+            <>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setBatchAction('approve');
+                  setBatchActionDialogOpen(true);
+                }}
+                disabled={!hasSignature}
+              >
+                Approve Selected ({selectedApprovals.size})
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setBatchAction('reject');
+                  setBatchActionDialogOpen(true);
+                }}
+                disabled={!hasSignature}
+              >
+                Reject Selected ({selectedApprovals.size})
+              </Button>
+            </>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={filteredApprovals.length === 0}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+          <Button onClick={fetchPendingApprovals} variant="outline" size="sm">
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {!hasSignature && (
@@ -217,15 +474,21 @@ const ApprovalQueue = () => {
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-full" />
         </div>
-      ) : pendingApprovals.length === 0 ? (
+      ) : filteredApprovals.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          <p>No pending approvals at this time.</p>
+          <p>No pending approvals match your criteria.</p>
         </div>
       ) : (
         <Table>
           <TableCaption>Forms awaiting your approval</TableCaption>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={selectedApprovals.size === filteredApprovals.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead>Form Type</TableHead>
               <TableHead>Submitter</TableHead>
               <TableHead>Position</TableHead>
@@ -236,9 +499,22 @@ const ApprovalQueue = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {pendingApprovals.map((approval) => (
+            {filteredApprovals.map((approval) => (
               <TableRow key={approval.id}>
-                <TableCell className="font-medium">{approval.form_title || "Unknown Form"}</TableCell>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedApprovals.has(approval.id)}
+                    onCheckedChange={() => toggleSelectApproval(approval.id)}
+                  />
+                </TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center space-x-2">
+                    <span>{approval.form_title || "Unknown Form"}</span>
+                    {approval.is_urgent && (
+                      <AlertCircle className="h-4 w-4 text-red-500" title="Urgent" />
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{approval.submitter_name || "Unknown"}</TableCell>
                 <TableCell>
                   {approval.workflow?.approval_position ? (
@@ -294,7 +570,6 @@ const ApprovalQueue = () => {
         </Table>
       )}
 
-      {/* View PDF Dialog */}
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] w-[90vw]">
           <DialogHeader>
@@ -317,7 +592,6 @@ const ApprovalQueue = () => {
               </div>
             </div>
 
-            {/* Now we need to fetch the PDF for viewing */}
             <div className="h-[70vh] border rounded">
               {isPdfLoading ? (
                 <div className="flex items-center justify-center h-full">
@@ -360,7 +634,6 @@ const ApprovalQueue = () => {
           </div>
         </DialogContent>
       </Dialog>
-      {/* Approve Dialog */}
       <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -399,7 +672,6 @@ const ApprovalQueue = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Reject Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -448,7 +720,51 @@ const ApprovalQueue = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Signature Dialog */}
+      <Dialog open={batchActionDialogOpen} onOpenChange={setBatchActionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {batchAction === 'approve' ? 'Approve' : 'Reject'} Multiple Forms
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="mb-4">
+              You are about to {batchAction} {selectedApprovals.size} forms.
+            </p>
+            <div className="space-y-2">
+              <label htmlFor="comments" className="text-sm font-medium">
+                Comments {batchAction === 'reject' && <span className="text-red-500">*</span>}
+              </label>
+              <Textarea
+                id="comments"
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                placeholder={`Add any comments for the ${batchAction} action${batchAction === 'reject' ? ' (required)' : ''}`}
+                rows={4}
+                required={batchAction === 'reject'}
+              />
+              {batchAction === 'reject' && !comments.trim() && (
+                <p className="text-sm text-red-500">
+                  Comments are required when rejecting forms
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBatchActionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant={batchAction === 'approve' ? 'default' : 'destructive'}
+              onClick={handleBatchAction}
+              disabled={isSubmitting || (batchAction === 'reject' && !comments.trim())}
+            >
+              {isSubmitting ? `${batchAction}ing...` : `Confirm ${batchAction}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <SignatureDialog
         isOpen={showSignatureDialog}
         onClose={() => setShowSignatureDialog(false)}

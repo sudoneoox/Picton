@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Search, Download, ChevronRight, ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const OrganizationManager = () => {
   const { showToast } = useToast();
@@ -70,6 +72,22 @@ const OrganizationManager = () => {
     is_organization_wide: false,
     is_active: true,
   });
+  const [analytics, setAnalytics] = useState({
+    totalUnits: 0,
+    activeUnits: 0,
+    totalApprovers: 0,
+    activeApprovers: 0,
+    unitsByLevel: {},
+    approversByUnit: {},
+    approversByRole: {},
+    organizationWideApprovers: 0,
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    level: "all",
+    status: "all", // active/inactive
+  });
+  const [expandedUnits, setExpandedUnits] = useState(new Set());
 
   // Fetch initial data
   useEffect(() => {
@@ -81,9 +99,9 @@ const OrganizationManager = () => {
           api.admin.getUnitApprovers(),
           api.admin.getUsers(),
         ]);
-        setUnits(unitsData);
-        setApprovers(approversData);
-        setUsers(usersData.results || usersData);
+        setUnits(unitsData || []);
+        setApprovers(approversData || []);
+        setUsers(usersData?.results || usersData || []);
       } catch (error) {
         pretty_log(`Error fetching organization data: ${error}`, "ERROR");
         showToast({ error: "Failed to load organization data" }, "error");
@@ -94,6 +112,42 @@ const OrganizationManager = () => {
 
     fetchData();
   }, []);
+
+  // Add effect to update analytics when data changes
+  useEffect(() => {
+    updateAnalytics();
+  }, [units, approvers]);
+
+  // Update analytics calculation
+  const updateAnalytics = () => {
+    const stats = {
+      totalUnits: units.length,
+      activeUnits: units.filter(u => u.is_active).length,
+      totalApprovers: approvers.length,
+      activeApprovers: approvers.filter(a => a.is_active).length,
+      unitsByLevel: {},
+      approversByUnit: {},
+      approversByRole: {},
+      organizationWideApprovers: approvers.filter(a => a.is_organization_wide).length,
+    };
+
+    // Calculate units by level
+    units.forEach(unit => {
+      stats.unitsByLevel[unit.level] = (stats.unitsByLevel[unit.level] || 0) + 1;
+    });
+
+    // Calculate approvers by unit
+    approvers.forEach(approver => {
+      if (approver.unit) {
+        stats.approversByUnit[approver.unit] = (stats.approversByUnit[approver.unit] || 0) + 1;
+      }
+      if (approver.role) {
+        stats.approversByRole[approver.role] = (stats.approversByRole[approver.role] || 0) + 1;
+      }
+    });
+
+    setAnalytics(stats);
+  };
 
   // Unit Handlers
   const handleCreateUnit = async () => {
@@ -228,6 +282,107 @@ const OrganizationManager = () => {
     });
     setApproverDialogOpen(true);
   };
+
+  // Add hierarchy helpers
+  const getUnitChildren = (unitId) => {
+    return units.filter(unit => unit.parent === unitId);
+  };
+
+  const toggleUnitExpansion = (unitId) => {
+    const newExpanded = new Set(expandedUnits);
+    if (newExpanded.has(unitId)) {
+      newExpanded.delete(unitId);
+    } else {
+      newExpanded.add(unitId);
+    }
+    setExpandedUnits(newExpanded);
+  };
+
+  // Add export functions
+  const handleExportUnits = () => {
+    const exportData = units.map(unit => ({
+      'Name': unit.name,
+      'Code': unit.code,
+      'Description': unit.description || '',
+      'Level': unit.level,
+      'Parent': units.find(u => u.id === unit.parent)?.name || 'None',
+      'Status': unit.is_active ? 'Active' : 'Inactive',
+      'Approvers': analytics.approversByUnit[unit.id] || 0,
+    }));
+
+    const csv = [
+      Object.keys(exportData[0]).join(','),
+      ...exportData.map(row => Object.values(row).map(value => 
+        `"${String(value).replace(/"/g, '""')}"`
+      ).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `organizational_units_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const handleExportApprovers = () => {
+    const exportData = approvers.map(approver => {
+      const user = users.find(u => u.id === approver.user);
+      const unit = units.find(u => u.id === approver.unit);
+      return {
+        'Name': user ? `${user.first_name} ${user.last_name}` : 'Unknown',
+        'Email': user?.email || 'Unknown',
+        'Unit': unit?.name || 'Organization-wide',
+        'Role': approver.role,
+        'Organization Wide': approver.is_organization_wide ? 'Yes' : 'No',
+        'Status': approver.is_active ? 'Active' : 'Inactive',
+      };
+    });
+
+    const csv = [
+      Object.keys(exportData[0]).join(','),
+      ...exportData.map(row => Object.values(row).map(value => 
+        `"${String(value).replace(/"/g, '""')}"`
+      ).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `unit_approvers_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  // Add filter function for units
+  const filteredUnits = units.filter(unit => {
+    const searchMatch = 
+      unit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      unit.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (unit.description || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+    const levelMatch = filters.level === "all" || unit.level.toString() === filters.level;
+    const statusMatch = filters.status === "all" || 
+      (filters.status === "active" ? unit.is_active : !unit.is_active);
+
+    return searchMatch && levelMatch && statusMatch;
+  });
+
+  // Add filter function for approvers
+  const filteredApprovers = approvers.filter(approver => {
+    const user = users.find(u => u.id === approver.user);
+    const unit = units.find(u => u.id === approver.unit);
+    
+    const searchMatch = 
+      (user?.first_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user?.last_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user?.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (unit?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      approver.role.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const statusMatch = filters.status === "all" || 
+      (filters.status === "active" ? approver.is_active : !approver.is_active);
+
+    return searchMatch && statusMatch;
+  });
 
   // Render Functions
   const renderUnitTable = () => {
@@ -396,273 +551,638 @@ const OrganizationManager = () => {
     );
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Organization Management</CardTitle>
-        <CardDescription>
-          Manage organizational units and approvers
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="units">Organizational Units</TabsTrigger>
-            <TabsTrigger value="approvers">Unit Approvers</TabsTrigger>
-          </TabsList>
-          <TabsContent value="units">{renderUnitTable()}</TabsContent>
-          <TabsContent value="approvers">{renderApproverTable()}</TabsContent>
-        </Tabs>
+  // Render analytics based on active tab
+  const renderAnalytics = () => {
+    if (activeTab === "units") {
+      return (
+        <div className="grid grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Units</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.totalUnits}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.activeUnits} active
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Organization Levels</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{Object.keys(analytics.unitsByLevel).length}</div>
+              <p className="text-xs text-muted-foreground">
+                Max level: {Math.max(...Object.keys(analytics.unitsByLevel).map(Number), 0)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Units with Approvers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {Object.keys(analytics.approversByUnit).length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {((Object.keys(analytics.approversByUnit).length / analytics.totalUnits) * 100).toFixed(1)}% coverage
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Avg. Approvers per Unit</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(analytics.totalApprovers / (analytics.totalUnits || 1)).toFixed(1)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    } else {
+      return (
+        <div className="grid grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Approvers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.totalApprovers}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.activeApprovers} active
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Unique Roles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{Object.keys(analytics.approversByRole).length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Organization-wide</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.organizationWideApprovers}</div>
+              <p className="text-xs text-muted-foreground">
+                {((analytics.organizationWideApprovers / analytics.totalApprovers) * 100).toFixed(1)}% of total
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Units Covered</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {Object.keys(analytics.approversByUnit).length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                of {analytics.totalUnits} total units
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+  };
 
-        {/* Unit Dialog */}
-        <Dialog open={unitDialogOpen} onOpenChange={setUnitDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {selectedUnit ? "Edit Organizational Unit" : "Create Organizational Unit"}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedUnit
-                  ? "Update the organizational unit details"
-                  : "Add a new organizational unit to the system"}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="unit-name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  id="unit-name"
-                  value={unitFormData.name}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, name: e.target.value })}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="unit-code" className="text-right">
-                  Code
-                </Label>
-                <Input
-                  id="unit-code"
-                  value={unitFormData.code}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, code: e.target.value })}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="unit-description" className="text-right">
-                  Description
-                </Label>
-                <Input
-                  id="unit-description"
-                  value={unitFormData.description}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, description: e.target.value })}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="unit-parent" className="text-right">
-                  Parent Unit
-                </Label>
+  return (
+    <div className="space-y-6">
+      {/* Analytics Dashboard */}
+      {renderAnalytics()}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="units">Units</TabsTrigger>
+          <TabsTrigger value="approvers">Approvers</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="units">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4 flex-1">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search units..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
                 <Select
-                  value={unitFormData.parent?.toString() || ""}
-                  onValueChange={(value) => setUnitFormData({
-                    ...unitFormData,
-                    parent: value === "none" ? null : parseInt(value),
-                    level: value === "none" ? 0 : (units.find(u => u.id === parseInt(value))?.level || 0) + 1
-                  })}
+                  value={filters.level}
+                  onValueChange={(value) => setFilters({ ...filters, level: value })}
                 >
-                  <SelectTrigger id="unit-parent" className="col-span-3">
-                    <SelectValue placeholder="Select a parent unit (optional)" />
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None (Root Unit)</SelectItem>
-                    {units
-                      .filter(u => !selectedUnit || u.id !== selectedUnit.id)
-                      .map((unit) => (
-                        <SelectItem key={unit.id} value={unit.id.toString()}>
-                          {unit.name}
-                        </SelectItem>
-                      ))}
+                    <SelectItem value="all">All Levels</SelectItem>
+                    {Object.keys(analytics.unitsByLevel).sort().map((level) => (
+                      <SelectItem key={level} value={level}>
+                        Level {level}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => setFilters({ ...filters, status: value })}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="unit-level" className="text-right">
-                  Level
-                </Label>
-                <Input
-                  id="unit-level"
-                  type="number"
-                  min="0"
-                  value={unitFormData.level}
-                  onChange={(e) => setUnitFormData({
-                    ...unitFormData,
-                    level: parseInt(e.target.value)
-                  })}
-                  className="col-span-3"
-                  disabled={unitFormData.parent !== null}
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="unit-active" className="text-right">
-                  Active
-                </Label>
-                <div className="flex items-center space-x-2 col-span-3">
-                  <Switch
-                    id="unit-active"
-                    checked={unitFormData.is_active}
-                    onCheckedChange={(checked) => setUnitFormData({
-                      ...unitFormData,
-                      is_active: checked
-                    })}
-                  />
-                  <Label htmlFor="unit-active">{unitFormData.is_active ? "Active" : "Inactive"}</Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportUnits}
+                  disabled={units.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Export
+                </Button>
+                <Button onClick={() => {
+                  resetUnitForm();
+                  setUnitDialogOpen(true);
+                }}>
+                  Add Unit
+                </Button>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setUnitDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={selectedUnit ? handleUpdateUnit : handleCreateUnit}>
-                {selectedUnit ? "Update Unit" : "Create Unit"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        {/* Approver Dialog */}
-        <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {selectedApprover ? "Edit Unit Approver" : "Create Unit Approver"}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedApprover
-                  ? "Update the unit approver details"
-                  : "Add a new approver to an organizational unit"}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="approver-unit" className="text-right">
-                  Unit
-                </Label>
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : filteredUnits.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No units match your criteria.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Level</TableHead>
+                    <TableHead>Approvers</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUnits.map((unit) => (
+                    <TableRow key={unit.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          {getUnitChildren(unit.id).length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-0 h-6 w-6"
+                              onClick={() => toggleUnitExpansion(unit.id)}
+                            >
+                              {expandedUnits.has(unit.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                          <span className="font-medium">{unit.name}</span>
+                        </div>
+                        {expandedUnits.has(unit.id) && (
+                          <div className="ml-6 mt-2 space-y-2">
+                            {getUnitChildren(unit.id).map(child => (
+                              <div key={child.id} className="flex items-center space-x-2">
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                <span>{child.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>{unit.code}</TableCell>
+                      <TableCell>Level {unit.level}</TableCell>
+                      <TableCell>{analytics.approversByUnit[unit.id] || 0}</TableCell>
+                      <TableCell>
+                        <Badge variant={unit.is_active ? "default" : "secondary"}>
+                          {unit.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditUnitDialog(unit)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteUnit(unit.id)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="approvers">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4 flex-1">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search approvers..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
                 <Select
-                  value={approverFormData.unit?.toString() || ""}
-                  onValueChange={(value) => setApproverFormData({
-                    ...approverFormData,
-                    unit: parseInt(value)
-                  })}
+                  value={filters.status}
+                  onValueChange={(value) => setFilters({ ...filters, status: value })}
                 >
-                  <SelectTrigger id="approver-unit" className="col-span-3">
-                    <SelectValue placeholder="Select a unit" />
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    {units.map((unit) => (
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportApprovers}
+                  disabled={approvers.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Export
+                </Button>
+                <Button onClick={() => {
+                  resetApproverForm();
+                  setApproverDialogOpen(true);
+                }}>
+                  Add Approver
+                </Button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : filteredApprovers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No approvers match your criteria.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Organization Wide</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredApprovers.map((approver) => {
+                    const user = users.find(u => u.id === approver.user);
+                    const unit = units.find(u => u.id === approver.unit);
+                    return (
+                      <TableRow key={approver.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {user ? `${user.first_name} ${user.last_name}` : "Unknown"}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {user?.email}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{unit?.name || "Organization-wide"}</TableCell>
+                        <TableCell>{approver.role}</TableCell>
+                        <TableCell>
+                          {approver.is_organization_wide ? "Yes" : "No"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={approver.is_active ? "default" : "secondary"}>
+                            {approver.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditApproverDialog(approver)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteApprover(approver.id)}
+                            className="text-red-500 hover:text-red-600"
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Unit Dialog */}
+      <Dialog open={unitDialogOpen} onOpenChange={setUnitDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedUnit ? "Edit Organizational Unit" : "Create Organizational Unit"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedUnit
+                ? "Update the organizational unit details"
+                : "Add a new organizational unit to the system"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="unit-name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="unit-name"
+                value={unitFormData.name}
+                onChange={(e) => setUnitFormData({ ...unitFormData, name: e.target.value })}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="unit-code" className="text-right">
+                Code
+              </Label>
+              <Input
+                id="unit-code"
+                value={unitFormData.code}
+                onChange={(e) => setUnitFormData({ ...unitFormData, code: e.target.value })}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="unit-description" className="text-right">
+                Description
+              </Label>
+              <Input
+                id="unit-description"
+                value={unitFormData.description}
+                onChange={(e) => setUnitFormData({ ...unitFormData, description: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="unit-parent" className="text-right">
+                Parent Unit
+              </Label>
+              <Select
+                value={unitFormData.parent?.toString() || ""}
+                onValueChange={(value) => setUnitFormData({
+                  ...unitFormData,
+                  parent: value === "none" ? null : parseInt(value),
+                  level: value === "none" ? 0 : (units.find(u => u.id === parseInt(value))?.level || 0) + 1
+                })}
+              >
+                <SelectTrigger id="unit-parent" className="col-span-3">
+                  <SelectValue placeholder="Select a parent unit (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (Root Unit)</SelectItem>
+                  {units
+                    .filter(u => !selectedUnit || u.id !== selectedUnit.id)
+                    .map((unit) => (
                       <SelectItem key={unit.id} value={unit.id.toString()}>
                         {unit.name}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="approver-user" className="text-right">
-                  User
-                </Label>
-                <Select
-                  value={approverFormData.user?.toString() || ""}
-                  onValueChange={(value) => setApproverFormData({
-                    ...approverFormData,
-                    user: parseInt(value)
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="unit-level" className="text-right">
+                Level
+              </Label>
+              <Input
+                id="unit-level"
+                type="number"
+                min="0"
+                value={unitFormData.level}
+                onChange={(e) => setUnitFormData({
+                  ...unitFormData,
+                  level: parseInt(e.target.value)
+                })}
+                className="col-span-3"
+                disabled={unitFormData.parent !== null}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="unit-active" className="text-right">
+                Active
+              </Label>
+              <div className="flex items-center space-x-2 col-span-3">
+                <Switch
+                  id="unit-active"
+                  checked={unitFormData.is_active}
+                  onCheckedChange={(checked) => setUnitFormData({
+                    ...unitFormData,
+                    is_active: checked
                   })}
-                >
-                  <SelectTrigger id="approver-user" className="col-span-3">
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id.toString()}>
-                        {user.first_name} {user.last_name} ({user.username})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="approver-role" className="text-right">
-                  Role
-                </Label>
-                <Input
-                  id="approver-role"
-                  value={approverFormData.role}
-                  onChange={(e) => setApproverFormData({
-                    ...approverFormData,
-                    role: e.target.value
-                  })}
-                  className="col-span-3"
-                  placeholder="e.g., Department Head, Director, Dean"
-                  required
                 />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="approver-scope" className="text-right">
-                  Organization-wide
-                </Label>
-                <div className="flex items-center space-x-2 col-span-3">
-                  <Switch
-                    id="approver-scope"
-                    checked={approverFormData.is_organization_wide}
-                    onCheckedChange={(checked) => setApproverFormData({
-                      ...approverFormData,
-                      is_organization_wide: checked
-                    })}
-                  />
-                  <Label htmlFor="approver-scope">
-                    {approverFormData.is_organization_wide
-                      ? "Can approve across all units"
-                      : "Limited to selected unit"
-                    }
-                  </Label>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="approver-active" className="text-right">
-                  Active
-                </Label>
-                <div className="flex items-center space-x-2 col-span-3">
-                  <Switch
-                    id="approver-active"
-                    checked={approverFormData.is_active}
-                    onCheckedChange={(checked) => setApproverFormData({
-                      ...approverFormData,
-                      is_active: checked
-                    })}
-                  />
-                  <Label htmlFor="approver-active">
-                    {approverFormData.is_active ? "Active" : "Inactive"}
-                  </Label>
-                </div>
+                <Label htmlFor="unit-active">{unitFormData.is_active ? "Active" : "Inactive"}</Label>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={selectedApprover ? handleUpdateApprover : handleCreateApprover}>
-                {selectedApprover ? "Update Approver" : "Create Approver"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUnitDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={selectedUnit ? handleUpdateUnit : handleCreateUnit}>
+              {selectedUnit ? "Update Unit" : "Create Unit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approver Dialog */}
+      <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedApprover ? "Edit Unit Approver" : "Create Unit Approver"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedApprover
+                ? "Update the unit approver details"
+                : "Add a new approver to an organizational unit"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="approver-unit" className="text-right">
+                Unit
+              </Label>
+              <Select
+                value={approverFormData.unit?.toString() || ""}
+                onValueChange={(value) => setApproverFormData({
+                  ...approverFormData,
+                  unit: parseInt(value)
+                })}
+              >
+                <SelectTrigger id="approver-unit" className="col-span-3">
+                  <SelectValue placeholder="Select a unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {units.map((unit) => (
+                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                      {unit.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="approver-user" className="text-right">
+                User
+              </Label>
+              <Select
+                value={approverFormData.user?.toString() || ""}
+                onValueChange={(value) => setApproverFormData({
+                  ...approverFormData,
+                  user: parseInt(value)
+                })}
+              >
+                <SelectTrigger id="approver-user" className="col-span-3">
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.first_name} {user.last_name} ({user.username})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="approver-role" className="text-right">
+                Role
+              </Label>
+              <Input
+                id="approver-role"
+                value={approverFormData.role}
+                onChange={(e) => setApproverFormData({
+                  ...approverFormData,
+                  role: e.target.value
+                })}
+                className="col-span-3"
+                placeholder="e.g., Department Head, Director, Dean"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="approver-scope" className="text-right">
+                Organization-wide
+              </Label>
+              <div className="flex items-center space-x-2 col-span-3">
+                <Switch
+                  id="approver-scope"
+                  checked={approverFormData.is_organization_wide}
+                  onCheckedChange={(checked) => setApproverFormData({
+                    ...approverFormData,
+                    is_organization_wide: checked
+                  })}
+                />
+                <Label htmlFor="approver-scope">
+                  {approverFormData.is_organization_wide
+                    ? "Can approve across all units"
+                    : "Limited to selected unit"
+                  }
+                </Label>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="approver-active" className="text-right">
+                Active
+              </Label>
+              <div className="flex items-center space-x-2 col-span-3">
+                <Switch
+                  id="approver-active"
+                  checked={approverFormData.is_active}
+                  onCheckedChange={(checked) => setApproverFormData({
+                    ...approverFormData,
+                    is_active: checked
+                  })}
+                />
+                <Label htmlFor="approver-active">
+                  {approverFormData.is_active ? "Active" : "Inactive"}
+                </Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={selectedApprover ? handleUpdateApprover : handleCreateApprover}>
+              {selectedApprover ? "Update Approver" : "Create Approver"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

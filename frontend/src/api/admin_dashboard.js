@@ -35,9 +35,10 @@ export const admin = {
   async getUsers() {
     try {
       // GET request to users endpoint
-      return await securedFetch(`${API_BASE_URL}/admin/users/`, {
+      const response = await securedFetch(`${API_BASE_URL}/admin/users/`, {
         method: "GET",
       });
+      return Array.isArray(response) ? response : response?.results || [];
     } catch (error) {
       pretty_log(`User fetch error: ${error.message}`, "ERROR");
       throw new Error(error.message || "Failed to fetch users");
@@ -53,10 +54,11 @@ export const admin = {
   async createUser(userData) {
     try {
       // POST request with user data payload
-      return await securedFetch(`${API_BASE_URL}/admin/users/`, {
+      const response = await securedFetch(`${API_BASE_URL}/admin/users/`, {
         method: "POST",
         body: JSON.stringify(userData),
       });
+      return response; // Return the created user data
     } catch (error) {
       pretty_log(`User creation error: ${error.message}`, "ERROR");
       throw new Error(error.message || "Failed to create user");
