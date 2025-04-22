@@ -84,7 +84,7 @@ export default function WorkflowDesigner() {
   const addStep = async () => {
     if (!selectedTemplate) return;
     try {
-      await fetch("/api/forms/approvals/", {
+      await fetch("/api/form-approval-workflows/", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Token ${token}` },
         body: JSON.stringify({
