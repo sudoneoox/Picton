@@ -75,25 +75,38 @@ export const staff = {
       throw new Error(error.message || "Failed to fetch active delegations");
     }
   },
-
   /**
    * Create a new delegation
    * @param {Object} delegationData - Delegation details
    * @returns {Promise<Object>} Created delegation data
    */
+
   async createDelegation(delegationData) {
     try {
+      pretty_log(`Creating delegation with data: ${JSON.stringify(delegationData)}`, "DEBUG");
+
       const data = await securedFetch(`${API_BASE_URL}/organization/delegations/`, {
         method: "POST",
         body: JSON.stringify(delegationData),
       });
+
       return data;
     } catch (error) {
-      pretty_log(`Error creating delegation: ${error.message}`, "ERROR");
-      throw new Error(error.message || "Failed to create delegation");
+      // Extract more detailed error message if available
+      let errorMessage = "Failed to create delegation";
+
+      if (error.message) {
+        errorMessage = error.message;
+      }
+
+      if (error.errors) {
+        errorMessage = JSON.stringify(error.errors);
+      }
+
+      pretty_log(`Error creating delegation: ${errorMessage}`, "ERROR");
+      throw error; // Pass the original error with all its properties
     }
   },
-
   /**
    * Update a delegation
    * @param {string} delegationId - ID of the delegation to update
@@ -144,5 +157,22 @@ export const staff = {
       pretty_log(`Error fetching my units: ${error.message}`, "ERROR");
       throw new Error(error.message || "Failed to fetch units");
     }
-  }
-};
+  },
+
+  /**
+   * Get the unit approver role for the current user in a specific unit
+   * @param {number} unitId - ID of the organizational unit
+   * @returns {Promise<Object>} Unit approver information
+   */
+  async getUnitApproverRole(unitId) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/organization/approvers/role/?unit=${unitId}`, {
+        method: "GET",
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Error fetching unit approver role: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to fetch unit approver role");
+    }
+  },
+}

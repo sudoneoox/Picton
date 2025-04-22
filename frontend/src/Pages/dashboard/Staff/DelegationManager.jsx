@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { api } from "@/api/api.js";
-import { useToast } from "@/components/ToastNotification";
 import { pretty_log } from "@/api/common_util";
 import {
   Card,
@@ -119,6 +118,7 @@ const DelegationManager = () => {
     };
 
     fetchData();
+    fetchCurrentUser();
   }, []);
 
   // Debug: Log whenever units state changes
@@ -316,10 +316,15 @@ const DelegationManager = () => {
   };
 
   // Get future dated users only for delegation
+
   const getEligibleDelegates = () => {
-    return users.filter(user =>
-      // Filter out yourself and inactive users
-      user.id.toString() !== formData.delegator && user.is_active &&
+    return users.filter(user => {
+      // Must be active user
+      if (!user.is_active) return false;
+
+      // Cannot delegate to yourself
+      if (user.id === parseInt(formData.delegator)) return false;
+
       // Only staff or admin can be delegates
       (user.role === "staff" || user.role === "admin")
     );
