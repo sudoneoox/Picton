@@ -34,9 +34,16 @@ function SortableItem({ id, children }) {
 
 export default function WorkflowDesigner() {
   const token = localStorage.getItem("authToken");
-  const { data: templates } = useSWR(["/api/forms/templates/",    token], fetcher);
-  const { data: units }     = useSWR(["/api/organization/units/", token], fetcher);
-  const { data: workflows, mutate } = useSWR(["/api/form-approval-workflows/", token], fetcher);
+  
+  const fetcher = (url) =>
+    fetch(url, {
+      headers: { Authorization: 'Token ${token}' },
+    }).then((r) => (r.ok ? r.json() : Promise.reject(r)));
+
+  
+  const { data: templates } = useSWR("/api/forms/templates/", fetcher);
+  const { data: units }     = useSWR("/api/organization/units/", fetcher);
+  const { data: workflows, mutate } = useSWR("/api/forms/approvals/", fetcher);
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [items, setItems] = useState([]);
@@ -64,7 +71,7 @@ export default function WorkflowDesigner() {
     try {
       await Promise.all(
         newItems.map((item) =>
-          fetch(`/api/form-approval-workflows/${item.id}/`, {
+          fetch(`/api/forms/approvals/${item.id}/`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json", Authorization: `Token ${token}` },
             body: JSON.stringify({ order: item.order }),
@@ -80,7 +87,7 @@ export default function WorkflowDesigner() {
   const addStep = async () => {
     if (!selectedTemplate) return;
     try {
-      await fetch("/api/form-approval-workflows/", {
+      await fetch("/api/forms/approvals/", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Token ${token}` },
         body: JSON.stringify({
@@ -101,7 +108,7 @@ export default function WorkflowDesigner() {
 
   const deleteStep = async (id) => {
     try {
-      await fetch(`/api/form-approval-workflows/${id}/`, {
+      await fetch(`/api/forms/approvals/${id}/`, {
         method: "DELETE",
         headers: { Authorization: `Token ${token}` },
       });
