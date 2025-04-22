@@ -3,10 +3,10 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
-
 from django.db import models
-from .ModelConstants import RoleChoices, BaseModel
 from utils import signature_upload_path
+
+from .ModelConstants import BaseModel, RoleChoices
 
 
 # IMPORTANT: override default django user table

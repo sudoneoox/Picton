@@ -75,7 +75,6 @@ export const staff = {
       throw new Error(error.message || "Failed to fetch active delegations");
     }
   },
-
   /**
    * Create a new delegation
    * @param {Object} delegationData - Delegation details
@@ -144,5 +143,22 @@ export const staff = {
       pretty_log(`Error fetching my units: ${error.message}`, "ERROR");
       throw new Error(error.message || "Failed to fetch units");
     }
-  }
-};
+  },
+
+  /**
+   * Get the unit approver role for the current user in a specific unit
+   * @param {number} unitId - ID of the organizational unit
+   * @returns {Promise<Object>} Unit approver information
+   */
+  async getUnitApproverRole(unitId) {
+    try {
+      const data = await securedFetch(`${API_BASE_URL}/organization/approvers/role/?unit=${unitId}`, {
+        method: "GET",
+      });
+      return data;
+    } catch (error) {
+      pretty_log(`Error fetching unit approver role: ${error.message}`, "ERROR");
+      throw new Error(error.message || "Failed to fetch unit approver role");
+    }
+  },
+}
