@@ -27,9 +27,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from utils import MethodNameMixin, pretty_print
 
-from ..core import AccountInactiveError, InvalidCredentialsError
-from ..models import User
-from ..serializers import LoginSerializer
+from api.core import AccountInactiveError, InvalidCredentialsError
+from api.models import User
+from api.serializers import LoginSerializer
 
 DEBUG = settings.DEBUG
 

@@ -5,15 +5,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from utils import FormPDFGenerator, MethodNameMixin, pretty_print
 
-from ...core import IsActiveUser
-from ...models import (
+from api.core import IsActiveUser
+from api.models import (
     FormApproval,
     FormApprovalWorkflow,
     FormSubmission,
-    FormTemplate,
     FormSubmissionIdentifier,
+    FormTemplate,
+    OrganizationalUnit,
+    UnitApprover,
 )
-from ...serializers import FormSubmissionSerializer
+from api.serializers import FormSubmissionSerializer
 
 
 class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
@@ -218,6 +220,10 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
             if not approval_workflows.exists():
                 # If no approval workflow, mark as approved immediately
+                pretty_print(
+                    "NO APPROVAL WORKFLOW FOUND MARKING AS APPROVED COULD BE A BUG, \n IN form_submissin.ViewSet.submit",
+                    "WARNING",
+                )
                 form_submission.status = "approved"
                 form_submission.save()
 
@@ -243,7 +249,11 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
             # Set form to pending approval and set current step to first approval step
             form_submission.status = "pending"
-            form_submission.current_step = approval_workflows.first().order
+            form_submission.current_step = 1
+
+            # Set required approval count based on workflow
+            required_workflows = approval_workflows.filter(is_required=True)
+            form_submission.required_approval_count = required_workflows.count()
             form_submission.save()
 
             pretty_print(
@@ -256,7 +266,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 form_submission.form_template.name, form_submission
             )
 
-            # SAVE pdf with unique identifier as the filename
+            # BUG: static should get template name from database
             if pdf_file:
                 template_code = (
                     "withdrawal"
@@ -276,7 +286,18 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 },
             )
 
-            # If the unit is not assigned, try to determine it
+            # If the unit is not assigned, try to determine it from form data
+            if not form_submission.unit and form_submission.form_data.get("unit"):
+                try:
+                    unit_id = int(form_submission.form_data.get("unit"))
+                    # Get unit from database - FIX: use the imported model, not a local import
+                    unit_obj = OrganizationalUnit.objects.get(id=unit_id)
+                    form_submission.unit = unit_obj
+                    form_submission.save()
+                except (ValueError, OrganizationalUnit.DoesNotExist):
+                    pass
+
+            # If still no unit, try submitter's unit
             if not form_submission.unit:
                 # Try to assign unit based on submitter
                 user = form_submission.submitter
@@ -287,11 +308,15 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                     form_submission.unit = user_approver.unit
                     form_submission.save()
 
+            # Create first approval record for the appropriate approver
+            FormApproval.create_or_reassign(
+                form_submission, None, form_submission.current_step
+            )
+
             return Response(
                 {
                     "status": "pending",
-                    "current_step": form_submission.current_step,
-                    "approver_role": approval_workflows.first().approver_role,
+                    "required_approvals": form_submission.required_approval_count,
                     "identifier": identifier,
                     "unit": form_submission.unit.id if form_submission.unit else None,
                     "unit_name": form_submission.unit.name

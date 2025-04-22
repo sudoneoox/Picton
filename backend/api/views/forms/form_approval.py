@@ -1,6 +1,6 @@
 from django.db.models import OuterRef, Q
 from django.utils import timezone
-from rest_framework import status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,11 +9,15 @@ from utils.prettyPrint import pretty_print
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import BasePermission
 
-from ...core import IsActiveUser
-from ...models import FormApproval, FormApprovalWorkflow, FormSubmission
-from ...serializers import (
-    FormApprovalSerializer,
+from api.core import IsActiveUser
+from api.models import (
+    ApprovalDelegation,
+    FormApproval,
+    FormApprovalWorkflow,
+    FormSubmission,
+    UnitApprover,
 )
+from api.serializers import FormApprovalSerializer, FormApprovalWorkflowSerializer
 
 class IsActiveUser(BasePermission):
     def has_permission(self, request, view):
@@ -62,8 +66,30 @@ class FormApprovalViewSet(ModelViewSet, MethodNameMixin):
         # Generate signed PDF with approver's signature
         try:
             pdf_generator = FormPDFGenerator()
+
+            # Map approver position to signature placeholder
+            position_map = {
+                "Graduate Studies/Program Director": "PROGRAM_DIRECTOR",
+                "Department Chair": "DEPT_CHAIR",
+                "Associate/Assistant Dean for Graduate Studies": "ASSOC_DEAN",
+                "Vice Provost/Dean of the Graduate School": "VICE_PROVOST",
+            }
+
+            position = (
+                approval.workflow.approval_position if approval.workflow else None
+            )
+            signature_key = position_map.get(position, "STAFF")
+
+            pretty_print(
+                f"Signing as position {position} (key: {signature_key})", "DEBUG"
+            )
+
             signed_pdf = pdf_generator.generate_signed_form(
-                submission, request.user, "approved", comments
+                submission,
+                request.user,
+                "approved",
+                comments,
+                signature_position=signature_key,
             )
 
             # Save the signed PDF
@@ -74,11 +100,7 @@ class FormApprovalViewSet(ModelViewSet, MethodNameMixin):
                 except:
                     identifier = f"form{submission.id}"
 
-                template_code = (
-                    "withdrawal"
-                    if submission.form_template.name == "Term Withdrawal Form"
-                    else "petition"
-                )
+                template_code = submission.form_template.get_form_type_code()
                 pdf_filename = f"forms/signed/{identifier}_{template_code}_approved.pdf"
                 approval.signed_pdf.save(pdf_filename, signed_pdf, save=False)
                 approval.signed_pdf_url = pdf_filename
@@ -96,69 +118,76 @@ class FormApprovalViewSet(ModelViewSet, MethodNameMixin):
             submission.current_step += 1
             submission.status = "pending"
             submission.save()
-            # TODO: Send notification to next approver
+            # Create the next approval record
+            FormApproval.create_or_reassign(submission, None, submission.current_step)
         else:
             submission.status = "approved"
             submission.save()
 
         return Response({"status": submission.status})
 
-    # Modify the reject method
-    @action(detail=True, methods=["post"])
-    def reject(self, request, pk=None):
-        approval = self.get_object()
-        submission = approval.form_submission
+        # Modify the reject method
+        @action(detail=True, methods=["post"])
+        def reject(self, request, pk=None):
+            approval = self.get_object()
+            submission = approval.form_submission
 
-        comments = request.data.get("comments", "")
-        if not comments:
-            return Response(
-                {"error": "Comments are required when rejecting a form"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Check if user has a signature
-        if not request.user.has_signature:
-            return Response(
-                {"error": "You need to upload a signature before rejecting forms"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        approval.decision = "rejected"
-        approval.comments = comments
-        approval.decided_at = timezone.now()
-
-        # Generate signed PDF with rejection reason
-        try:
-            pdf_generator = FormPDFGenerator()
-            signed_pdf = pdf_generator.generate_signed_form(
-                submission, request.user, "rejected", comments
-            )
-
-            # Save the signed PDF
-            if signed_pdf:
-                identifier = ""
-                try:
-                    identifier = submission.submission_identifier.identifier
-                except:
-                    identifier = f"form{submission.id}"
-
-                template_code = (
-                    "withdrawal"
-                    if submission.form_template.name == "Term Withdrawal Form"
-                    else "petition"
+            comments = request.data.get("comments", "")
+            if not comments:
+                return Response(
+                    {"error": "Comments are required when rejecting a form"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-                pdf_filename = f"forms/signed/{identifier}_{template_code}_rejected.pdf"
-                approval.signed_pdf.save(pdf_filename, signed_pdf, save=False)
-                approval.signed_pdf_url = pdf_filename
-        except Exception as e:
-            pretty_print(f"Error generating signed PDF: {str(e)}", "ERROR")
 
-        approval.save()
+            # Check if user has a signature
+            if not request.user.has_signature:
+                return Response(
+                    {"error": "You need to upload a signature before rejecting forms"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        submission.status = "rejected"
-        submission.save()
+            approval.decision = "rejected"
+            approval.comments = comments
+            approval.decided_at = timezone.now()
 
-        return Response({"status": "rejected"})
+            # Generate signed PDF with rejection reason
+            try:
+                pdf_generator = FormPDFGenerator()
+                signed_pdf = pdf_generator.generate_signed_form(
+                    submission, request.user, "rejected", comments
+                )
+
+                # Save the signed PDF
+                if signed_pdf:
+                    identifier = ""
+                    try:
+                        identifier = submission.submission_identifier.identifier
+                    except:
+                        identifier = f"form{submission.id}"
+
+                    template_code = (
+                        "withdrawal"
+                        if submission.form_template.name == "Term Withdrawal Form"
+                        else "petition"
+                    )
+                    pdf_filename = (
+                        f"forms/signed/{identifier}_{template_code}_rejected.pdf"
+                    )
+                    approval.signed_pdf.save(pdf_filename, signed_pdf, save=False)
+                    approval.signed_pdf_url = pdf_filename
+
+            except Exception as e:
+                pretty_print(
+                    f"Error generating signed PDF in FormApproval.ViewSet.reject: {str(e)}",
+                    "ERROR",
+                )
+
+            approval.save()
+
+            submission.status = "rejected"
+            submission.save()
+
+            return Response({"status": "rejected"})
 
     @action(detail=False, methods=["GET"])
     def pending(self, request):
@@ -174,6 +203,7 @@ class FormApprovalViewSet(ModelViewSet, MethodNameMixin):
             )
 
         # Get units where user is an approver
+        user_approver_positions = UnitApprover.objects.filter(user=user, is_active=True)
         user_units = UnitApprover.objects.filter(user=user, is_active=True).values_list(
             "unit", flat=True
         )
@@ -212,7 +242,6 @@ class FormApprovalViewSet(ModelViewSet, MethodNameMixin):
         for submission in pending_submissions:
             # Use the new method to handle delegations
             FormApproval.create_or_reassign(submission, user, submission.current_step)
-
         # Get all pending approvals assigned to this user or delegated to this user
         approvals = FormApproval.objects.filter(
             form_submission__status="pending", approver=user, decision=""
@@ -220,7 +249,24 @@ class FormApprovalViewSet(ModelViewSet, MethodNameMixin):
             "form_submission",
             "form_submission__form_template",
             "form_submission__submitter",
+            "workflow",
         )
 
+        # Serialize with custom method to include unit role information
         serializer = self.get_serializer(approvals, many=True)
-        return Response(serializer.data)
+
+        # Add unit role information to each approval
+        response_data = serializer.data
+        for i, approval in enumerate(approvals):
+            # Find the specific unit approver role for this user in this unit
+            unit = approval.form_submission.unit
+            if unit:
+                unit_approver = UnitApprover.objects.filter(
+                    user=user, unit=unit, is_active=True
+                ).first()
+
+                if unit_approver:
+                    response_data[i]["unit_role"] = unit_approver.role
+                    response_data[i]["unit_name"] = unit.name
+
+        return Response(response_data)

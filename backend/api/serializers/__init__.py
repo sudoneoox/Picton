@@ -8,6 +8,7 @@ from .formSerializer import (
     UnitApproverSerializer,
     ApprovalDelegationSerializer,
     OrganizationalUnitSerializer,
+    FormApprovalWorkflowSerializer,
 )
 
 
@@ -23,4 +24,5 @@ __all__ = [
     "UnitApproverSerializer",
     "ApprovalDelegationSerializer",
     "OrganizationalUnitSerializer",
+    "FormApprovalWorkflowSerializer",
 ]
