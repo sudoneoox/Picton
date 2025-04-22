@@ -32,20 +32,28 @@ const ApprovalQueue = () => {
   const { showToast } = useToast();
   const [pdfContent, setPdfContent] = useState(null);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
-  const [delegatedApprovals, setDelegatedApprovals] = useState([])
-
-
-
+  const [delegatedApprovals, setDelegatedApprovals] = useState([]);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     fetchPendingApprovals();
     checkSignature();
 
+    // Fetch users for delegation display
+    const fetchUsers = async () => {
+      try {
+        const response = await api.admin.getUsers();
+        setUsers(response?.results || []);
+      } catch (error) {
+        pretty_log(`Error fetching users: ${error}`, "ERROR");
+      }
+    };
+    fetchUsers();
 
     const fetchDelegations = async () => {
       try {
         const delegations = await api.staff.getActiveDelegations();
-        setDelegatedApprovals(delegations.filter(d => d.delegate === user.id));
+        setDelegatedApprovals(delegations);
       } catch (error) {
         pretty_log(`Error fetching delegations: ${error}`, "ERROR")
       }
@@ -100,6 +108,7 @@ const ApprovalQueue = () => {
       setPdfDialogOpen(true);
     }
   };
+
   const handleApproveClick = (approval) => {
     if (!hasSignature) {
       setShowSignatureDialog(true);
@@ -171,6 +180,12 @@ const ApprovalQueue = () => {
     });
   };
 
+  const getDelegatorName = (delegatorId) => {
+    if (!delegatorId) return "";
+    const user = users.find(u => u.id === delegatorId);
+    return user ? `${user.first_name} ${user.last_name}` : delegatorId;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -225,13 +240,22 @@ const ApprovalQueue = () => {
               <TableRow key={approval.id}>
                 <TableCell className="font-medium">{approval.form_title || "Unknown Form"}</TableCell>
                 <TableCell>{approval.submitter_name || "Unknown"}</TableCell>
-                <TableCell>{approval.workflow?.approval_position || "Approver"}</TableCell>
                 <TableCell>
+                  {approval.workflow?.approval_position ? (
+                    <Badge variant="outline">{approval.workflow.approval_position}</Badge>
+                  ) : (
+                    approval.unit_role ? (
+                      <span>
+                        {approval.unit_role}
+                        <span className="text-xs ml-1 text-muted-foreground">({approval.unit_name})</span>
+                      </span>
+                    ) : "Approver"
+                  )}
+                </TableCell>                <TableCell>
                   {approval.delegated_by ? (
                     <span className='inline-flex items-center text-xs'>
-                      <span className='bg-blue-100 text-blue-800 rounded-full px-2 py-1 mr-1'>Delegated</span>
-                      <span>from {users.find(u => u.ui === approval.delegated_by)?.first_name || approval.delegated_by}</span>
-
+                      <Badge className='bg-blue-100 text-blue-800 rounded-full px-2 py-1 mr-1'>Delegated</Badge>
+                      <span>from {getDelegatorName(approval.delegated_by)}</span>
                     </span>
                   ) : null}
                 </TableCell>
@@ -266,7 +290,8 @@ const ApprovalQueue = () => {
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>        </Table>
+          </TableBody>
+        </Table>
       )}
 
       {/* View PDF Dialog */}
@@ -282,6 +307,9 @@ const ApprovalQueue = () => {
               <div>
                 <p className="text-sm">Submitter: {selectedApproval?.submitter_name || "Unknown"}</p>
                 <p className="text-sm">Submitted: {selectedApproval && formatDate(selectedApproval.created_at)}</p>
+                {selectedApproval?.workflow && (
+                  <p className="text-sm">Signing as: <Badge variant="outline">{selectedApproval.workflow.approval_position}</Badge></p>
+                )}
               </div>
               <div>
                 <p className="text-sm">Step: {selectedApproval?.step_number || "N/A"}</p>
@@ -340,8 +368,13 @@ const ApprovalQueue = () => {
           </DialogHeader>
           <div className="py-4">
             <p className="mb-4">
-              You are approving form {selectedApproval?.form_submission?.identifier || `ID: ${selectedApproval?.form_submission?.id}`}.
+              You are approving form {selectedApproval?.submission_identifier || `ID: ${selectedApproval?.form_submission}`}.
             </p>
+            {selectedApproval?.workflow && (
+              <p className="mb-4 font-medium">
+                Signing as: <Badge className="ml-1">{selectedApproval.workflow.approval_position}</Badge>
+              </p>
+            )}
             <div className="space-y-2">
               <label htmlFor="comments" className="text-sm font-medium">
                 Comments (optional)
@@ -374,8 +407,13 @@ const ApprovalQueue = () => {
           </DialogHeader>
           <div className="py-4">
             <p className="mb-4">
-              You are rejecting form {selectedApproval?.form_submission?.identifier || `ID: ${selectedApproval?.form_submission?.id}`}.
+              You are rejecting form {selectedApproval?.submission_identifier || `ID: ${selectedApproval?.form_submission}`}.
             </p>
+            {selectedApproval?.workflow && (
+              <p className="mb-4 font-medium">
+                Signing as: <Badge className="ml-1">{selectedApproval.workflow.approval_position}</Badge>
+              </p>
+            )}
             <div className="space-y-2">
               <label htmlFor="comments" className="text-sm font-medium">
                 Reason for Rejection <span className="text-red-500">*</span>

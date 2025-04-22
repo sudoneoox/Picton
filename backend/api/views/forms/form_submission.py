@@ -5,15 +5,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from utils import FormPDFGenerator, MethodNameMixin, pretty_print
 
-from ...core import IsActiveUser
-from ...models import (
+from api.core import IsActiveUser
+from api.models import (
     FormApproval,
     FormApprovalWorkflow,
     FormSubmission,
-    FormTemplate,
     FormSubmissionIdentifier,
+    FormTemplate,
+    OrganizationalUnit,
+    UnitApprover,
 )
-from ...serializers import FormSubmissionSerializer
+from api.serializers import FormSubmissionSerializer
 
 
 class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
@@ -248,6 +250,10 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             # Set form to pending approval and set current step to first approval step
             form_submission.status = "pending"
             form_submission.current_step = 1
+
+            # Set required approval count based on workflow
+            required_workflows = approval_workflows.filter(is_required=True)
+            form_submission.required_approval_count = required_workflows.count()
             form_submission.save()
 
             pretty_print(
@@ -280,7 +286,18 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 },
             )
 
-            # If the unit is not assigned, try to determine it
+            # If the unit is not assigned, try to determine it from form data
+            if not form_submission.unit and form_submission.form_data.get("unit"):
+                try:
+                    unit_id = int(form_submission.form_data.get("unit"))
+                    # Get unit from database - FIX: use the imported model, not a local import
+                    unit_obj = OrganizationalUnit.objects.get(id=unit_id)
+                    form_submission.unit = unit_obj
+                    form_submission.save()
+                except (ValueError, OrganizationalUnit.DoesNotExist):
+                    pass
+
+            # If still no unit, try submitter's unit
             if not form_submission.unit:
                 # Try to assign unit based on submitter
                 user = form_submission.submitter
@@ -291,6 +308,11 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                     form_submission.unit = user_approver.unit
                     form_submission.save()
 
+            # Create first approval record for the appropriate approver
+            FormApproval.create_or_reassign(
+                form_submission, None, form_submission.current_step
+            )
+
             return Response(
                 {
                     "status": "pending",
@@ -298,7 +320,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
                     "identifier": identifier,
                     "unit": form_submission.unit.id if form_submission.unit else None,
                     "unit_name": form_submission.unit.name
-                    if form_submission.unit_name
+                    if form_submission.unit
                     else None,
                 }
             )

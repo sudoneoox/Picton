@@ -220,8 +220,8 @@ const Registrations = () => {
         <div className="registration-left__content">
           <h1 className="registration-left__logo">Picton LLC</h1>
           <div className="registration-left__testimonial">
-            <p>PLACEHOLDER</p>
-            <span>PLACEHOLDER</span>
+            {/* <p>PLACEHOLDER</p> */}
+            {/* <span>PLACEHOLDER</span> */}
           </div>
         </div>
       </div>

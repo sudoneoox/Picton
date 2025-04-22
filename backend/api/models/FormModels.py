@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 import os
 
+from utils.prettyPrint import pretty_print
+
 from .ModelConstants import RoleChoices, FormStatusChoices, BaseModel
 from .OrganizationalModels import (
     OrganizationalUnit,
@@ -270,7 +272,7 @@ class FormApproval(BaseModel, models.Model):
         super().save(*args, **kwargs)
 
         # update form submission status after saving approval
-        if self.deicision in FormStatusChoices.choices:
+        if self.decision in FormStatusChoices.choices:
             self.form_submission.update_approval_status()
 
     @classmethod
@@ -278,13 +280,75 @@ class FormApproval(BaseModel, models.Model):
         """
         Creates a new approval or reassigns to the correct approver based on delegations
         """
-        # Check if the approver has delegated their authority
-        delegate = ApprovalDelegation.get_active_delegation(
-            approver, form_submission.unit
+        from api.models import UnitApprover, FormApprovalWorkflow
+
+        # Get workflow step for this submission and step number
+        workflow = FormApprovalWorkflow.objects.filter(
+            form_template=form_submission.form_template, order=step_number
+        ).first()
+
+        if not workflow:
+            pretty_print(
+                "no workflow found in create_or_reassign returning None", "WARNING"
+            )
+            return None
+
+        # get unit from the form_submission
+        unit = form_submission.unit
+        if not unit:
+            pretty_print(
+                "No unit found in create_or_reassign returning None", "WARNING"
+            )
+            return None
+
+        # if approver is specified, check if they have delegation
+        delegate = None
+        if approver:
+            delegate = ApprovalDelegation.get_active_delegation(approver, unit)
+
+        # If no specific approver, find eligible approvers based on position and unit
+        eligible_approvers = []
+        approver_position = workflow.approval_position
+
+        # Find unit approvers with matching role
+        if unit:
+            # Check for exact unit approvers
+            unit_approvers = UnitApprover.objects.filter(
+                unit=unit, role=approver_position, is_active=True
+            )
+            eligible_approvers.extend([ua.user for ua in unit_approvers])
+
+            # Check for organization-wide approvers
+            org_approvers = UnitApprover.objects.filter(
+                role=approver_position, is_active=True, is_organization_wide=True
+            )
+            eligible_approvers.extend([ua.user for ua in org_approvers])
+
+        # If no eligible approvers and no specified approver, return None
+        if not eligible_approvers and not approver:
+            pretty_print(
+                f"No eligible approvers found for position: {approver_position}",
+                "WARNING",
+            )
+            return None
+
+        # Use the specified approver if provided, or the first eligible approver
+        actual_approver = (
+            approver
+            if approver
+            else (eligible_approvers[0] if eligible_approvers else None)
         )
 
-        # If there's a delegation, assign to delegate instead
-        actual_approver = delegate if delegate else approver
+        # If no approver could be determined, return None
+        if not actual_approver:
+            return None
+
+        # If there's a delegation, use the delegate instead
+        if delegate:
+            delegated_by = actual_approver
+            actual_approver = delegate
+        else:
+            delegated_by = None
 
         # Create or get the approval
         approval, created = cls.objects.get_or_create(
@@ -292,15 +356,24 @@ class FormApproval(BaseModel, models.Model):
             step_number=step_number,
             defaults={
                 "approver": actual_approver,
-                "delegated_by": approver if delegate else None,
+                "delegated_by": delegated_by,
+                "workflow": workflow,
+                "decision": "",  # Ensure empty decision for new approvals
             },
         )
 
         # If approval exists but delegation changed, update it
         if not created and delegate and approval.approver != delegate:
             approval.approver = delegate
-            approval.delegated_by = approver
+            approval.delegated_by = delegated_by
             approval.save()
+
+        # If approval is new, make any additional setup needed
+        if created:
+            pretty_print(
+                f"Created new approval for {actual_approver.username} at step {step_number}",
+                "INFO",
+            )
 
         return approval
 
