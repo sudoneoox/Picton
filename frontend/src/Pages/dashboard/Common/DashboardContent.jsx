@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ApprovalQueue from "@/Pages/dashboard/Staff/ApprovalQueue"
+import DelegationManager from "@/Pages/dashboard/Staff/DelegationManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserDataTable from "@/Pages/dashboard/Privileged/UserDataTable";
 import UserCreationForm from "@/Pages/dashboard/Privileged/UserCreationForm"

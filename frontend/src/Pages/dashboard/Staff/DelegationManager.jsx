@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { api } from "@/api/api.js";
-import { useToast } from "@/components/ToastNotification";
 import { pretty_log } from "@/api/common_util";
 import {
   Card,
@@ -42,8 +41,9 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { useToast } from "@/components/ToastNotification";
 
 const DelegationManager = () => {
   const { showToast } = useToast();
@@ -59,6 +59,18 @@ const DelegationManager = () => {
     end_date: new Date(new Date().setDate(new Date().getDate() + 7)), // Default to 1 week
     reason: "",
   });
+  const [userData, setUserData] = useState(null);
+
+
+
+  const fetchCurrentUser = async () => {
+    try {
+      const user = await api.auth.getCurrentUser();
+      setUserData(user);
+    } catch (error) {
+      pretty_log(`Error fetching current user: ${error}`, "ERROR");
+    }
+  };
 
   // Fetch initial data
   useEffect(() => {
@@ -82,16 +94,40 @@ const DelegationManager = () => {
     };
 
     fetchData();
+    fetchCurrentUser();
   }, []);
 
   const handleCreateDelegation = async () => {
     try {
-      // Format dates for the API
+      // Validate required fields
+      if (!formData.unit) {
+        showToast({ error: "Please select a unit" }, "error");
+        return;
+      }
+      if (!formData.delegate) {
+        showToast({ error: "Please select a delegate" }, "error");
+        return;
+      }
+      if (!formData.reason) {
+        showToast({ error: "Please provide a reason for delegation" }, "error");
+        return;
+      }
+
+      // Format dates for the API and ensure proper data types
       const apiFormData = {
-        ...formData,
+        unit: typeof formData.unit === 'string' ? parseInt(formData.unit) : formData.unit,
+        delegate: typeof formData.delegate === 'string' ? parseInt(formData.delegate) : formData.delegate,
+        reason: formData.reason,
         start_date: formData.start_date.toISOString(),
         end_date: formData.end_date.toISOString(),
       };
+
+      // Add detailed logging
+      pretty_log(`Sending delegation data: ${JSON.stringify(apiFormData)}`, "DEBUG");
+      pretty_log(`Unit type: ${typeof apiFormData.unit}, value: ${apiFormData.unit}`, "DEBUG");
+      pretty_log(`Delegate type: ${typeof apiFormData.delegate}, value: ${apiFormData.delegate}`, "DEBUG");
+      pretty_log(`Start date: ${apiFormData.start_date}`, "DEBUG");
+      pretty_log(`End date: ${apiFormData.end_date}`, "DEBUG");
 
       const newDelegation = await api.staff.createDelegation(apiFormData);
       setDelegations([...delegations, newDelegation]);
@@ -99,9 +135,29 @@ const DelegationManager = () => {
       showToast({ message: "Delegation created successfully" }, "success");
       resetForm();
     } catch (error) {
-      showToast({ error: error.message || "Failed to create delegation" }, "error");
+      // Enhanced error handling with more details
+      pretty_log(`Delegation creation error detail: ${JSON.stringify(error)}`, "ERROR");
+      pretty_log(`Error type: ${typeof error}`, "ERROR");
+      pretty_log(`Error message: ${error.message}`, "ERROR");
+
+      if (error.response) {
+        pretty_log(`Response status: ${error.response.status}`, "ERROR");
+        pretty_log(`Response data: ${JSON.stringify(error.response.data)}`, "ERROR");
+      }
+
+      let errorMessage = "Failed to create delegation";
+
+      // Extract detailed error message if available
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response && error.response.data && error.response.data.error) {
+        errorMessage = error.response.data.error;
+      }
+
+      showToast({ error: errorMessage }, "error");
     }
   };
+
 
   const handleCancelDelegation = async (delegationId) => {
     if (!window.confirm("Are you sure you want to cancel this delegation?")) {
@@ -209,13 +265,18 @@ const DelegationManager = () => {
   };
 
   // Get future dated users only for delegation
+
   const getEligibleDelegates = () => {
-    return users.filter(user =>
-      // Filter out yourself and inactive users
-      user.id.toString() !== formData.delegator && user.is_active &&
+    return users.filter(user => {
+      // Must be active user
+      if (!user.is_active) return false;
+
+      // Cannot delegate to yourself
+      if (user.id === parseInt(formData.delegator)) return false;
+
       // Only staff or admin can be delegates
-      (user.role === "staff" || user.role === "admin")
-    );
+      return user.role === "staff" || user.role === "admin";
+    });
   };
 
   return (
@@ -277,6 +338,8 @@ const DelegationManager = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="delegation-delegate" className="text-right">
                   Delegate To
@@ -292,11 +355,19 @@ const DelegationManager = () => {
                     <SelectValue placeholder="Select a user" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getEligibleDelegates().map((user) => (
-                      <SelectItem key={user.id} value={user.id.toString()}>
-                        {user.first_name} {user.last_name} ({user.username})
-                      </SelectItem>
-                    ))}
+                    {users
+                      .filter(user =>
+                        // Filter criteria: active user, not current user, staff or admin role
+                        user.is_active &&
+                        user.id !== (userData?.id || 0) &&
+                        (user.role === "staff" || user.role === "admin")
+                      )
+                      .map((user) => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          {user.first_name} {user.last_name} ({user.username})
+                        </SelectItem>
+                      ))
+                    }
                   </SelectContent>
                 </Select>
               </div>

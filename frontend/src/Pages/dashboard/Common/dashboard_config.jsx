@@ -74,12 +74,13 @@ const roleConfigs = {
         ],
       },
       {
-        id: 'manage-delegations',
-        title: 'Manage Delegations',
+        title: 'Delegations',
+        icon: "UserPlus",
+        isActive: true,
         items: [
           {
-            id: "delegate-forms",
-            title: " Delegate Forms",
+            id: "manage-delegations",
+            title: "Manage Delegations",
             permissions: ['staff.manage_delegations'],
           }
         ]
