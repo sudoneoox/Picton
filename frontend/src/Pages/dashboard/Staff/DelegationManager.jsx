@@ -27,12 +27,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -41,9 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const DelegationManager = () => {
   const { showToast } = useToast();
@@ -51,28 +43,73 @@ const DelegationManager = () => {
   const [delegations, setDelegations] = useState([]);
   const [units, setUnits] = useState([]);
   const [users, setUsers] = useState([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [formData, setFormData] = useState({
     unit: "",
     delegate: "",
-    start_date: new Date(),
-    end_date: new Date(new Date().setDate(new Date().getDate() + 7)), // Default to 1 week
+    start_date: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
+    end_date: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
     reason: "",
   });
 
-  // Fetch initial data
+  // Add state for existing delegations warning
+  const [existingDelegations, setExistingDelegations] = useState([]);
+  const [showExistingDelegationsWarning, setShowExistingDelegationsWarning] = useState(false);
+
+  // Add a function to fetch delegations
+  const fetchDelegations = async () => {
+    try {
+      const delegationsData = await api.staff.getActiveDelegations();
+      setDelegations(delegationsData);
+    } catch (error) {
+      pretty_log(`Error fetching delegations: ${error}`, "ERROR");
+      showToast({ error: "Failed to refresh delegations" }, "error");
+    }
+  };
+
+  // Modify useEffect to use the new function
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [delegationsData, unitsData, usersData] = await Promise.all([
+        // Try to get user's units first, fall back to all units if needed
+        let unitsData;
+        try {
+          unitsData = await api.staff.getMyUnits();
+          pretty_log("Staff units response:", "INFO");
+          pretty_log(unitsData, "INFO");
+        } catch (error) {
+          pretty_log("Falling back to all organizational units", "INFO");
+          unitsData = await api.admin.getOrganizationalUnits();
+          pretty_log("All units response:", "INFO");
+          pretty_log(unitsData, "INFO");
+        }
+
+        const [delegationsData, usersData] = await Promise.all([
           api.staff.getActiveDelegations(),
-          api.staff.getMyUnits(),
-          api.admin.getUsers(),
+          api.admin.getUsers()
         ]);
+
+        // Debug logging for units data structure
+        pretty_log("Final units data structure:", "INFO");
+        if (Array.isArray(unitsData)) {
+          pretty_log(`Number of units: ${unitsData.length}`, "INFO");
+          if (unitsData.length > 0) {
+            pretty_log("First unit structure:", "INFO");
+            pretty_log(unitsData[0], "INFO");
+          }
+        } else {
+          pretty_log("Units data is not an array:", "INFO");
+          pretty_log(typeof unitsData, "INFO");
+        }
+
+        if (!unitsData || unitsData.length === 0) {
+          showToast({ error: "No units available for delegation" }, "error");
+        }
+
         setDelegations(delegationsData);
-        setUnits(unitsData);
-        setUsers(usersData.results || usersData);
+        setUnits(unitsData || []); // Ensure we set an empty array if null/undefined
+        setUsers(usersData);
       } catch (error) {
         pretty_log(`Error fetching delegation data: ${error}`, "ERROR");
         showToast({ error: "Failed to load delegation data" }, "error");
@@ -84,41 +121,111 @@ const DelegationManager = () => {
     fetchData();
   }, []);
 
-  const handleCreateDelegation = async () => {
-    try {
-      // Format dates for the API
-      const apiFormData = {
-        ...formData,
-        start_date: formData.start_date.toISOString(),
-        end_date: formData.end_date.toISOString(),
-      };
+  // Debug: Log whenever units state changes
+  useEffect(() => {
+    pretty_log("Units state updated:", "INFO");
+    pretty_log(units, "INFO");
+  }, [units]);
 
-      const newDelegation = await api.staff.createDelegation(apiFormData);
-      setDelegations([...delegations, newDelegation]);
-      setDialogOpen(false);
-      showToast({ message: "Delegation created successfully" }, "success");
-      resetForm();
+  // Function to check for existing delegations
+  const checkExistingDelegations = async (unitId, startDate, endDate) => {
+    try {
+      const activeDelegations = await api.staff.getActiveDelegations();
+      const overlapping = activeDelegations.filter(d => 
+        d.unit.toString() === unitId.toString() &&
+        d.is_active &&
+        new Date(d.end_date) >= new Date(startDate) &&
+        new Date(d.start_date) <= new Date(endDate)
+      );
+      
+      setExistingDelegations(overlapping);
+      setShowExistingDelegationsWarning(overlapping.length > 0);
+      return overlapping.length > 0;
     } catch (error) {
-      showToast({ error: error.message || "Failed to create delegation" }, "error");
+      pretty_log(`Error checking existing delegations: ${error}`, "ERROR");
+      return false;
     }
   };
 
-  const handleCancelDelegation = async (delegationId) => {
-    if (!window.confirm("Are you sure you want to cancel this delegation?")) {
+  // Update form data handler to check for existing delegations
+  const handleFormDataChange = async (field, value) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+
+    // Check for existing delegations when all date and unit fields are filled
+    if (newFormData.unit && newFormData.start_date && newFormData.end_date) {
+      await checkExistingDelegations(
+        newFormData.unit,
+        newFormData.start_date,
+        newFormData.end_date
+      );
+    }
+  };
+
+  const handleCreateDelegation = async () => {
+    // Add validation for required fields
+    if (!formData.unit || !formData.delegate || !formData.start_date || !formData.end_date || !formData.reason) {
+      showToast({ error: "Please fill in all required fields" }, "error");
       return;
     }
 
+    // Validate dates
+    const startDate = new Date(formData.start_date);
+    const endDate = new Date(formData.end_date);
+    const now = new Date();
+
+    // Set hours to 0 for accurate date comparison
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
+
+    if (startDate < now) {
+      showToast({ error: "Start date cannot be in the past" }, "error");
+      return;
+    }
+
+    if (endDate <= startDate) {
+      showToast({ error: "End date must be after start date" }, "error");
+      return;
+    }
+
+    // Convert dates to ISO format with time and add delegator field
+    const requestData = {
+      ...formData,
+      start_date: new Date(formData.start_date + "T00:00:00.000Z").toISOString(),
+      end_date: new Date(formData.end_date + "T23:59:59.999Z").toISOString(),
+      // The delegator field will be set by the backend to the current user
+      delegator: null
+    };
+
+    // Debug log the request data
+    pretty_log("Creating delegation with data:", "DEBUG");
+    pretty_log(JSON.stringify(requestData, null, 2), "DEBUG");
+
+    try {
+      await api.staff.createDelegation(requestData);
+      await fetchDelegations(); // Refresh the delegations list
+      setShowCreateDialog(false);
+      showToast({ message: "Delegation created successfully" }, "success");
+      resetForm();
+    } catch (error) {
+      pretty_log("Delegation creation error details:", "ERROR");
+      pretty_log(error.details || error, "ERROR");
+      
+      // Display specific error message if available
+      const errorMessage = error.details?.error || error.details?.detail || error.message || "Failed to create delegation";
+      showToast({ error: errorMessage }, "error");
+    }
+  };
+
+  const handleDeleteDelegation = async (delegationId) => {
     try {
       await api.staff.cancelDelegation(delegationId);
-      // Update local state
-      setDelegations(delegations.map(delegation =>
-        delegation.id === delegationId
-          ? { ...delegation, is_active: false }
-          : delegation
-      ));
-      showToast({ message: "Delegation canceled successfully" }, "success");
+      await fetchDelegations(); // Refresh the delegations list
+      showToast({ message: "Delegation cancelled successfully" }, "success");
     } catch (error) {
-      showToast({ error: error.message || "Failed to cancel delegation" }, "error");
+      const errorMessage = error.details?.error || error.message || "Failed to cancel delegation";
+      showToast({ error: errorMessage }, "error");
     }
   };
 
@@ -126,14 +233,15 @@ const DelegationManager = () => {
     setFormData({
       unit: "",
       delegate: "",
-      start_date: new Date(),
-      end_date: new Date(new Date().setDate(new Date().getDate() + 7)),
+      start_date: new Date().toISOString().split('T')[0],
+      end_date: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
       reason: "",
     });
   };
 
   const formatDate = (dateString) => {
-    return format(new Date(dateString), "PPP");
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   };
 
   // Render delegation table
@@ -183,9 +291,8 @@ const DelegationManager = () => {
                 <TableCell>{formatDate(delegation.start_date)}</TableCell>
                 <TableCell>{formatDate(delegation.end_date)}</TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${delegation.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                    {delegation.is_active ? 'Active' : 'Canceled'}
+                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${delegation.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {delegation.is_active ? 'Active' : 'Expired'}
                   </span>
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate">{delegation.reason}</TableCell>
@@ -194,9 +301,9 @@ const DelegationManager = () => {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleCancelDelegation(delegation.id)}
+                      onClick={() => handleDeleteDelegation(delegation.id)}
                     >
-                      Cancel
+                      Delete
                     </Button>
                   )}
                 </TableCell>
@@ -218,188 +325,171 @@ const DelegationManager = () => {
     );
   };
 
+  // Update the units rendering to handle potential different data structures
+  const renderUnitOptions = () => {
+    if (!Array.isArray(units)) {
+      return <SelectItem value="" disabled>Error loading units</SelectItem>;
+    }
+
+    if (units.length === 0) {
+      return (
+        <>
+          <SelectItem value="" disabled>No units available</SelectItem>
+          <SelectItem value="" disabled className="text-muted-foreground text-xs italic">
+            Units must be created by an admin and assigned to you as an approver
+          </SelectItem>
+        </>
+      );
+    }
+
+    return units.map((unit) => {
+      const id = unit.id?.toString() || unit.unit_id?.toString();
+      const name = unit.name || unit.unit_name;
+      
+      if (!id || !name) {
+        pretty_log("Invalid unit structure:", "WARNING");
+        pretty_log(unit, "WARNING");
+        return null;
+      }
+
+      return (
+        <SelectItem key={id} value={id}>
+          {name}
+        </SelectItem>
+      );
+    }).filter(Boolean);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Delegation Management</CardTitle>
-        <CardDescription>
-          Delegate your approval authority to other users
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex justify-between items-center mb-4">
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <h3 className="text-lg font-medium">My Delegations</h3>
-            <p className="text-sm text-muted-foreground">
-              Manage your approval delegations
-            </p>
+            <CardTitle>Delegations</CardTitle>
+            {units.length === 0 && (
+              <CardDescription className="text-yellow-600 dark:text-yellow-400">
+                No units available for delegation. Please contact an administrator.
+              </CardDescription>
+            )}
           </div>
-          <Button onClick={() => {
-            resetForm();
-            setDialogOpen(true);
-          }}>
+          <Button onClick={() => setShowCreateDialog(true)} disabled={units.length === 0}>
             Create Delegation
           </Button>
-        </div>
+        </CardHeader>
+        <CardContent>
+          {renderDelegationTable()}
+        </CardContent>
+      </Card>
 
-        {renderDelegationTable()}
-
-        {/* Create Delegation Dialog */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Delegation</DialogTitle>
-              <DialogDescription>
-                Delegate your approval authority to another user
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="delegation-unit" className="text-right">
-                  Unit
-                </Label>
-                <Select
-                  value={formData.unit?.toString() || ""}
-                  onValueChange={(value) => setFormData({
-                    ...formData,
-                    unit: parseInt(value)
-                  })}
-                >
-                  <SelectTrigger id="delegation-unit" className="col-span-3">
-                    <SelectValue placeholder="Select a unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {units.map((unit) => (
-                      <SelectItem key={unit.id} value={unit.id.toString()}>
-                        {unit.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="delegation-delegate" className="text-right">
-                  Delegate To
-                </Label>
-                <Select
-                  value={formData.delegate?.toString() || ""}
-                  onValueChange={(value) => setFormData({
-                    ...formData,
-                    delegate: parseInt(value)
-                  })}
-                >
-                  <SelectTrigger id="delegation-delegate" className="col-span-3">
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getEligibleDelegates().map((user) => (
-                      <SelectItem key={user.id} value={user.id.toString()}>
-                        {user.first_name} {user.last_name} ({user.username})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="delegation-start-date" className="text-right">
-                  Start Date
-                </Label>
-                <div className="col-span-3">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.start_date ? (
-                          format(formData.start_date, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={formData.start_date}
-                        onSelect={(date) => setFormData({
-                          ...formData,
-                          start_date: date
-                        })}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Delegation</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to create a new delegation. All fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {showExistingDelegationsWarning && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div className="flex">
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700">
+                      Warning: There are existing delegations for this period:
+                    </p>
+                    <ul className="mt-2 text-sm text-yellow-700">
+                      {existingDelegations.map(d => (
+                        <li key={d.id}>
+                          • {d.delegator_name} → {d.delegate_name} 
+                          ({new Date(d.start_date).toLocaleDateString()} to {new Date(d.end_date).toLocaleDateString()})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="delegation-end-date" className="text-right">
-                  End Date
-                </Label>
-                <div className="col-span-3">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.end_date ? (
-                          format(formData.end_date, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={formData.end_date}
-                        onSelect={(date) => setFormData({
-                          ...formData,
-                          end_date: date
-                        })}
-                        initialFocus
-                        disabled={(date) => date < formData.start_date}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="delegation-reason" className="text-right">
-                  Reason
-                </Label>
-                <div className="col-span-3">
-                  <Textarea
-                    id="delegation-reason"
-                    value={formData.reason}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      reason: e.target.value
-                    })}
-                    placeholder="Explain why you're delegating your approval authority"
-                    className="min-h-[100px]"
-                  />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateDelegation}
-                disabled={!formData.unit || !formData.delegate || !formData.reason}
+            )}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="unit" className="text-right">
+                Unit <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.unit}
+                onValueChange={(value) => handleFormDataChange("unit", value)}
               >
-                Create Delegation
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {renderUnitOptions()}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="delegate" className="text-right">
+                Delegate To <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.delegate}
+                onValueChange={(value) => handleFormDataChange("delegate", value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getEligibleDelegates().map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.first_name} {user.last_name} ({user.username})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="start_date" className="text-right">
+                Start Date <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="date"
+                id="start_date"
+                value={formData.start_date}
+                onChange={(e) => handleFormDataChange("start_date", e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="end_date" className="text-right">
+                End Date <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="date"
+                id="end_date"
+                value={formData.end_date}
+                onChange={(e) => handleFormDataChange("end_date", e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="reason" className="text-right">
+                Reason <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="reason"
+                value={formData.reason}
+                onChange={(e) => handleFormDataChange("reason", e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateDelegation}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

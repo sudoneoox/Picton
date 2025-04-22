@@ -79,7 +79,7 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
                 return Response(
                     {
                         "message": "User created successfully",
-                        "user": UserSerializer(user).data,
+                        "user": AdminUserSerializer(user).data,
                     },
                     status=status.HTTP_201_CREATED,
                 )
@@ -110,7 +110,7 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
                 "page": page,
                 "page_size": page_size,
                 "total_pages": (total_users + page_size - 1) // page_size,
-                "results": UserSerializer(users, many=True).data,
+                "results": AdminUserSerializer(users, many=True).data,
             }
         )
 
@@ -195,18 +195,16 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
             )
             # If changing to admin, set is_superuser=True
             if role == "admin":
-                request.data["is_superuser"] = True
-                request.data["is_staff"] = True
-
+                user.is_superuser = True
+                user.is_staff = True
             # If changing to staff, set is_staff=True
             elif role == "staff":
-                request.data["is_superuser"] = False
-                request.data["is_staff"] = True
-
+                user.is_superuser = False
+                user.is_staff = True
             # If changing to student, clear admin privileges
             elif role == "student":
-                request.data["is_superuser"] = False
-                request.data["is_staff"] = False
+                user.is_superuser = False
+                user.is_staff = False
 
             if user.role == "admin" and role != "admin":
                 pretty_print(
@@ -232,14 +230,21 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
             pretty_print(f"Validation errors for user {user.id}: {errors}", "DEBUG")
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # No errors found continue
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            pretty_print(f"Updated user {user.id} with data: {request.data}", "DEBUG")
-            return Response(serializer.data)
+        # Preserve the current active status unless explicitly changed
+        if "is_active" not in request.data:
+            request.data["is_active"] = user.is_active
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Update user fields
+        for field in ["username", "email", "first_name", "last_name", "role"]:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+
+        # Save user changes first
+        user.save()
+
+        # Return the updated user data
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         """Create a new user"""
@@ -294,7 +299,7 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
             return Response(
                 {
                     "message": "User created successfully",
-                    "user": UserSerializer(user).data,
+                    "user": AdminUserSerializer(user).data,
                 },
                 status=status.HTTP_201_CREATED,
             )

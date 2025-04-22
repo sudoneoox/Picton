@@ -70,27 +70,48 @@ const roleConfigs = {
             title: 'Update Signature',
             permissions: ['student.update_signature']
           }
-
-        ],
+        ]
       },
       {
-        id: 'manage-delegations',
-        title: 'Manage Delegations',
-        permissions: ['staff.manage_delegations']
+        title: "Organization",
+        icon: "Building",
+        isActive: true,
+        items: [
+          {
+            id: 'manage-delegations',
+            title: 'Manage Delegations',
+            permissions: ['staff.manage_delegations']
+          }
+        ]
       },
+      {
+        title: "Account",
+        icon: "User",
+        isActive: true,
+        items: [
+          {
+            id: "profile",
+            title: "Profile Settings",
+            permissions: ["staff.edit_profile"]
+          }
+        ]
+      }
     ],
-
     dashboard: {
-      defaultView: "",
-      title: "Staff Dashboard",
+      defaultView: "review-forms",
+      title: "Staff Dashboard"
     },
-
     permissions: {
       canEditUsers: false,
       canCreateUsers: false,
-      canToggleUserStatus: false,
+      canToggleUserStatus: true,
       canUpdateSignature: true,
-      canManageDelegations: true
+      canManageDelegations: true,
+      staff: {
+        review_forms: true,
+        edit_profile: true,
+        manage_delegations: true
+      }
     }
   },
 

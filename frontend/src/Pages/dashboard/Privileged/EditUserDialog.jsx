@@ -41,15 +41,17 @@ const EditUserDialog = ({ user, onUserUpdated }) => {
     first_name: user.first_name || "",
     last_name: user.last_name || "",
     role: user.role,
+    is_active: user.is_active,
   });
   const { showToast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.admin.updateUser(user.id, formData);
+      const { is_active, ...updateData } = formData;
+      const response = await api.admin.updateUser(user.id, updateData);
       showToast({ message: "User updated successfully" }, "success");
-      onUserUpdated(response);
+      onUserUpdated({ ...user, ...response });
       setOpen(false);
     } catch (error) {
       pretty_log(`Error updating user: ${error}`, "ERROR");
@@ -60,14 +62,10 @@ const EditUserDialog = ({ user, onUserUpdated }) => {
   const handleDelete = async () => {
     try {
       await api.admin.deleteUser(user.id);
-      showToast({ message: "User deleted successfully" }, "success");
       setDeleteDialogOpen(false);
-      setTimeout(() => {
-        setOpen(false);
-        if (onUserUpdated) {
-          onUserUpdated({ ...user, deleted: true });
-        }
-      }, 100);
+      setOpen(false);
+      onUserUpdated({ ...user, deleted: true });
+      showToast({ message: "User deleted successfully" }, "success");
     } catch (error) {
       pretty_log(`Error deleting user: ${error}`, "ERROR");
       const errorMessage = error.message || "Failed to delete user";
@@ -91,15 +89,14 @@ const EditUserDialog = ({ user, onUserUpdated }) => {
           "Error"
         );
       }
+      setDeleteDialogOpen(false);
     }
   };
 
   const handleOpenChange = (newOpen) => {
-    if (!newOpen) {
-      if (!deleteDialogOpen) {
-        setOpen(false);
-      }
-    } else {
+    if (!newOpen && !deleteDialogOpen) {
+      setOpen(false);
+    } else if (newOpen) {
       setOpen(true);
     }
   };
@@ -219,7 +216,12 @@ const EditUserDialog = ({ user, onUserUpdated }) => {
 
       <AlertDialog 
         open={deleteDialogOpen} 
-        onOpenChange={setDeleteDialogOpen}
+        onOpenChange={(newOpen) => {
+          setDeleteDialogOpen(newOpen);
+          if (!newOpen) {
+            setOpen(true);
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -230,7 +232,7 @@ const EditUserDialog = ({ user, onUserUpdated }) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
+            <AlertDialogCancel>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

@@ -14,6 +14,7 @@ import SubmitForms from "../Student/SubmitForms";
 import ViewForms from "./ViewForms";
 import { UserProfileSettings } from "@/components/UserProfileSettings";
 import { Switch } from "@/components/ui/switch";
+import DelegationManager from "../Staff/DelegationManager";
 
 const DashboardContent = ({ activeView, dashboardConfig }) => {
   const [data, setData] = useState([]);
@@ -51,14 +52,7 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
           }
 
           response = await api.admin.getUsers();
-          if (response && response.results) {
-            setData(response.results);
-          } else if (Array.isArray(response)) {
-            setData(response);
-          } else {
-            setData([]);
-            pretty_log(`Unexpected Data Type Received ${response} ${typeof response}`, "ERROR");
-          }
+          setData(Array.isArray(response) ? response : response?.results || []);
           break;
 
         case "submit-forms":
@@ -109,12 +103,12 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
         return;
       }
 
-      await api.admin.toggleUserStatus(userId);
+      const response = await api.admin.toggleUserStatus(userId);
 
-      // Update local state
+      // Update local state with the response data
       setData((prevData) =>
         prevData.map((user) =>
-          user.id === userId ? { ...user, is_active: !user.is_active } : user,
+          user.id === userId ? { ...user, ...response } : user
         ),
       );
 
@@ -208,7 +202,25 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
               <CardTitle>Create New User</CardTitle>
             </CardHeader>
             <CardContent>
-              <UserCreationForm />
+              <UserCreationForm 
+                open={true}
+                onClose={() => {}}
+                onUserCreated={() => {
+                  fetchData();
+                }}
+              />
+            </CardContent>
+          </Card>
+        );
+
+      case "manage-delegations":
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Manage Delegations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DelegationManager />
             </CardContent>
           </Card>
         );
@@ -346,6 +358,14 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
                 userData={data}
                 onToggleStatus={handleToggleStatus}
                 canToggleUserStatus={permissions.canToggleUserStatus}
+                onUserUpdated={(updatedUser) => {
+                  // Update the local state with the updated user data
+                  setData((prevData) =>
+                    prevData.map((user) =>
+                      user.id === updatedUser.id ? { ...user, ...updatedUser } : user
+                    )
+                  );
+                }}
                 onUserCreated={fetchData}
               />
             </CardContent>
@@ -366,21 +386,6 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
           )
         }
         return <OrganizationManager />;
-
-      case "manage-delegations":
-        if (!permissions.canManageDelegations) {
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle>Permission Denied</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>You do not have permission to access this page.</p>
-              </CardContent>
-            </Card>
-          )
-        }
-        return <DelegationManager />;
 
       default:
         return (

@@ -6,6 +6,7 @@ import { Shared, Dashboard } from "@/Pages/imports.jsx";
 import { MicrosoftCallback } from "@/components/MicrosoftCallback.jsx";
 import Layout from "@/Layout.jsx";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function App() {
   return (

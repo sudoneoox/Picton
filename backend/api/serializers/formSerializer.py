@@ -9,6 +9,7 @@ from ..models import (
     UnitApprover,
     OrganizationalUnit,
     ApprovalDelegation,
+    DelegationHistory,
 )
 
 
@@ -235,3 +236,24 @@ class ApprovalDelegationSerializer(serializers.ModelSerializer):
 
     def get_unit_name(self, obj):
         return obj.unit.name
+
+
+class DelegationHistorySerializer(serializers.ModelSerializer):
+    action_by_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = DelegationHistory
+        fields = [
+            'id',
+            'delegation',
+            'action',
+            'action_by',
+            'action_by_name',
+            'action_date',
+            'details'
+        ]
+        
+    def get_action_by_name(self, obj):
+        if obj.action_by:
+            return f"{obj.action_by.first_name} {obj.action_by.last_name}"
+        return None

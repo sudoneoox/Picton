@@ -5,11 +5,18 @@ from rest_framework.response import Response
 from django.utils import timezone
 from utils import MethodNameMixin
 
-from ..models import OrganizationalUnit, UnitApprover, ApprovalDelegation, User
+from ..models import (
+    OrganizationalUnit,
+    UnitApprover,
+    ApprovalDelegation,
+    DelegationHistory,
+    User,
+)
 from ..serializers import (
     OrganizationalUnitSerializer,
     UnitApproverSerializer,
     ApprovalDelegationSerializer,
+    DelegationHistorySerializer,
 )
 
 
@@ -124,10 +131,39 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # Validate delegation dates
+        start_date = request.data.get("start_date")
+        end_date = request.data.get("end_date")
+        
+        if start_date >= end_date:
+            return Response(
+                {"error": "End date must be after start date"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Check for overlapping delegations
+        overlapping = ApprovalDelegation.objects.filter(
+            delegator=request.user,
+            unit_id=unit_id,
+            is_active=True,
+            start_date__lte=end_date,
+            end_date__gte=start_date,
+        ).exists()
+
+        if overlapping:
+            return Response(
+                {"error": "You already have an active delegation for this period"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Add the current user as delegator
+        data = request.data.copy()
+        data['delegator'] = request.user.id
+
         # Create the delegation
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(delegator=request.user)
+        serializer.save()
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -166,4 +202,27 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
         )
 
         serializer = self.get_serializer(delegated_to_me | delegated_by_me, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["POST"])
+    def cancel(self, request, pk=None):
+        """Cancel a delegation"""
+        delegation = self.get_object()
+        
+        # Only the delegator or an admin can cancel
+        if not (request.user == delegation.delegator or request.user.is_superuser):
+            return Response(
+                {"error": "Only the delegator or an admin can cancel the delegation"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        delegation.cancel(cancelled_by=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["GET"])
+    def history(self, request, pk=None):
+        """Get the history of a delegation"""
+        delegation = self.get_object()
+        history = DelegationHistory.objects.filter(delegation=delegation)
+        serializer = DelegationHistorySerializer(history, many=True)
         return Response(serializer.data)

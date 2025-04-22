@@ -12,13 +12,20 @@ import { getCSRFToken } from "./common_util";
 import { pretty_log } from "./common_util";
 
 export async function securedFetch(url, options = {}) {
-  // Retrieve CSRF token from cookies
-  const csrfToken = getCSRFToken();
+  try {
+    // First, ensure we have a CSRF token
+    const csrfResponse = await fetch('/api/auth/csrf/', {
+      credentials: 'include',
+    });
+    
+    if (!csrfResponse.ok) {
+      throw new Error('Failed to get CSRF token');
+    }
 
-  // Validate CSRF token presence
+    // Get the CSRF token from cookies
+  const csrfToken = getCSRFToken();
   if (!csrfToken) {
-    pretty_log("Missing CSRF token - authentication required", "ERROR");
-    throw new Error("Authentication error. Please refresh the page.");
+      throw new Error('No CSRF token available');
   }
 
   // Configure headers with CSRF protection
@@ -34,7 +41,6 @@ export async function securedFetch(url, options = {}) {
     headers["Content-Type"] = "application/json";
   }
 
-  try {
     pretty_log(`API Request: ${options.method || 'GET'} ${url}`, "DEBUG");
 
     // Execute fetch with security settings
@@ -46,12 +52,50 @@ export async function securedFetch(url, options = {}) {
 
     // Handle non-2xx responses
     if (!response.ok) {
-      const errorData = await response.json();
+      let errorData;
+      const contentType = response.headers.get("content-type");
+      
+      try {
+        if (contentType && contentType.includes("application/json")) {
+          errorData = await response.json();
+        } else {
+          // If response is not JSON (e.g. HTML error page), get text
+          const text = await response.text();
+          errorData = {
+            error: response.status === 500 
+              ? "Internal server error. Please try again later."
+              : `Server error: ${response.status}`,
+            details: text.substring(0, 100) // Only take first 100 chars of error
+          };
+        }
+      } catch (e) {
+        errorData = {
+          error: "Failed to parse error response",
+          details: e.message
+        };
+      }
+      
+      // Only reload for CSRF-related 403 errors
+      if (response.status === 403 && errorData.error?.toLowerCase().includes('csrf')) {
+        window.location.reload();
+        return;
+      }
+
+      // Debug log the error response
+      pretty_log(`API Error Response:`, "ERROR");
+      pretty_log(JSON.stringify(errorData, null, 2), "ERROR");
+
       throw {
-        message: errorData.error || "API request failed",
+        message: errorData.error || errorData.detail || errorData.message || "API request failed",
         status: response.status,
-        errors: errorData.errors,
+        errors: errorData.errors || errorData,
+        details: errorData
       };
+    }
+
+    // For 204 No Content responses
+    if (response.status === 204) {
+      return null;
     }
 
     return response.json();
@@ -59,13 +103,6 @@ export async function securedFetch(url, options = {}) {
     // Enhance and log error details
     const errorMessage = error.message || `API Error: ${url}`;
     pretty_log(`${errorMessage} (Status: ${error.status || 'Unknown'})`, "ERROR");
-
-    // If CSRF token is invalid, try to refresh the page
-    if (error.status === 403 && error.message?.includes("CSRF")) {
-      pretty_log("CSRF token validation failed - refreshing page", "ERROR");
-      window.location.reload();
-      return;
-    }
 
     // Preserve error details for upstream handling
     throw {
