@@ -13,9 +13,13 @@ class OrganizationalUnit(BaseModel, models.Model):
     Used to determine approval workflows by unit.
     """
 
+    # descriptor
     name = models.CharField(max_length=100)
+    # Organizational Code (CS, MATH, UGRAD, ...)
     code = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True)
+
+    # FK linking to itself a organizational unit has another organizational unit as a parent (OPTIONAL)
     parent = models.ForeignKey(
         "self",
         null=True,
@@ -24,7 +28,10 @@ class OrganizationalUnit(BaseModel, models.Model):
         related_name="sub_units",
     )
 
+    # level on hierarchy (0 being the highest)
     level = models.PositiveIntegerField(help_text="Hierarchy level (0 for top level)")
+
+    # activate/deactivate without deleting data
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -44,6 +51,7 @@ class OrganizationalUnit(BaseModel, models.Model):
             List[OrganizationalUnit]: List of units in order from root to this unit
         """
 
+        # Linked List Traverse Approach
         path = [self]
         current = self
         while current.parent:
@@ -54,22 +62,31 @@ class OrganizationalUnit(BaseModel, models.Model):
 
 class UnitApprover(BaseModel, models.Model):
     """
-    Links approvers to organizational units with specific roles
+    Links approvers to organizational units with specific roles (lookup table with a bit more information)
 
     Maps users to their approval roles within specific organizational units.
     Can be organization-wide for approvers who can approve across all units.
     """
 
+    # the organizational unit the approver is a part of
     unit = models.ForeignKey(
         OrganizationalUnit, on_delete=models.CASCADE, related_name="approvers"
     )
+
+    # the approver
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="unit_approver_roles"
     )
+
+    # role of approver (Graduate Advisor, Program Director....)
     role = models.CharField(max_length=50)
+
+    # whether they can approve across all units not just in their organization
     is_organization_wide = models.BooleanField(
         default=False, help_text="Can approve across all units"
     )
+
+    # to deactivate/activate without deleting data
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -87,16 +104,23 @@ class ApprovalDelegation(BaseModel, models.Model):
     Each delegation has a specific time period and is linked to a unit.
     """
 
+    ## FK approver_1
     delegator = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="delegated_from"
     )
+    # FK approver_2
     delegate = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="delegated_to"
     )
+    # The unit (NOTE: they have to be a part of the same organizationalUnit)
     unit = models.ForeignKey(OrganizationalUnit, on_delete=models.CASCADE)
+    # when the delegation begins
     start_date = models.DateTimeField()
+    # when the delegation ends
     end_date = models.DateTimeField()
+    # simple comment to show the other staff
     reason = models.TextField()
+    # whether active or not without deleting data
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -135,17 +159,3 @@ class ApprovalDelegation(BaseModel, models.Model):
 
         delegation = query.first()
         return delegation.delegate if delegation else None
-
-    @classmethod
-    def get_active_delegations_for_user(cls, user):
-        """
-        Get all active delegations where this user is the delegate
-        """
-        from django.utils import timezone
-
-        return cls.objects.filter(
-            delegate=user,
-            is_active=True,
-            start_date__lte=timezone.now(),
-            end_date__gte=timezone.now(),
-        ).select_related("delegator", "unit")
