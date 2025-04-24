@@ -17,6 +17,8 @@ import SubmitForms from "../Student/SubmitForms";
 import ViewForms from "./ViewForms";
 import { UserProfileSettings } from "@/components/UserProfileSettings";
 import { Switch } from "@/components/ui/switch";
+import WorkflowDesigner from "@/Pages/dashboard/Privileged/WorkflowDesigner";
+
 
 
 /**
@@ -397,6 +399,21 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
         }
         return <DelegationManager />;
 
+        case "approval-flow-builder":
+          // admin-only permissions check
+          if (!permissions.canManageFormWorkflows) {
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Permission Denied</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>You do not have permission to access this page</p>
+                </CardContent>
+              </Card>
+            );
+          }
+          return <WorkflowDesigner />;
       default:
         return (
           <Card>

@@ -35,6 +35,11 @@ const roleConfigs = {
             id: "manage-form-schemas",
             title: "Manage Form Templates",
             permissions: ["admin.manage_form_schemas"]
+          },
+          {
+            id: "approval-flow-builder",
+            title: "Approval Flow Builder",
+            permissions: ["admin.manage_form_workflows"]
           }
         ]
       },
@@ -60,7 +65,8 @@ const roleConfigs = {
       canCreateUsers: true,
       canToggleUserStatus: true,
       canManageFormSchemas: true,
-      canManageOrganization: true
+      canManageOrganization: true,
+      canManageFormWorkflows: true
     }
   },
 

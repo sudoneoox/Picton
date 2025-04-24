@@ -22,6 +22,9 @@ from .organization import (
     ApprovalDelegationViewSet,
 )
 
+from .forms.form_approval import FormApprovalWorkflowViewSet
+
+
 
 __all__ = [
     "LoginView",
