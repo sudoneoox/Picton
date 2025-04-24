@@ -7,7 +7,12 @@ from utils import pretty_print
 
 
 class CheckSignatureView(APIView):
-    """Check if user has a signature"""
+    """
+    Check if user has a signature
+
+    Used to determine if a signature needs to be uploaded before approving forms.
+    Staff and admins must have a signature on file before they can approve forms.
+    """
 
     permission_classes = [IsAuthenticated]
 
@@ -25,12 +30,28 @@ class CheckSignatureView(APIView):
 
 
 class SubmitSignatureView(APIView):
-    """Upload user signature"""
+    """
+    Upload user signature
+
+    Handles file upload for user signatures, validates the file type and size,
+    and stores it in the user profile. Signatures are used for form approvals.
+    """
 
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request):
+        """
+        Handle signature image upload
+
+        Validates signature file type and size before saving to user profile.
+        Allowed formats: JPEG, PNG, GIF
+        Maximum size: 2MB
+
+        Returns:
+            Success response with has_signature=True if uploaded successfully
+            Error response with details if validation fails
+        """
         pretty_print(f"Uploading signature for user: {request.user.username}", "DEBUG")
         pretty_print(f"Request FILES: {request.FILES}", "DEBUG")
         pretty_print(f"Request data: {request.data}", "DEBUG")

@@ -3,7 +3,12 @@ from ..models import User
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
-    """Serializer for admin dashboard with additional fields"""
+    """
+    Serializer for admin dashboard with additional fields
+
+    Provides all user fields needed for admin operations.
+    Used in the admin dashboard for user management.
+    """
 
     class Meta:
         model = User

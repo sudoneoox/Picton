@@ -56,6 +56,13 @@ class FormTemplateSerializer(serializers.ModelSerializer):
 
 
 class FormSubmissionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for form submissions
+
+    Includes additional computed fields like submitter_name and template_name
+    to reduce the need for additional queries on the frontend.
+    """
+
     submitter_name = serializers.SerializerMethodField()
     template_name = serializers.SerializerMethodField()
     unit_name = serializers.SerializerMethodField()
@@ -93,10 +100,16 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
         return f"{obj.submitter.first_name} {obj.submitter.last_name}"
 
     def get_template_name(self, obj):
+        """get the name of the form template used"""
         return obj.form_template.name
 
     def get_identifier(self, obj):
-        """Get the unique identifier for this submission"""
+        """
+        Get the unique identifier for this submission
+
+        Fetches the identifier through the related model or returns None
+        if no identifier exists.
+        """
         try:
             # Get the identifier through the related model
             identifier_obj = FormSubmissionIdentifier.objects.filter(
@@ -111,6 +124,13 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
 
 
 class FormApprovalSerializer(serializers.ModelSerializer):
+    """
+    Serializer for form approvals
+
+    Includes additional computed fields to provide context about
+    the approval, submission, and users involved.
+    """
+
     approver_name = serializers.SerializerMethodField()
     submitter_name = serializers.SerializerMethodField()
     form_title = serializers.SerializerMethodField()
@@ -148,6 +168,7 @@ class FormApprovalSerializer(serializers.ModelSerializer):
         return f"{obj.approver.first_name} {obj.approver.last_name}"
 
     def get_submitter_name(self, obj):
+        """Get formatted full name of form submitter"""
         submitter = obj.form_submission.submitter
         return f"{submitter.first_name} {submitter.last_name}"
 
