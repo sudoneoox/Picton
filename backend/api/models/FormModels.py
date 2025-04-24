@@ -1,13 +1,10 @@
 from django.db import models
-from django.conf import settings
-import os
-
 from utils.prettyPrint import pretty_print
 
-from .ModelConstants import RoleChoices, FormStatusChoices, BaseModel
+from .ModelConstants import BaseModel, FormStatusChoices, RoleChoices
 from .OrganizationalModels import (
-    OrganizationalUnit,
     ApprovalDelegation,
+    OrganizationalUnit,
 )
 from .UserModel import User
 
@@ -20,12 +17,18 @@ from .UserModel import User
 
 
 class FormTemplate(BaseModel, models.Model):
-    """Stores template information for different form types"""
+    """
+    Stores template information for different form types
+    Holds the schema and required optional fields in json format
+    """
 
+    # name of form template (Graduate Petition, ...)
     name = models.CharField(max_length=100)
+
+    # small descriptor to show user
     description = models.TextField(blank=True)
 
-    # For Future to allow admins to activate or deactivate a form template
+    # in order to deactivate, activate without deleting form data
     is_active = models.BooleanField(default=True)
 
     # store field schema as JSON
@@ -37,22 +40,12 @@ class FormTemplate(BaseModel, models.Model):
     # LaTeX template path relative to templates/forms directory
     latex_template_path = models.CharField(max_length=255)
 
-    def get_latex_template_path(self):
-        """
-        Get the full path to the LaTeX template file
-
-        Constructs the absolute file path to the template file on disk.
-        Used by the PDF generator to locate the correct template.
-
-        Returns:
-            String: Absolute file path to the LaTeX template
-        """
-        return os.path.join(
-            settings.BASE_DIR, "templates", "forms", self.latex_template_path
-        )
-
     def save(self, *args, **kwargs):
-        """Ensure template path is set before saving"""
+        """
+        Overload default save method
+        Ensure template path is set before saving
+        """
+
         if not self.latex_template_path:
             # Default to normalized name if not set
             self.latex_template_path = f"{self.name.lower().replace(' ', '_')}.tex"
@@ -60,9 +53,9 @@ class FormTemplate(BaseModel, models.Model):
 
     def get_form_type_code(self):
         """
-        Get a short code for the form type (useful for filenames)
+        Get a short code for the form type (used for filenames)
 
-        Returns a standardized code based on the form name:
+        Returns a code based on the form name:
         - For Graduate Petition forms: "petition"
         - For Term Withdrawal forms: "withdrawal"
         - For other forms: acronym or shortened name
@@ -92,19 +85,25 @@ class FormApprovalWorkflow(BaseModel, models.Model):
     including which roles must approve and in what order.
     """
 
+    # FK linking to the form
     form_template = models.ForeignKey(
         FormTemplate, on_delete=models.CASCADE, related_name="approvals_workflows"
     )
 
+    # the approvers role (staff, admin)
     approver_role = models.CharField(max_length=30, choices=RoleChoices.choices)
 
+    # the approvers position (Graduate Advisor, Department Chair ...)
     approval_position = models.CharField(
         max_length=100, help_text="Position title of the approver"
     )
+
+    # whether the approval is optional or not
     is_required = models.BooleanField(
         default=True, help_text="Whether this approval is required for completion"
     )
 
+    # The order in which the approvers need to sign
     order = models.PositiveIntegerField(
         help_text="Suggested order in the approval sequence"
     )
@@ -125,9 +124,12 @@ class FormSubmission(BaseModel, models.Model):
     including all associated data, approvals, and generated PDFs.
     """
 
+    # required approval counts of the form needed to mark it as approved
     required_approval_count = models.PositiveIntegerField(
         default=0, help_text="Number of required approvals for this submission"
     )
+
+    # the current approval count
     completed_approval_count = models.PositiveIntegerField(
         default=0, help_text="Number of completed approvals"
     )
@@ -142,6 +144,7 @@ class FormSubmission(BaseModel, models.Model):
         User, on_delete=models.CASCADE, related_name="form_submissions"
     )
 
+    # the form data submitted by the frontend form held as JSON
     form_data = models.JSONField(help_text="JSON data containing form field values")
 
     # The Updated PDF created from the users input
@@ -156,10 +159,13 @@ class FormSubmission(BaseModel, models.Model):
         max_length=20, choices=FormStatusChoices.choices, default="draft"
     )
 
+    # the current step where the pdf is at
     current_step = models.PositiveIntegerField(default=0)
 
     # In order to track revision stage in case the form gets returned for changes
     version = models.PositiveIntegerField(default=1)
+
+    # FK linking to itself so that you can sort of get like a timeline view?
     previous_version = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -168,7 +174,7 @@ class FormSubmission(BaseModel, models.Model):
         related_name="revisions",
     )
 
-    # Add new field for organizational unit
+    # FK linking the orgnizational unit the form is for
     unit = models.ForeignKey(
         OrganizationalUnit,
         on_delete=models.CASCADE,
@@ -187,6 +193,7 @@ class FormSubmission(BaseModel, models.Model):
     def generate_submission_identifier(self):
         """
         Generate a unique identifier for this submission
+        IMPORTANT: USED TO KEEP THE FILE NAMES UNIQUE
 
         Creates a formatted identifier using user ID, template ID, timestamp,
         and a random suffix to ensure uniqueness while being somewhat readable.
@@ -205,24 +212,10 @@ class FormSubmission(BaseModel, models.Model):
 
         return f"FRM-{self.submitter.id}-{self.form_template.id}-{timestamp}-{random_suffix}"
 
-    def initialize_approval_requirements(self):
-        """
-        Initialize the approval requirements based on the template
-
-        Sets the required_approval_count based on how many required
-        approval steps are defined in the form template's workflow.
-        Should be called when a form is first submitted.
-        """
-
-        required_approvals = self.form_template.approvals_workflows.filter(
-            is_required=True
-        )
-        self.required_approval_count = required_approvals.count()
-        self.save()
-
     def update_approval_status(self):
         """
         Update the form status based on completed approvals
+        Used on save method
 
         Counts completed approvals and updates the form status to
         approved, rejected, or returned based on approval decisions.
@@ -238,6 +231,7 @@ class FormSubmission(BaseModel, models.Model):
         self.completed_approval_count = completed_required
 
         # Check if any are rejected
+        # if any are rejected its instanly marked as rejected
         has_rejection = FormApproval.objects.filter(
             form_submission=self, decision="rejected"
         ).exists()
@@ -262,16 +256,17 @@ class FormSubmission(BaseModel, models.Model):
 class FormApproval(BaseModel, models.Model):
     """Individual approval records for form submissions"""
 
+    # FK linking to form
     form_submission = models.ForeignKey(
         FormSubmission, on_delete=models.CASCADE, related_name="approvals"
     )
 
-    # Who approved the form should have a staff or admin role
+    # FK Who approved the form should have a staff or admin role
     approver = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="form_approvals"
     )
 
-    # link to the workflow that defines this approval position
+    # FK link to the workflow that defines this approval position
     workflow = models.ForeignKey(
         FormApprovalWorkflow,
         on_delete=models.SET_NULL,
@@ -282,6 +277,7 @@ class FormApproval(BaseModel, models.Model):
     # Final Step Number
     step_number = models.PositiveIntegerField()
 
+    # the decision (approved, returned, etc)
     decision = models.CharField(
         max_length=20,
         choices=FormStatusChoices.choices,
@@ -290,21 +286,17 @@ class FormApproval(BaseModel, models.Model):
     # In case it was Rejected
     comments = models.TextField(blank=True)
 
-    # Track approval timing metrics
     received_at = models.DateTimeField(auto_now_add=True)
     decided_at = models.DateTimeField(null=True, blank=True)
 
-    # To track which fields were flagged for correction
-    fields_to_correct = models.JSONField(null=True, blank=True)
-
-    # Should have staff signature
+    # Fk linking to staff signature
     signed_pdf = models.FileField(upload_to="forms/signed_pdfs/", null=True, blank=True)
 
     # to quickly locate should be similiar to
     # {approver_id}_{form_type}_{approval_id}
     signed_pdf_url = models.TextField(null=True)
 
-    # Add delegation tracking
+    # FK to Add delegation tracking
     delegated_by = models.ForeignKey(
         User,
         null=True,
@@ -340,7 +332,7 @@ class FormApproval(BaseModel, models.Model):
         Returns:
             FormApproval object or None if no eligible approver found
         """
-        from api.models import UnitApprover, FormApprovalWorkflow
+        from api.models import FormApprovalWorkflow, UnitApprover
 
         # Get workflow step for this submission and step number
         workflow = FormApprovalWorkflow.objects.filter(
@@ -442,7 +434,7 @@ class FormSubmissionIdentifier(models.Model):
     """
     Lookup Table for student form submissions with unique identifiers
 
-    Creates a user-friendly identifier for forms that can be used to lookup
+    Creates a friendly identifier for forms that can be used to lookup
     submissions without exposing internal IDs. Also provides quick filtering
     by form type and student ID.
     """
@@ -455,7 +447,7 @@ class FormSubmissionIdentifier(models.Model):
         FormSubmission, on_delete=models.CASCADE, related_name="submission_identifier"
     )
 
-    # metedata to quickly filter
+    # metadata to quickly filter
     form_type = models.CharField(max_length=100)
     student_id = models.CharField(max_length=50, blank=True)
     submission_date = models.DateTimeField(auto_now_add=True)
