@@ -43,7 +43,8 @@ class LoginView(views.APIView, MethodNameMixin):
         try:
             personal_id = request.data.get("personalId")
             password = request.data.get("password")
-            # in the frontend its sent as personalId but the serializer is expecting personal_id
+
+            # map frontend field name to serializer field name
             request.data["personal_id"] = personal_id
 
             serializer = LoginSerializer(data=request.data)
@@ -116,7 +117,12 @@ class LoginView(views.APIView, MethodNameMixin):
 
 
 class RegisterView(views.APIView, MethodNameMixin):
-    """Handle new user registration"""
+    """
+    Handle new user registration
+
+    Creates new user accounts with basic validation.
+    All users created through this endpoint are assigned the student role.
+    """
 
     permission_classes = [AllowAny]
 
@@ -202,7 +208,12 @@ class RegisterView(views.APIView, MethodNameMixin):
 
 
 class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
-    """Handle Microsoft Azure authentication"""
+    """
+    Handle Microsoft Azure authentication
+
+    Provides endpoints for Microsoft Azure AD OAuth authentication,
+    supporting both login and registration with Microsoft accounts.
+    """
 
     permission_classes = [AllowAny]
 
@@ -213,7 +224,18 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
         return response.json()
 
     def _verify_token_signature(self, token):
-        """Verify token signature using Azure public keys"""
+        """
+        Verify token signature using Azure public keys
+
+        Args:
+            token: The JWT token to verify
+
+        Returns:
+            The decoded token payload if valid
+
+        Raises:
+            AuthenticationFailed: If token signature is invalid
+        """
         jwks = self._get_azure_jwks()
         header = jwt.get_unverified_header(token)
         public_key = None
@@ -290,6 +312,17 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
 
     @action(detail=False, methods=["post"])
     def register(self, request):
+        """
+        Register a new user with Microsoft Azure AD credentials
+
+        Creates a new user account using information from the Microsoft token.
+        Sets a random password since authentication will occur via OAuth.
+
+        Returns:
+            Response with user details if successful
+            Error response if token is invalid or user already exists
+        """
+
         try:
             pretty_print("Starting Azure registration process", "INFO")
             token = request.data.get("token")
@@ -360,6 +393,12 @@ class AzureAuthViewSet(viewsets.ViewSet, MethodNameMixin):
 
 
 class LogoutView(views.APIView):
+    """
+    Handle user logout
+
+    Terminates the user's session and clears authentication cookies.
+    """
+
     permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=["POST"])
@@ -383,12 +422,28 @@ class LogoutView(views.APIView):
 class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def csrf(self, request):
-        """Get a new CSRF token"""
+        """
+        Get a new CSRF token
+
+        Sets a CSRF cookie in the response. This endpoint should be called
+        before making any POST/PUT/PATCH/DELETE requests to ensure proper
+        CSRF protection.
+        """
         return Response({"message": "CSRF cookie set"})
 
     @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def update_email(self, request):
-        """Update user's email address"""
+        """
+        Update user's email address
+
+        Validates that the new email is not already in use by another account
+        before updating the user's email.
+
+        Returns:
+            Success response if updated
+            Error response if email is missing or already taken
+        """
+
         try:
             email = request.data.get("email")
             if not email:

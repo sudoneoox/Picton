@@ -1,5 +1,5 @@
-// IMPORTANT: Test data make it so that fetching from the database populates this data object
-//
+// IMPORTANT: Navigation sidebar component for the dashboard
+
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { Users, File, User, LucideIcon } from "lucide-react";
@@ -37,6 +37,11 @@ interface DashboardConfig {
   getDashboard: () => { defaultView: string; title: string };
 }
 
+
+/**
+ * Sidebar navigation component
+ * Renders sidebar with sections and items based on user role
+ */
 export function SidebarNav({
   onViewChange,
   userData = null,
@@ -47,6 +52,7 @@ export function SidebarNav({
   userData?: any;
   dashboardConfig?: DashboardConfig;
 }) {
+  // State for user data when not provided via props
   const [userDataState, setUserDataState] = useState<UserDataState>({
     name: userData?.username || "",
     email: userData?.email || "",
@@ -57,7 +63,7 @@ export function SidebarNav({
   const dashboard = dashboardConfig?.getDashboard() || { defaultView: "" }
   const [activeItem, setActiveItem] = useState(dashboard.defaultView || "");
 
-  // Only fetch user data if not provided
+  // Fetch user data if not provided via props  
   useEffect(() => {
     if (!userData) {
       const fetchUserData = async () => {
@@ -78,13 +84,19 @@ export function SidebarNav({
     }
   }, [userData]);
 
-  // Handle sidebar item click
+  /**
+   * Handle sidebar item click
+   * Updates active item and notifies parent component
+   */
   const handleItemClick = (itemId: string) => {
     setActiveItem(itemId);
     onViewChange(itemId);
   };
 
-  // get icon component based on icon name
+  /**
+   * Get icon component based on icon name
+   * Maps string icon names to Lucide icon components
+   */
   const getIconComponent = (iconName: string): LucideIcon => {
     const icons: Record<string, LucideIcon> = {
       "Users": Users,
@@ -96,6 +108,10 @@ export function SidebarNav({
     return icons[iconName] || Users;
   };
 
+  /**
+   * Build navigation items from dashboard config
+   * Creates the sidebar structure with sections and items
+   */
   const buildNavItems = () => {
     if (!dashboardConfig) {
       // Fallback to default if no config

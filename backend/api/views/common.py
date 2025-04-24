@@ -5,6 +5,9 @@ from rest_framework import permissions
 class AdminRequiredMixin:
     """
     Mixin to enforce admin-only access
+
+    Adds a convenience method to check if the current user is an admin.
+    Used by views that should only be accessible to administrators.
     """
 
     permission_classes = [permissions.IsAdminUser]

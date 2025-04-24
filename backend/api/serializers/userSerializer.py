@@ -1,9 +1,14 @@
 from rest_framework import serializers
-from ..models import User
+from api.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Basic User Serializer with limited fields"""
+    """
+    Basic User Serializer with limited fields
+
+    Used for list views and situations where only basic user info is needed.
+    Excludes sensitive fields and detailed information.
+    """
 
     class Meta:
         model = User
@@ -21,7 +26,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
-    """Detailed user serializer with all fields"""
+    """
+    Detailed user serializer with all fields
+
+    Used for profile views and admin screens where complete user details are needed.
+    Includes additional fields not in the basic UserSerializer.
+    """
 
     class Meta:
         model = User

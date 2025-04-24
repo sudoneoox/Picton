@@ -1,3 +1,5 @@
+// IMPORTANT: Main dasboard wrapper component
+
 import { useEffect, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { SidebarNav } from "@/Pages/dashboard/Common/SidebarNavbar";
@@ -10,8 +12,11 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar";
 import { UserData, DashboardSettings, DashboardConfig } from "@/types/dashboard";
-// import StudentDashboard from "@/Pages/dashboard/Student/StudentDashboard.jsx";
 
+/**
+ * Main dashboard component that provides the layout structure
+ * Handles sidebar, header, and content rendering based on user role
+ */
 export default function SharedDashboard({ userData }: { userData: UserData }) {
   // initialize config with user data
   const config: DashboardConfig = initializeConfig(userData);

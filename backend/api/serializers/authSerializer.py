@@ -2,7 +2,12 @@ from rest_framework import serializers
 
 
 class LoginSerializer(serializers.Serializer):
-    """Serializer for login endpoint validation"""
+    """
+    Serializer for login endpoint validation
+
+    Validates login credentials from various input formats,
+    supporting login via personal ID, username, or email.
+    """
 
     personal_id = serializers.CharField(required=True)
     password = serializers.CharField(required=True)

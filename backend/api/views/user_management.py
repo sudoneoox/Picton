@@ -6,9 +6,9 @@ from rest_framework.response import Response
 from django.conf import settings
 
 from utils import MethodNameMixin, pretty_print
-from ..serializers import UserDetailSerializer, UserSerializer
-from ..models import User
-from ..core import IsAdminOrSelf, IsActiveUser
+from api.serializers import UserDetailSerializer, UserSerializer
+from api.models import User
+from api.core import IsAdminOrSelf, IsActiveUser
 
 from typing import List
 
@@ -29,9 +29,12 @@ class UserManagementViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=False, methods=["GET"])
     def me(self, request):
-        """Get current user's profile"""
-        # NOTE: /users/me/ endpoint authentication middleware
+        """
+        Get current user's profile
 
+        Returns detailed information about the authenticated user.
+        This endpoint is used for initializing user data in the frontend.
+        """
         pretty_print(
             f"Received Request from {self._get_method_name()}: {request}", "DEBUG"
         )

@@ -11,6 +11,13 @@ from .ModelConstants import BaseModel, RoleChoices
 
 # IMPORTANT: override default django user table
 class CustomUserManager(BaseUserManager):
+    """
+    Custom manager for the User model
+
+    Provides methods for creating users and superusers with
+    appropriate default values and validation.
+    """
+
     def create_user(self, username, email, password=None, **extra_fields):
         if not username:
             raise ValueError("Username is required")
@@ -26,6 +33,11 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, username, email, password=None, **extra_fields):
+        """
+        Create and save a superuser
+
+        Creates a user with admin role and superuser privileges.
+        """
         extra_fields.setdefault(
             "role",
             "admin",
@@ -40,6 +52,13 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(BaseModel, AbstractBaseUser, PermissionsMixin):
+    """
+    Custom user model extending Django's AbstractBaseUser
+
+    Includes additional fields for forms system like personal_id and role.
+    Supports signature storage for form approvals.
+    """
+
     # Required fields
     username = models.CharField(max_length=40, unique=True)
     email = models.EmailField(unique=True)
@@ -81,13 +100,23 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ["email"]  # username is automatically required
 
     def save(self, *args, **kwargs):
+        """
+        Override save method to ensure personal_id is set
+
+        Automatically generates a unique personal_id if one is not provided.
+        """
         # Generate personal_id if not provided
         if not self.personal_id:
             self.personal_id = self._generate_unique_personal_id()
         super().save(*args, **kwargs)
 
     def _generate_unique_personal_id(self):
-        """Generate a unique 7-digit personal ID"""
+        """
+        Generate a unique 7-digit personal ID
+
+        Keeps generating random 7-digit numbers until an unused one is found.
+        This is used as a user-friendly identifier for students and staff.
+        """
         import random
 
         while True:

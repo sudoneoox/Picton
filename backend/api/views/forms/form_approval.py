@@ -19,7 +19,12 @@ from api.serializers import FormApprovalSerializer, FormApprovalWorkflowSerializ
 
 
 class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
-    """ViewSet for viewing form approvals"""
+    """
+    ViewSet for viewing and processing form approvals
+
+    Provides endpoints for users to view and act on form approvals.
+    Includes methods to approve, reject, and fetch pending approvals.
+    """
 
     serializer_class = FormApprovalSerializer
     queryset = FormApproval.objects.all()
@@ -122,71 +127,76 @@ class FormApprovalViewSet(viewsets.ReadOnlyModelViewSet, MethodNameMixin):
         return Response({"status": submission.status})
 
         # Modify the reject method
-        @action(detail=True, methods=["post"])
-        def reject(self, request, pk=None):
-            approval = self.get_object()
-            submission = approval.form_submission
 
-            comments = request.data.get("comments", "")
-            if not comments:
-                return Response(
-                    {"error": "Comments are required when rejecting a form"},
-                    status=status.HTTP_400_BAD_REQUEST,
+    @action(detail=True, methods=["post"])
+    def reject(self, request, pk=None):
+        approval = self.get_object()
+        submission = approval.form_submission
+
+        comments = request.data.get("comments", "")
+        if not comments:
+            return Response(
+                {"error": "Comments are required when rejecting a form"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Check if user has a signature
+        if not request.user.has_signature:
+            return Response(
+                {"error": "You need to upload a signature before rejecting forms"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        approval.decision = "rejected"
+        approval.comments = comments
+        approval.decided_at = timezone.now()
+
+        # Generate signed PDF with rejection reason
+        try:
+            pdf_generator = FormPDFGenerator()
+            signed_pdf = pdf_generator.generate_signed_form(
+                submission, request.user, "rejected", comments
+            )
+
+            # Save the signed PDF
+            if signed_pdf:
+                identifier = ""
+                try:
+                    identifier = submission.submission_identifier.identifier
+                except:
+                    identifier = f"form{submission.id}"
+
+                template_code = (
+                    "withdrawal"
+                    if submission.form_template.name == "Term Withdrawal Form"
+                    else "petition"
                 )
+                pdf_filename = f"forms/signed/{identifier}_{template_code}_rejected.pdf"
+                approval.signed_pdf.save(pdf_filename, signed_pdf, save=False)
+                approval.signed_pdf_url = pdf_filename
 
-            # Check if user has a signature
-            if not request.user.has_signature:
-                return Response(
-                    {"error": "You need to upload a signature before rejecting forms"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        except Exception as e:
+            pretty_print(
+                f"Error generating signed PDF in FormApproval.ViewSet.reject: {str(e)}",
+                "ERROR",
+            )
 
-            approval.decision = "rejected"
-            approval.comments = comments
-            approval.decided_at = timezone.now()
+        approval.save()
 
-            # Generate signed PDF with rejection reason
-            try:
-                pdf_generator = FormPDFGenerator()
-                signed_pdf = pdf_generator.generate_signed_form(
-                    submission, request.user, "rejected", comments
-                )
+        submission.status = "rejected"
+        submission.save()
 
-                # Save the signed PDF
-                if signed_pdf:
-                    identifier = ""
-                    try:
-                        identifier = submission.submission_identifier.identifier
-                    except:
-                        identifier = f"form{submission.id}"
-
-                    template_code = (
-                        "withdrawal"
-                        if submission.form_template.name == "Term Withdrawal Form"
-                        else "petition"
-                    )
-                    pdf_filename = (
-                        f"forms/signed/{identifier}_{template_code}_rejected.pdf"
-                    )
-                    approval.signed_pdf.save(pdf_filename, signed_pdf, save=False)
-                    approval.signed_pdf_url = pdf_filename
-
-            except Exception as e:
-                pretty_print(
-                    f"Error generating signed PDF in FormApproval.ViewSet.reject: {str(e)}",
-                    "ERROR",
-                )
-
-            approval.save()
-
-            submission.status = "rejected"
-            submission.save()
-
-            return Response({"status": "rejected"})
+        return Response({"status": "rejected"})
 
     @action(detail=False, methods=["GET"])
     def pending(self, request):
-        """Get all pending approvals for the current user's role including delegated ones"""
+        """
+        Get all pending approvals for the current user's role
+
+        Finds form submissions that require approval from the current user,
+        taking into account their role, unit, and any delegated approvals.
+        Returns a list of approvals waiting for decisions.
+        """
         user = request.user
         role = user.role
 

@@ -1,5 +1,16 @@
+// IMPORTANT: Configuration system for role-based dashboard setup
+
+
 import { pretty_log } from "@/api/common_util.js"
 
+
+/**
+ * Configuration settings for different user roles 
+ * Each role has:
+ * - sidebar: Navigation sections and items
+ * - dashboard: Default view and title settings
+ * - permissions: Role-specific capabilities
+ */
 const roleConfigs = {
   admin: {
     sidebar: [
@@ -158,6 +169,11 @@ const roleConfigs = {
 }
 
 
+/**
+ * Dashboard configuration object
+ * Maintains the current configuration and provides methods
+ * to access and modify dashboard settings
+ */
 const dashboardConfig = {
   // Default configuration
   config: {
@@ -209,10 +225,14 @@ const dashboardConfig = {
 };
 
 
-// function to init config with user data
+/**
+ * Initialize dashboard configuration with user data
+ * Sets up the correct role-based configuration and permissions
+ */
 export const initializeConfig = (userData) => {
   pretty_log("Initializing User Config for Dashboard", "INFO")
 
+  // Extract user properties
   const id = userData.id;
   const username = userData.username;
   const email = userData.email;
@@ -226,7 +246,7 @@ export const initializeConfig = (userData) => {
   const updatedAt = userData.updated_at;
   const superuser = userData.is_superuser;
 
-  // Assign user properties
+  // Update configuration with user data and role-specific settings
   dashboardConfig.update({
     user: {
       id,
@@ -241,7 +261,7 @@ export const initializeConfig = (userData) => {
       updatedAt,
       isSuperUser: superuser
     },
-    // Apply role-specific config
+    // Apply role-specific config with fallback to student role (since it has the lowest privileges)
     ...roleConfigs[userRole] || roleConfigs.student // Fallback to student if role is unknown
   });
 

@@ -16,6 +16,9 @@ from ..serializers import (
 class OrganizationalUnitViewSet(viewsets.ModelViewSet, MethodNameMixin):
     """
     ViewSet for managing organizational units
+
+    Provides endpoints to create, read, update, and delete organizational units.
+    Also includes methods to retrieve sub-units and approvers for a unit.
     """
 
     serializer_class = OrganizationalUnitSerializer
@@ -30,7 +33,13 @@ class OrganizationalUnitViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=True, methods=["GET"])
     def sub_units(self, request, pk=None):
-        """Get all sub-units of this unit"""
+        """
+        Get all sub-units of this unit
+
+        Returns all child organizational units that report to this unit.
+        Used to display organizational hierarchies.
+        """
+
         unit = self.get_object()
         sub_units = OrganizationalUnit.objects.filter(parent=unit)
         serializer = self.get_serializer(sub_units, many=True)
@@ -38,7 +47,13 @@ class OrganizationalUnitViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=True, methods=["GET"])
     def approvers(self, request, pk=None):
-        """Get all approvers for this unit"""
+        """
+        Get all approvers for this unit
+
+        Returns all users who have approval authority in this unit.
+        Used for displaying available approvers
+        """
+
         unit = self.get_object()
         approvers = UnitApprover.objects.filter(unit=unit, is_active=True)
         serializer = UnitApproverSerializer(approvers, many=True)
@@ -48,6 +63,9 @@ class OrganizationalUnitViewSet(viewsets.ModelViewSet, MethodNameMixin):
 class UnitApproverViewSet(viewsets.ModelViewSet, MethodNameMixin):
     """
     ViewSet for managing unit approvers
+
+    Controls which users have approval authority in which units.
+    Includes methods to get a user's units and roles within units.
     """
 
     serializer_class = UnitApproverSerializer
@@ -218,7 +236,16 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=False, methods=["GET"])
     def active(self, request):
-        """Get all active delegations for the current user"""
+        """
+        Get all active delegations for the current user
+
+        Returns delegations where the current user is either the delegator
+        (delegated their approval authority) or the delegate (received
+        approval authority from someone else).
+
+        Only returns delegations that are currently active based on date range.
+        """
+
         now = timezone.now()
         delegated_to_me = ApprovalDelegation.objects.filter(
             delegate=request.user,

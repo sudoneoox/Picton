@@ -1,3 +1,5 @@
+// IMPORTANT: Renders the appropriate content based on activeView
+
 import React, { useState, useEffect } from "react";
 import ApprovalQueue from "@/Pages/dashboard/Staff/ApprovalQueue"
 import DelegationManager from "@/Pages/dashboard/Staff/DelegationManager";
@@ -16,6 +18,11 @@ import ViewForms from "./ViewForms";
 import { UserProfileSettings } from "@/components/UserProfileSettings";
 import { Switch } from "@/components/ui/switch";
 
+
+/**
+ * Main content component that renders the appropriate view 
+ * based on the active navigation item and user permissions
+ */
 const DashboardContent = ({ activeView, dashboardConfig }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +38,10 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
     canUpdateSignature: false,
   }
 
-  // Move fetchData outside useEffect so it can be passed to child components
+  /**
+   * Fetch data based on the active view
+   * Different views require different API endpoints
+   */
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -147,7 +157,11 @@ const DashboardContent = ({ activeView, dashboardConfig }) => {
     }
   };
 
-  // Render appropriate content based on active view
+
+  /**
+  * Render appropriate content based on active view
+  * Enforces permission checks for restricted views
+  */
   const renderContent = () => {
     if (loading) {
       return <LoadingSkeleton />;

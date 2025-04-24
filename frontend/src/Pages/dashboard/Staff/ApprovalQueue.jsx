@@ -1,3 +1,5 @@
+// IMPORTANT: Component for staff to review and approve forms
+
 import React, { useState, useEffect } from 'react';
 import { api } from "@/api/api.js";
 import { pretty_log } from "@/api/common_util";
@@ -18,6 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ToastNotification";
 import SignatureDialog from "@/Pages/dashboard/Common/SignatureDialog";
 
+/**
+ * Component for staff to review and process form approvals
+ * Shows pending approvals and allows approval or rejection actions
+ */
+
 const ApprovalQueue = () => {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +42,7 @@ const ApprovalQueue = () => {
   const [delegatedApprovals, setDelegatedApprovals] = useState([]);
   const [users, setUsers] = useState([]);
 
+  // Initial Data Loading
   useEffect(() => {
     fetchPendingApprovals();
     checkSignature();
@@ -50,6 +58,7 @@ const ApprovalQueue = () => {
     };
     fetchUsers();
 
+    // Fetch Active Delegations
     const fetchDelegations = async () => {
       try {
         const delegations = await api.staff.getActiveDelegations();
@@ -61,6 +70,8 @@ const ApprovalQueue = () => {
     fetchDelegations();
   }, []);
 
+
+  // Check if user has signature on file
   const checkSignature = async () => {
     try {
       const response = await api.commonAPI.checkIfSignature();
@@ -71,6 +82,7 @@ const ApprovalQueue = () => {
     }
   };
 
+  // fetch pending approvals from API
   const fetchPendingApprovals = async () => {
     try {
       setLoading(true);
@@ -87,6 +99,10 @@ const ApprovalQueue = () => {
     }
   };
 
+  /**
+   * Handle view form button click
+   * Fetches form details and displays PDF
+   */
   const handleViewForm = async (approval) => {
     setSelectedApproval(approval);
     setIsPdfLoading(true);
@@ -109,6 +125,10 @@ const ApprovalQueue = () => {
     }
   };
 
+  /**
+   * Handle approve button click
+   * Shows signature dialog if needed, otherwise opens approve dialog
+   */
   const handleApproveClick = (approval) => {
     if (!hasSignature) {
       setShowSignatureDialog(true);
@@ -119,6 +139,11 @@ const ApprovalQueue = () => {
     setApproveDialogOpen(true);
   };
 
+
+  /**
+   * Handle reject button click
+   * Shows signature dialog if needed, otherwise opens reject dialog
+   */
   const handleRejectClick = (approval) => {
     if (!hasSignature) {
       setShowSignatureDialog(true);
@@ -129,6 +154,7 @@ const ApprovalQueue = () => {
     setRejectDialogOpen(true);
   };
 
+  // submit form approval to API
   const handleApprove = async () => {
     if (!selectedApproval) return;
 
@@ -146,6 +172,8 @@ const ApprovalQueue = () => {
     }
   };
 
+
+  //  submit form rejection to API
   const handleReject = async () => {
     if (!selectedApproval || !comments.trim()) {
       showToast({ error: "Comments are required when rejecting a form" }, "error");
@@ -166,11 +194,13 @@ const ApprovalQueue = () => {
     }
   };
 
+  // handles signature submission
   const handleSignatureSubmit = () => {
     setHasSignature(true);
     setShowSignatureDialog(false);
   };
 
+  // format date string for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString(undefined, {
@@ -180,6 +210,7 @@ const ApprovalQueue = () => {
     });
   };
 
+  // get delegated name from user id
   const getDelegatorName = (delegatorId) => {
     if (!delegatorId) return "";
     const user = users.find(u => u.id === delegatorId);
@@ -188,6 +219,8 @@ const ApprovalQueue = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* Header with refresh button */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-medium">Pending Approvals</h2>
         <Button onClick={fetchPendingApprovals} variant="outline" size="sm">
@@ -195,6 +228,7 @@ const ApprovalQueue = () => {
         </Button>
       </div>
 
+      {/* Signature warning */}
       {!hasSignature && (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded mb-4">
           <h3 className="text-amber-800 font-medium">Signature Required</h3>
@@ -211,6 +245,7 @@ const ApprovalQueue = () => {
         </div>
       )}
 
+      {/* Approvals table */}
       {loading ? (
         <div className="space-y-4">
           <Skeleton className="h-8 w-full" />
@@ -294,6 +329,7 @@ const ApprovalQueue = () => {
         </Table>
       )}
 
+      {/* Dialogs */}
       {/* View PDF Dialog */}
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] w-[90vw]">
@@ -317,7 +353,7 @@ const ApprovalQueue = () => {
               </div>
             </div>
 
-            {/* Now we need to fetch the PDF for viewing */}
+            {/* PDF Viewer */}
             <div className="h-[70vh] border rounded">
               {isPdfLoading ? (
                 <div className="flex items-center justify-center h-full">
@@ -360,6 +396,8 @@ const ApprovalQueue = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+
       {/* Approve Dialog */}
       <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
         <DialogContent>
