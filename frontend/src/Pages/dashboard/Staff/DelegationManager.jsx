@@ -1,3 +1,5 @@
+// IMPORTANT: Component for managing approval delegations
+
 import React, { useState, useEffect } from 'react';
 import { api } from "@/api/api.js";
 import { pretty_log } from "@/api/common_util";
@@ -45,7 +47,12 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/components/ToastNotification";
 
+/**
+ * Component for managing approval delegations
+ * Allows staff to delegate their approval authority to other users
+ */
 const DelegationManager = () => {
+  // state management
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [delegations, setDelegations] = useState([]);
@@ -62,7 +69,7 @@ const DelegationManager = () => {
   const [userData, setUserData] = useState(null);
 
 
-
+  // fetch current user data
   const fetchCurrentUser = async () => {
     try {
       const user = await api.auth.getCurrentUser();
@@ -77,6 +84,7 @@ const DelegationManager = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // parallel data fetching for better performance
         const [delegationsData, unitsData, usersData] = await Promise.all([
           api.staff.getActiveDelegations(),
           api.staff.getMyUnits(),
@@ -97,6 +105,10 @@ const DelegationManager = () => {
     fetchCurrentUser();
   }, []);
 
+  /**
+   * Handle delegation creation
+   * Validates form data and submits to API
+   */
   const handleCreateDelegation = async () => {
     try {
       // Validate required fields
@@ -122,7 +134,7 @@ const DelegationManager = () => {
         end_date: formData.end_date.toISOString(),
       };
 
-      // Add detailed logging
+      // BUG: DEBUG DATA
       pretty_log(`Sending delegation data: ${JSON.stringify(apiFormData)}`, "DEBUG");
       pretty_log(`Unit type: ${typeof apiFormData.unit}, value: ${apiFormData.unit}`, "DEBUG");
       pretty_log(`Delegate type: ${typeof apiFormData.delegate}, value: ${apiFormData.delegate}`, "DEBUG");
@@ -135,7 +147,7 @@ const DelegationManager = () => {
       showToast({ message: "Delegation created successfully" }, "success");
       resetForm();
     } catch (error) {
-      // Enhanced error handling with more details
+      // BUG: DEBUG DATA
       pretty_log(`Delegation creation error detail: ${JSON.stringify(error)}`, "ERROR");
       pretty_log(`Error type: ${typeof error}`, "ERROR");
       pretty_log(`Error message: ${error.message}`, "ERROR");
@@ -147,7 +159,7 @@ const DelegationManager = () => {
 
       let errorMessage = "Failed to create delegation";
 
-      // Extract detailed error message if available
+      // BUG: DEBUG DATA
       if (error.message) {
         errorMessage = error.message;
       } else if (error.response && error.response.data && error.response.data.error) {
@@ -158,7 +170,10 @@ const DelegationManager = () => {
     }
   };
 
-
+  /**
+   * Handle delegation cancellation
+   * Confirms with user and calls API to cancel
+   */
   const handleCancelDelegation = async (delegationId) => {
     if (!window.confirm("Are you sure you want to cancel this delegation?")) {
       return;
@@ -178,6 +193,7 @@ const DelegationManager = () => {
     }
   };
 
+  // reset form to defaults
   const resetForm = () => {
     setFormData({
       unit: "",
@@ -192,7 +208,7 @@ const DelegationManager = () => {
     return format(new Date(dateString), "PPP");
   };
 
-  // Render delegation table
+  // Render delegation table with current delegations
   const renderDelegationTable = () => {
     if (loading) {
       return (
@@ -204,7 +220,7 @@ const DelegationManager = () => {
       );
     }
 
-    // Filter to show only active delegations first
+    // Sort delegations: active first, then by start date (newest first)
     const sortedDelegations = [...delegations].sort((a, b) => {
       if (a.is_active && !b.is_active) return -1;
       if (!a.is_active && b.is_active) return 1;
@@ -264,20 +280,6 @@ const DelegationManager = () => {
     );
   };
 
-  // Get future dated users only for delegation
-
-  const getEligibleDelegates = () => {
-    return users.filter(user => {
-      // Must be active user
-      if (!user.is_active) return false;
-
-      // Cannot delegate to yourself
-      if (user.id === parseInt(formData.delegator)) return false;
-
-      // Only staff or admin can be delegates
-      return user.role === "staff" || user.role === "admin";
-    });
-  };
 
   return (
     <Card>
@@ -315,6 +317,7 @@ const DelegationManager = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              {/* Unit selection */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="delegation-unit" className="text-right">
                   Unit
@@ -339,7 +342,7 @@ const DelegationManager = () => {
                 </Select>
               </div>
 
-
+              {/* Delegate selection */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="delegation-delegate" className="text-right">
                   Delegate To
@@ -371,6 +374,8 @@ const DelegationManager = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Start date selection */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="delegation-start-date" className="text-right">
                   Start Date
@@ -404,6 +409,7 @@ const DelegationManager = () => {
                   </Popover>
                 </div>
               </div>
+              {/* End date selection */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="delegation-end-date" className="text-right">
                   End Date
@@ -438,6 +444,8 @@ const DelegationManager = () => {
                   </Popover>
                 </div>
               </div>
+
+              {/* Reason field */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="delegation-reason" className="text-right">
                   Reason

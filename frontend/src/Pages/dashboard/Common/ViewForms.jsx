@@ -1,3 +1,5 @@
+// IMPORTANT: Component fo r viewing submitted forms
+
 import React, { useState, useEffect } from "react";
 import { api } from "@/api/api";
 import { pretty_log } from "@/api/common_util";
@@ -15,6 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Component for viewing form submissions and their status
+ * Displays a table of submissions and allows viewing form details
+ */
+
 const ViewForms = () => {
   const [formSubmissions, setFormSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,10 +30,13 @@ const ViewForms = () => {
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [loadingForm, setLoadingForm] = useState(false);
 
+
+  // fetch form submissions on component mount
   useEffect(() => {
     fetchUserForms();
   }, []);
 
+  // fetch user's form submission from API
   const fetchUserForms = async () => {
     try {
       setLoading(true);
@@ -39,6 +49,11 @@ const ViewForms = () => {
       setLoading(false);
     }
   };
+
+  /**
+   * Handle view form action
+   * Fetches form details and opens the PDF viewer dialog
+   */
 
   const handleViewForm = async (identifier) => {
     try {
@@ -53,6 +68,9 @@ const ViewForms = () => {
       setLoadingForm(false);
     }
   };
+
+
+  // Get color class for status badge based on form status
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -69,6 +87,7 @@ const ViewForms = () => {
     }
   };
 
+  // format date string for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString(undefined, {
@@ -80,6 +99,7 @@ const ViewForms = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with refresh button */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-medium">Your Submitted Forms</h2>
         <Button onClick={fetchUserForms} variant="outline" size="sm">
@@ -87,6 +107,7 @@ const ViewForms = () => {
         </Button>
       </div>
 
+      {/* Loading state */}
       {loading ? (
         <div className="space-y-4">
           <Skeleton className="h-8 w-full" />
@@ -131,6 +152,7 @@ const ViewForms = () => {
         </Table>
       )}
 
+      {/* Form details dialog */}
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] w-[90vw]">
           <DialogHeader>
@@ -176,6 +198,7 @@ const ViewForms = () => {
                 </div>
               ))}
 
+              {/* Progress bar */}
               {selectedForm && (
                 <div className="mt-2 pt-2 border-t">
                   <div className="flex justify-between items-center">
@@ -198,7 +221,7 @@ const ViewForms = () => {
             </div>
           </div>
 
-
+          {/* Form content section */}
           {
             loadingForm ? (
               <div className="h-[50vh] flex items-center justify-center">
