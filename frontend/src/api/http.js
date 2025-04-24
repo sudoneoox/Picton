@@ -46,14 +46,26 @@ export async function securedFetch(url, options = {}) {
 
     // Handle non-2xx responses
     if (!response.ok) {
-      const errorData = await response.json();
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        // If response is not JSON, use text instead
+        const textError = await response.text();
+        errorData = { error: textError || "Unknown server error" };
+      }
+
+      pretty_log(`API Error Response: ${JSON.stringify(errorData)}`, "ERROR");
+
       throw {
-        message: errorData.error || "API request failed",
+        message: errorData.error || errorData.detail || "API request failed",
         status: response.status,
         errors: errorData.errors,
+        response: { data: errorData }
       };
     }
 
+    // Return response data
     return response.json();
   } catch (error) {
     // Enhance and log error details

@@ -38,7 +38,15 @@ class FormTemplate(BaseModel, models.Model):
     latex_template_path = models.CharField(max_length=255)
 
     def get_latex_template_path(self):
-        """Get the full path to the LaTeX template file"""
+        """
+        Get the full path to the LaTeX template file
+
+        Constructs the absolute file path to the template file on disk.
+        Used by the PDF generator to locate the correct template.
+
+        Returns:
+            String: Absolute file path to the LaTeX template
+        """
         return os.path.join(
             settings.BASE_DIR, "templates", "forms", self.latex_template_path
         )
@@ -50,12 +58,16 @@ class FormTemplate(BaseModel, models.Model):
             self.latex_template_path = f"{self.name.lower().replace(' ', '_')}.tex"
         super().save(*args, **kwargs)
 
-        # follow default naming convention
-        template_name = self.name.lower().replace(" ", "_")
-        return f"{template_name}.tex"
-
     def get_form_type_code(self):
-        """Get a short code for the form type (useful for filenames)"""
+        """
+        Get a short code for the form type (useful for filenames)
+
+        Returns a standardized code based on the form name:
+        - For Graduate Petition forms: "petition"
+        - For Term Withdrawal forms: "withdrawal"
+        - For other forms: acronym or shortened name
+        """
+
         if "Graduate Petition" in self.name:
             return "petition"
         elif "Term Withdrawal" in self.name:
@@ -73,7 +85,12 @@ class FormTemplate(BaseModel, models.Model):
 
 
 class FormApprovalWorkflow(BaseModel, models.Model):
-    """Define who needs to approve which form template"""
+    """
+    Define who needs to approve which form template
+
+    Establishes the required approval sequence for each form template,
+    including which roles must approve and in what order.
+    """
 
     form_template = models.ForeignKey(
         FormTemplate, on_delete=models.CASCADE, related_name="approvals_workflows"
@@ -101,7 +118,12 @@ class FormApprovalWorkflow(BaseModel, models.Model):
 
 
 class FormSubmission(BaseModel, models.Model):
-    """Stores submitted form data"""
+    """
+    Stores submitted form data
+
+    Tracks the entire lifecycle of a form from draft to final approval,
+    including all associated data, approvals, and generated PDFs.
+    """
 
     required_approval_count = models.PositiveIntegerField(
         default=0, help_text="Number of required approvals for this submission"
@@ -110,7 +132,7 @@ class FormSubmission(BaseModel, models.Model):
         default=0, help_text="Number of completed approvals"
     )
 
-    # Form Template Used specifically their id
+    # Form Template Used
     form_template = models.ForeignKey(
         FormTemplate, on_delete=models.CASCADE, related_name="submissions"
     )
@@ -163,7 +185,17 @@ class FormSubmission(BaseModel, models.Model):
         return f"{self.form_template.name} - {self.submitter.username} ({self.status})"
 
     def generate_submission_identifier(self):
-        """Generate a unique identifer for this submission"""
+        """
+        Generate a unique identifier for this submission
+
+        Creates a formatted identifier using user ID, template ID, timestamp,
+        and a random suffix to ensure uniqueness while being somewhat readable.
+        Format: FRM-{user_id}-{template-id}-{timestamp}-{random_suffix}
+
+        Returns:
+            String: The generated unique identifier
+        """
+
         import uuid
         from datetime import datetime
 
@@ -174,7 +206,14 @@ class FormSubmission(BaseModel, models.Model):
         return f"FRM-{self.submitter.id}-{self.form_template.id}-{timestamp}-{random_suffix}"
 
     def initialize_approval_requirements(self):
-        """Initialize the approval requirements based on the template"""
+        """
+        Initialize the approval requirements based on the template
+
+        Sets the required_approval_count based on how many required
+        approval steps are defined in the form template's workflow.
+        Should be called when a form is first submitted.
+        """
+
         required_approvals = self.form_template.approvals_workflows.filter(
             is_required=True
         )
@@ -182,7 +221,13 @@ class FormSubmission(BaseModel, models.Model):
         self.save()
 
     def update_approval_status(self):
-        """Update the form status based on approvals"""
+        """
+        Update the form status based on completed approvals
+
+        Counts completed approvals and updates the form status to
+        approved, rejected, or returned based on approval decisions.
+        Called automatically when approvals are saved.
+        """
         # Count completed required approvals
         completed_required = FormApproval.objects.filter(
             form_submission=self,
@@ -286,6 +331,14 @@ class FormApproval(BaseModel, models.Model):
     def create_or_reassign(cls, form_submission, approver, step_number):
         """
         Creates a new approval or reassigns to the correct approver based on delegations
+
+        Args:
+            form_submission: The form submission requiring approval
+            approver: Optional specific approver (can be None to auto-determine)
+            step_number: Current approval workflow step number
+
+        Returns:
+            FormApproval object or None if no eligible approver found
         """
         from api.models import UnitApprover, FormApprovalWorkflow
 
@@ -386,7 +439,13 @@ class FormApproval(BaseModel, models.Model):
 
 
 class FormSubmissionIdentifier(models.Model):
-    """Lookup Table for student from submissions with unique identifiers"""
+    """
+    Lookup Table for student form submissions with unique identifiers
+
+    Creates a user-friendly identifier for forms that can be used to lookup
+    submissions without exposing internal IDs. Also provides quick filtering
+    by form type and student ID.
+    """
 
     # unique identifier for form_submission
     identifier = models.CharField(max_length=50, unique=True)

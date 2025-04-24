@@ -13,7 +13,12 @@ from ...serializers import FormTemplateSerializer
 
 
 class FormTemplateViewSet(viewsets.ModelViewSet, MethodNameMixin):
-    """ViewSet for form templates"""
+    """
+    ViewSet for form templates
+
+    Manages form templates including their LaTeX content. Supports
+    creating, updating, and enabling/disabling templates.
+    """
 
     serializer_class = FormTemplateSerializer
     queryset = FormTemplate.objects.all()
@@ -109,13 +114,27 @@ class FormTemplateViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     # Admin-only access for create/update/delete operations
     def get_permissions(self):
+        """
+        Set appropriate permissions based on the current action
+
+        - Create/update/delete operations require admin permissions
+        - Read operations only require user to be authenticated
+
+        Returns:
+            List of permission instances to apply
+        """
         if self.action in ["create", "update", "partial_update", "destroy"]:
             self.permission_classes = [IsAdminUser]
         return super().get_permissions()
 
     @action(detail=True, methods=["patch"])
     def toggle_status(self, request, pk=None):
-        """Toggle form template active status"""
+        """
+        Toggle form template active status
+
+        Admins can enable/disable templates to control which ones are available
+        to users without deleting them from the system.
+        """
         template = self.get_object()
         pretty_print(f"Toggling Form Template Status for {template.id}", "DEBUG")
 

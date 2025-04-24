@@ -19,7 +19,16 @@ from api.serializers import FormSubmissionSerializer
 
 
 class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
-    """ViewSet for form submissions"""
+    """
+    ViewSet for form submissions
+
+    Handles the entire lifecycle of form submissions:
+    - Creating new form drafts
+    - Previewing forms before submission
+    - Submitting forms for approval
+    - Tracking form status
+    - Retrieving form data and associated PDFs
+    """
 
     serializer_class = FormSubmissionSerializer
     queryset = FormSubmission.objects.all()
@@ -28,7 +37,14 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     def get_approval_path(self):
         """
         Determines the approval path based on the organizational unit hierarchy
+
+        Calculates which approvers should be involved in approving this form
+        based on the unit hierarchy and organization-wide approvers.
+
+        Returns:
+            List of approvers in the appropriate order
         """
+
         if not self.unit:
             return []
 
@@ -53,7 +69,15 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
         return approvers
 
     def perform_create(self, serializer) -> None:
-        """Set the submitter as the current user and assign to their unit if available"""
+        """
+        Set the submitter as the current user and assign to their unit if available
+
+        Automatically associates the new form submission with the current user
+        and attempts to determine their organizational unit.
+
+        Args:
+            serializer: The serializer with validated data
+        """
         # Try to determine the user's organizational unit
         user = self.request.user
         user_unit = None
@@ -73,16 +97,13 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
     def preview(self, request):
         """
         Generate a preview PDF from form data without storing it to the database
-        So user can preview pdf inside their dashboard
+
+        This allows users to preview forms before submission. Creates a temporary
+        draft submission that can be referenced later when the form is submitted.
         """
         pretty_print(f"Generating form preview from {self._get_method_name()}", "DEBUG")
 
-        # NOTE: The Form Type (Graduate Petition | Term Withdrawal)
-        # More should be added in the future
-        # Graduate Petition should have Form ID 1
-        # Term Withdrawal should have Form ID 2
-
-        # BUG: The data comes weirdly this is done to depack the first level of the json request
+        # BUG: The data comes in nested format, we need to unpack first level of json request
         form_template = request.data.get("form_template")
 
         try:
@@ -187,7 +208,12 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=True, methods=["POST"])
     def submit(self, request, pk=None):
-        """Submit a draft form for approval"""
+        """
+        Submit a draft form for approval
+
+        Processes a draft form submission and puts it into the approval workflow.
+        Creates identifiers, sets initial approval state, and generates the final PDF.
+        """
         pretty_print(f"Request in submit form {request}", "INFO")
         try:
             form_submission = self.get_object()
@@ -219,7 +245,7 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             )
 
             if not approval_workflows.exists():
-                # If no approval workflow, mark as approved immediately
+                # TODO: If no approval workflow, mark as approved immediately
                 pretty_print(
                     "NO APPROVAL WORKFLOW FOUND MARKING AS APPROVED COULD BE A BUG, \n IN form_submissin.ViewSet.submit",
                     "WARNING",
@@ -398,7 +424,18 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             return Response({"status": "approved", "message": "Form fully approved"})
 
     def _generate_pdf(self, template_name, form_submission):
-        """Generate PDF for the form submission"""
+        """
+        Generate PDF for the form submission
+
+        Creates a PDF document from the form data using the LaTeX template.
+
+        Args:
+            template_name: The name of the form template
+            form_submission: The FormSubmission object containing the data
+
+        Returns:
+            A PDF file object or None if generation fails
+        """
         pretty_print(
             f"RECEIVED INSIDE _generate_pdf: {template_name} {form_submission}", "DEBUG"
         )
@@ -420,7 +457,20 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             return None
 
     def _generate_signed_pdf(self, form_submission, approval):
-        """Generate signed PDF for the approval"""
+        """
+        Generate signed PDF for the approval
+
+        Creates a PDF with approval signature and decision information.
+
+        Args:
+            form_submission: The form submission being approved
+            approval: The approval record
+
+        Returns:
+            File object or None if generation fails
+
+        TODO: Complete this implementation to include signature
+        """
         # TODO: need to do this complete need to make it required for user to
         # submit their signature into their account before being able to access
         # forms sidepanel
@@ -432,7 +482,14 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             return None
 
     def get_queryset(self):
-        """Filter submissions based on user role"""
+        """
+        Filter submissions based on user role
+
+        Returns:
+            - All submissions for admins
+            - User's own submissions and pending approvals for staff users
+            - Only user's own submissions for regular users
+        """
         user = self.request.user
         queryset = super().get_queryset()
 
@@ -456,7 +513,14 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=False, methods=["GET"])
     def by_identifier(self, request):
-        """Retrieve a form submission by its identifier"""
+        """
+        Retrieve a form submission by its identifier
+
+        Allows looking up form submissions using the user-friendly identifier
+        rather than the internal ID. Returns the full submission data with
+        base64-encoded PDF content if available.
+        """
+
         identifier = request.query_params.get("identifier")
 
         if not identifier:
@@ -511,8 +575,13 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=False, methods=["GET"])
     def all_identifiers(self, request):
-        """Retrieve all form submission identifiers for the current user"""
+        """
+        Retrieve all form submission identifiers for the current user
 
+        Returns a list of all form submissions created by the current user,
+        including basic status information. Used to show users their submission
+        history without loading full submission details.
+        """
         try:
             # get all identifiers for forms submitted by current user
             identifiers = FormSubmissionIdentifier.objects.filter(
@@ -541,7 +610,16 @@ class FormSubmissionViewSet(viewsets.ModelViewSet, MethodNameMixin):
             )
 
     def _validate_form_data(self, form_data, form_template) -> bool:
-        """Validate form data against template schema"""
+        """
+        Validate form data against the template schema
+
+        Args:
+            form_data: The user-submitted form data (dict)
+            form_template: The FormTemplate containing the field schema
+
+        Returns:
+            bool: True if data is valid, False otherwise
+        """
         pretty_print(f"[VALIDATION] form_data type: {type(form_data)}", "DEBUG")
 
         if not isinstance(form_data, dict):

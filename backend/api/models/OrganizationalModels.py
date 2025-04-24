@@ -5,7 +5,13 @@ from .UserModel import User
 
 
 class OrganizationalUnit(BaseModel, models.Model):
-    """Represents a unit in the organizational hierarchy"""
+    """
+    Represents a unit in the organizational hierarchy
+
+    Models the institutional structure with departments, colleges, etc.
+    Supports hierarchical relationships through the parent field.
+    Used to determine approval workflows by unit.
+    """
 
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
@@ -28,7 +34,16 @@ class OrganizationalUnit(BaseModel, models.Model):
         return f"{self.name} ({self.code})"
 
     def get_hierarchy_path(self):
-        """Returns the full path of units from root to this unit"""
+        """
+        Returns the full path of units from root to this unit
+
+        Walks up the hierarchy from this unit to the root unit,
+        building a list of all units in the path.
+
+        Returns:
+            List[OrganizationalUnit]: List of units in order from root to this unit
+        """
+
         path = [self]
         current = self
         while current.parent:
@@ -38,7 +53,12 @@ class OrganizationalUnit(BaseModel, models.Model):
 
 
 class UnitApprover(BaseModel, models.Model):
-    """Links approvers to organizational units with specific roles"""
+    """
+    Links approvers to organizational units with specific roles
+
+    Maps users to their approval roles within specific organizational units.
+    Can be organization-wide for approvers who can approve across all units.
+    """
 
     unit = models.ForeignKey(
         OrganizationalUnit, on_delete=models.CASCADE, related_name="approvers"
@@ -60,7 +80,12 @@ class UnitApprover(BaseModel, models.Model):
 
 
 class ApprovalDelegation(BaseModel, models.Model):
-    """Tracks temporary delegations of approval authority"""
+    """
+    Tracks temporary delegations of approval authority
+
+    Allows staff to delegate their approval authority to others during absences.
+    Each delegation has a specific time period and is linked to a unit.
+    """
 
     delegator = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="delegated_from"
@@ -85,8 +110,16 @@ class ApprovalDelegation(BaseModel, models.Model):
     @classmethod
     def get_active_delegation(cls, user, unit=None):
         """
-        Check if a user has delegated their approval authority
-        Returns the active delegate user or None
+        Get all active delegations where this user is the delegate
+
+        Finds all approval authorities that have been delegated to this user
+        that are currently active based on date range.
+
+        Args:
+            user: The user to check for active delegations
+
+        Returns:
+            QuerySet: Active delegations for this user
         """
         from django.utils import timezone
 

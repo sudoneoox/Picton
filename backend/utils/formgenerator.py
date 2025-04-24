@@ -45,13 +45,16 @@ class FormPDFGenerator:
         """
         Generate a form PDF based on template name and form data
 
+        Creates a new PDF document from the specified template and user data,
+        without approval signatures (used for previews and initial submissions).
+
         Args:
             template_name: String identifier for the form template
-            user: The User model instance
+            user: The User model instance (usually the submitter)
             form_data: Dictionary containing form field values
 
         Returns:
-            The generated PDF from the appropriate template
+            ContentFile containing the generated PDF
         """
         pretty_print(
             f"received params in generate_template_form {template_name}, {user}, {list(form_data)}",
@@ -65,6 +68,9 @@ class FormPDFGenerator:
     ):
         """
         Generate a signed version of the form with approver's signature
+
+        Creates a PDF with approval information, including decision status,
+        comments, and the approver's signature image at the appropriate position.
 
         Args:
             form_submission: The FormSubmission object
@@ -374,8 +380,18 @@ class FormPDFGenerator:
             return None
 
     def _process_graduate_posthumous_fields(self, form_data, replacements):
-        """Process specific fields for Graduate Posthumous Degree Petition"""
-        # Year and season
+        """
+        Process specific fields for Graduate Posthumous Degree Petition
+
+        Handles the specialized field formats and options specific to the
+        Graduate Posthumous Degree form template. Automatically checks the
+        posthumous degree purpose checkbox.
+
+        Args:
+            form_data: Dictionary of form field values
+            replacements: Dictionary to store placeholder replacements
+        """
+
         replacements["$YEAR$"] = str(form_data.get("year", datetime.now().year))
         replacements["$SEASON$"] = form_data.get("season", "")
 
@@ -388,7 +404,18 @@ class FormPDFGenerator:
         replacements["$PURPOSE_POSTHUMOUS_DEGREE$"] = "\\checkmark"
 
     def _process_graduate_petition_fields(self, form_data, replacements):
-        """Process specific fields for Graduate Petition forms"""
+        """
+        Process specific fields for Graduate Petition forms
+
+        Handles the specialized field formats and checkbox options specific
+        to the Graduate Petition form template. Maps form data values to
+        LaTeX template placeholders.
+
+        Args:
+            form_data: Dictionary of form field values
+            replacements: Dictionary to store placeholder replacements
+        """
+
         # Year and season
         replacements["$YEAR$"] = str(form_data.get("year", datetime.now().year))
         replacements["$SEASON$"] = form_data.get("season", "")
@@ -434,8 +461,17 @@ class FormPDFGenerator:
         replacements["$VICE_PROVOST_DATE$"] = ""
 
     def _process_term_withdrawal_fields(self, form_data, replacements):
-        """Process specific fields for Term Withdrawal forms"""
-        # Year field
+        """
+        Process specific fields for Term Withdrawal forms
+
+        Handles the specialized field formats and checkbox options specific
+        to the Term Withdrawal form template. Maps form data to LaTeX placeholders
+        and handles checkboxes for the semester selection.
+
+        Args:
+            form_data: Dictionary of form field values
+            replacements: Dictionary to store placeholder replacements
+        """
         year_value = form_data.get(
             "withdrawal_year", form_data.get("year", datetime.now().year)
         )
@@ -477,7 +513,20 @@ class FormPDFGenerator:
     def _process_generic_fields(
         self, fields, form_data, template_content, replacements
     ):
-        """Process fields for generic form templates by searching for placeholders in the template"""
+        """
+        Process fields for generic form templates
+
+        Handles dynamic form templates by scanning the template content for
+        placeholders and mapping form data to those placeholders. Supports
+        different placeholder naming conventions and specialized field types.
+
+        Args:
+            fields: List of field definitions from the form template schema
+            form_data: Dictionary of form field values
+            template_content: String containing the LaTeX template content
+            replacements: Dictionary to store placeholder replacements
+        """
+
         # Find all placeholders in the template content
         import re
 
@@ -520,7 +569,20 @@ class FormPDFGenerator:
                         replacements[placeholder] = str(field_value)
 
     def _process_signature(self, user):
-        """Process user signature for inclusion in the PDF"""
+        """
+        Process user signature for inclusion in the PDF
+
+        Retrieves the user's signature image and creates the appropriate
+        LaTeX command to include it in the document. Handles both local
+        and remote storage of signature files.
+
+        Args:
+            user: User object containing the signature image
+
+        Returns:
+            String with LaTeX command to include the signature image, or empty string if no signature
+        """
+
         # This assumes the signature is stored as an ImageField in the User model
         if not user.signature:
             pretty_print(f"User {user} does not have a signature on file", "WARNING")
@@ -541,7 +603,20 @@ class FormPDFGenerator:
                 return f"\\includegraphics[width=2in]{{{tmp.name}}}"
 
     def _compile_latex(self, content):
-        """Compile LaTeX content to PDF"""
+        """
+        Compile LaTeX content to PDF
+
+        Uses pdflatex to compile the LaTeX content into a PDF document.
+        Handles error conditions and provides debugging information when
+        compilation fails.
+
+        Args:
+            content: String containing the LaTeX content to compile
+
+        Returns:
+            ContentFile containing the PDF or None if compilation fails
+        """
+
         # Create a temporary directory for compilation
         with tempfile.TemporaryDirectory() as temp_dir:
             # Write the LaTeX content to a file
@@ -597,7 +672,13 @@ class FormPDFGenerator:
                 return None
 
     def _format_phone_number(self, phone_number):
-        """Format phone number for display"""
+        """
+        Format phone number for display
+
+        Cleans and formats a phone number to the standard (XXX) XXX-XXXX format
+        if possible, otherwise returns the original string.
+        """
+
         if not phone_number:
             return ""
         # Remove all non-numeric characters
@@ -608,5 +689,19 @@ class FormPDFGenerator:
         return phone_number
 
     def _get_logo_path(self, is_dark_mode=False):
-        """Get the appropriate logo path based on theme mode"""
+        """
+        Get the appropriate logo path based on theme mode
+
+        Returns the path to the university logo, potentially using
+        a different version based on dark/light mode.
+
+        Args:
+            is_dark_mode: Boolean indicating if dark mode is active
+
+        Returns:
+            String path to the appropriate logo file
+        """
+        # NOTE: Currently only returns the standard logo regardless of mode
+        # TODO: Add support for dark mode logos
+
         return self.logo_path

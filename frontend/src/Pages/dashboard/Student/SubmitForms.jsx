@@ -1,3 +1,4 @@
+// IMPORTANT: Component for submitting new forms
 import React, { useState, useEffect } from "react";
 import { api } from "@/api/api.js";
 import { pretty_log } from "@/api/common_util";
@@ -8,6 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Component for submitting new forms
+ * Displays available form templates and launches form submission dialog
+ */
 const SubmitForms = ({ formTemplates = [] }) => {
   const [hasSignature, setHasSignature] = useState(true); // Optimistic
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
@@ -41,7 +46,7 @@ const SubmitForms = ({ formTemplates = [] }) => {
     }
   }, [formTemplates]);
 
-  // Check if user has a signature
+  // Check if user has a signature (REQUIRED for form submissions)
   useEffect(() => {
     const checkSignature = async () => {
       try {
@@ -61,11 +66,13 @@ const SubmitForms = ({ formTemplates = [] }) => {
     checkSignature();
   }, []);
 
+  // handle signature submission completion
   const handleSignatureSubmit = () => {
     setHasSignature(true);
     setShowSignatureDialog(false);
   };
 
+  // handle start new form buttom click
   const handleStartNewForm = () => {
     if (availableTemplates.length === 1) {
       // If only one template, select it automatically
@@ -75,12 +82,14 @@ const SubmitForms = ({ formTemplates = [] }) => {
     }
   };
 
+  // handle form template selection
   const handleFormTypeSelect = (template) => {
     setSelectedTemplate(template);
     setShowFormTypeDialog(false);
     setShowFormDialog(true);
   };
 
+  // handle form dialog close
   const handleCloseFormDialog = () => {
     setShowFormDialog(false);
     setSelectedTemplate(null);
@@ -96,6 +105,7 @@ const SubmitForms = ({ formTemplates = [] }) => {
     );
   }
 
+  // Show signature prompt if user doesn't have a signature
   if (!hasSignature) {
     return (
       <div className="flex flex-col items-center gap-4">
@@ -122,6 +132,7 @@ const SubmitForms = ({ formTemplates = [] }) => {
 
   return (
     <div className="space-y-6">
+      {/* Info banner */}
       <div className="bg-blue-50 border border-blue-200 p-4 rounded">
         <h3 className="text-blue-800 font-medium">Submit a Form</h3>
         <p className="text-blue-700 mt-1">

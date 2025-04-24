@@ -1,3 +1,6 @@
+// IMPORTANT: Popup dialog for signature upload
+// Use when a signature is required before permorming an action
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,18 +15,24 @@ import { api } from "@/api/api.js";
 import { useToast } from "@/components/ToastNotification";
 import { pretty_log } from "@/api/common_util";
 
-// Simple signature upload component
+
+/**
+ * Dialog for signature upload
+ * Used as a modal for collecting signatures when required
+ */
 const SignatureDialog = ({ isOpen, onClose, onSignatureSubmit }) => {
   const [signature, setSignature] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
+  // handle file selection
   const handleSignatureChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setSignature(e.target.files[0]);
     }
   };
 
+  // submit signature to server
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!signature) {
@@ -51,6 +60,11 @@ const SignatureDialog = ({ isOpen, onClose, onSignatureSubmit }) => {
       setIsSubmitting(false);
     }
   };
+
+  /**
+   * Handle dialog open/close state
+   * Prevent closing while submission is in progress
+   */
 
   const handleOpenChange = (open) => {
     // Only allow closing if we're not submitting

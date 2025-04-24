@@ -1,12 +1,13 @@
-from rest_framework import viewsets, status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from utils import MethodNameMixin, pretty_print
 
-from ..serializers import AdminUserSerializer, UserSerializer
+from api.models import User
+from api.serializers import AdminUserSerializer, UserSerializer
+
 from .common import AdminRequiredMixin
-from ..models import User
-from utils import pretty_print, MethodNameMixin
 
 
 class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNameMixin):
@@ -24,7 +25,8 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
         """
         GET: Pagination list of all users for admin
         POST: Create a new user
-        EXAMPLE pagination:
+
+        Example pagination:
             GET /api/admin/users/?page=1&page_size=5
         """
         if request.method == "POST":
@@ -33,14 +35,23 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
                 pretty_print(f"Creating new user with data: {data}", "DEBUG")
 
                 # Validate required fields
-                required_fields = ["username", "email", "role", "first_name", "last_name"]
-                missing_fields = [field for field in required_fields if not data.get(field)]
+                required_fields = [
+                    "username",
+                    "email",
+                    "role",
+                    "first_name",
+                    "last_name",
+                ]
+                missing_fields = [
+                    field for field in required_fields if not data.get(field)
+                ]
                 if missing_fields:
                     return Response(
-                        {"error": f"Missing required fields: {', '.join(missing_fields)}"},
+                        {
+                            "error": f"Missing required fields: {', '.join(missing_fields)}"
+                        },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-
                 # Check for existing users
                 if User.objects.filter(email=data["email"]).exists():
                     return Response(
@@ -114,24 +125,6 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
             }
         )
 
-    # TODO: implement chart view or stat view for frontend its going to utilize this
-    @action(detail=False, methods=["get"])
-    def user_stats(self, _):
-        """Get user statistics for dashboard"""
-        pretty_print(
-            f"Getting user_stats for admin dashborad from {self._get_method_name()}",
-            "INFO",
-        )
-        total_users = User.objects.count()
-        active_users = User.objects.filter(is_active=True).count()
-        return Response(
-            {
-                "total_users": total_users,
-                "active_users": active_users,
-                "inactive_users": total_users - active_users,
-            }
-        )
-
     def get_queryset(self):
         """Add custom filtering and ordering"""
         queryset = super().get_queryset()
@@ -140,7 +133,18 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
 
     @action(detail=True, methods=["patch"])
     def toggle_status(self, request, pk=None):
-        """Toggle user active status"""
+        """
+        Toggle user active status
+
+        Allows admins to activate or deactivate user accounts.
+        Contains safety checks to prevent:
+        - Deactivating superuser accounts
+        - Deactivating your own account
+
+        Returns:
+            Response with updated user status
+            Error response if operation is not allowed
+        """
         user = self.get_object()
         # Can not deactivate account for admin
         if user.is_superuser:
@@ -208,9 +212,10 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
                 request.data["is_superuser"] = False
                 request.data["is_staff"] = False
 
+            # IMPORTANT: Cannot demote an admin
             if user.role == "admin" and role != "admin":
                 pretty_print(
-                    "Cannot Change and admin's role to something with lower priveleges",
+                    "Cannot Change and admin's role to something with lower privileges",
                     "WARNING",
                 )
                 errors["role"] = ["Cannot deprivilege an admin"]
@@ -308,7 +313,18 @@ class AdminDashboardViewSet(AdminRequiredMixin, viewsets.ModelViewSet, MethodNam
 
     @action(detail=True, methods=["delete"])
     def delete_user(self, request, pk=None):
-        """Delete a user - only superusers can delete users"""
+        """
+        Delete a user
+
+        Only superusers can delete users. Contains safety checks to prevent:
+        - Deleting your own account
+        - Non-superusers from deleting accounts
+        - Deleting other superuser accounts
+
+        Returns:
+            HTTP 204 No Content if successful
+            Error response if operation is not allowed
+        """
         if not request.user.is_superuser:
             return Response(
                 {"error": "Only superusers can delete users"},

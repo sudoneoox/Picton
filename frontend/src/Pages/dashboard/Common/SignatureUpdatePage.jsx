@@ -1,3 +1,5 @@
+// IMPORTANT: Component for uplading and managing user signatures
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +7,10 @@ import { api } from "@/api/api";
 import { pretty_log } from "@/api/common_util";
 import { useToast } from "@/components/ToastNotification";
 
+/**
+ * Signature management component
+ * Allows users to upload and update their digital signature
+ */
 const SignatureUpdatePage = () => {
   const [signature, setSignature] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -13,9 +19,14 @@ const SignatureUpdatePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { showToast } = useToast();
 
+  // check if use has a signature on component mount
   useEffect(() => {
     checkSignature();
   }, []);
+
+  /**
+   * Check if the user already has a signature on file
+   */
 
   const checkSignature = async () => {
     try {
@@ -30,17 +41,21 @@ const SignatureUpdatePage = () => {
     }
   };
 
+  /**
+   * Handle signature file selection
+   * Validates file type and size, creates preview
+   */
   const handleSignatureChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
 
-      // Validate file size
+      // Validate file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
         showToast({ error: "Signature file too large. Maximum is 2MB." }, "error");
         return;
       }
 
-      // Validate file type
+      // Validate file type (jpeg, png, gif only)
       const fileType = file.type;
       if (!['image/jpeg', 'image/png', 'image/gif'].includes(fileType)) {
         showToast({ error: "Invalid file type. Please upload a JPEG, PNG or GIF image" }, "error");
@@ -57,6 +72,10 @@ const SignatureUpdatePage = () => {
       reader.readAsDataURL(file);
     }
   };
+
+  /**
+   * Submit signature to server
+   */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -87,6 +106,7 @@ const SignatureUpdatePage = () => {
     }
   };
 
+  // Show loading state while checking signature status
   if (isLoading) {
     return (
       <Card>
@@ -112,6 +132,7 @@ const SignatureUpdatePage = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Success message if signature exists */}
         {hasSignature && (
           <div className="mb-6 p-4 bg-muted rounded-md">
             <p className="font-medium text-green-600">✓ You have a signature on file</p>

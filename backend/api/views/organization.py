@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from django.utils import timezone
-from utils import MethodNameMixin
+from utils import MethodNameMixin, pretty_print
 
 from ..models import OrganizationalUnit, UnitApprover, ApprovalDelegation, User
 from ..serializers import (
@@ -16,6 +16,9 @@ from ..serializers import (
 class OrganizationalUnitViewSet(viewsets.ModelViewSet, MethodNameMixin):
     """
     ViewSet for managing organizational units
+
+    Provides endpoints to create, read, update, and delete organizational units.
+    Also includes methods to retrieve sub-units and approvers for a unit.
     """
 
     serializer_class = OrganizationalUnitSerializer
@@ -30,7 +33,13 @@ class OrganizationalUnitViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=True, methods=["GET"])
     def sub_units(self, request, pk=None):
-        """Get all sub-units of this unit"""
+        """
+        Get all sub-units of this unit
+
+        Returns all child organizational units that report to this unit.
+        Used to display organizational hierarchies.
+        """
+
         unit = self.get_object()
         sub_units = OrganizationalUnit.objects.filter(parent=unit)
         serializer = self.get_serializer(sub_units, many=True)
@@ -38,7 +47,13 @@ class OrganizationalUnitViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=True, methods=["GET"])
     def approvers(self, request, pk=None):
-        """Get all approvers for this unit"""
+        """
+        Get all approvers for this unit
+
+        Returns all users who have approval authority in this unit.
+        Used for displaying available approvers
+        """
+
         unit = self.get_object()
         approvers = UnitApprover.objects.filter(unit=unit, is_active=True)
         serializer = UnitApproverSerializer(approvers, many=True)
@@ -48,6 +63,9 @@ class OrganizationalUnitViewSet(viewsets.ModelViewSet, MethodNameMixin):
 class UnitApproverViewSet(viewsets.ModelViewSet, MethodNameMixin):
     """
     ViewSet for managing unit approvers
+
+    Controls which users have approval authority in which units.
+    Includes methods to get a user's units and roles within units.
     """
 
     serializer_class = UnitApproverSerializer
@@ -117,6 +135,33 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
     serializer_class = ApprovalDelegationSerializer
     queryset = ApprovalDelegation.objects.all()
 
+    @action(detail=True, methods=["POST"])
+    def cancel(self, request, pk=None):
+        """Cancel a delegation"""
+        try:
+            delegation = self.get_object()
+
+            # Only allow canceling by the delegator or an admin
+            if delegation.delegator != request.user and not request.user.is_superuser:
+                return Response(
+                    {"error": "You can only cancel your own delegations"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # Set delegation as inactive
+            delegation.is_active = False
+            delegation.save()
+
+            return Response(
+                {"message": "Delegation cancelled successfully", "id": delegation.id}
+            )
+        except Exception as e:
+            pretty_print(f"Error cancelling delegation: {str(e)}", "ERROR")
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
     def get_permissions(self):
         # Creating delegations requires being an approver
         if self.action == "create":
@@ -134,9 +179,18 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
         unit_id = request.data.get("unit")
         delegate_id = request.data.get("delegate")
 
-        if not unit_id or not delegate_id:
+        # Log the incoming request data
+        pretty_print(f"Delegation creation request data: {request.data}", "DEBUG")
+
+        if not unit_id:
             return Response(
-                {"error": "Unit and delegate are required"},
+                {"error": "Unit is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not delegate_id:
+            return Response(
+                {"error": "Delegate is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -151,9 +205,14 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # Create delegation data with the current user as delegator
+        delegation_data = request.data.copy()
+
         # Create the delegation
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=delegation_data)
         serializer.is_valid(raise_exception=True)
+
+        # Save with the current user as delegator
         serializer.save(delegator=request.user)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -177,7 +236,16 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet, MethodNameMixin):
 
     @action(detail=False, methods=["GET"])
     def active(self, request):
-        """Get all active delegations for the current user"""
+        """
+        Get all active delegations for the current user
+
+        Returns delegations where the current user is either the delegator
+        (delegated their approval authority) or the delegate (received
+        approval authority from someone else).
+
+        Only returns delegations that are currently active based on date range.
+        """
+
         now = timezone.now()
         delegated_to_me = ApprovalDelegation.objects.filter(
             delegate=request.user,
